@@ -1,11 +1,11 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, BrowserRouter } from "react-router-dom";
 import Layout from "./layout.jsx";
 import Home from "./pages/Home";
 import "./index.css";
 import PrivacyPolicy from "./pages/Privacy.jsx";
 import TermsConditions from "./pages/Terms.jsx";
 import RefundPolicy from "./pages/Refund.jsx";
-import CartOffCanvas from "./components/Header/CartOffCanvas.jsx";
+// import CartOffCanvas from "./components/Header/CartOffCanvas.jsx";
 import LoginModal from "./components/Header/Login.jsx";
 import UserProfilePage from "./pages/Userprofile.jsx";
 import Wishlist from "./pages/Wishlist.jsx";
@@ -17,13 +17,18 @@ import PartnerPage from "./pages/Partner.jsx";
 import Faq from "./pages/Faq.jsx";
 import Kids from "./pages/Kids.jsx";
 import BecomeAPartner from "./pages/BecomeAPartner.jsx";
+import ScrollToTop from "./components/Scrolltop.jsx";
+import BecomeARider from "./pages/BecomeARider.jsx";
 
 function App() {
   return (
+
+<>
+    <ScrollToTop />
     <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={<Home />} />
-        <Route path="cart" element={<CartOffCanvas />} />
+        {/* <Route path="cart" element={<CartOffCanvas />} /> */}
         <Route path="login" element={<LoginModal />} />
         <Route path="userprofile" element={<UserProfilePage />} />
         <Route path="wishlist" element={<Wishlist />} />
@@ -40,6 +45,7 @@ function App() {
         <Route path="faq" element={<Faq />} />
         <Route path="kids" element={<Kids />} />
         <Route path="becomeapartner" element={<BecomeAPartner />} />
+        <Route path="becomearider" element={<BecomeARider />} />
         <Route
           path="*"
           element={
@@ -51,6 +57,7 @@ function App() {
         />
       </Route>
     </Routes>
+    </>
   );
 }
 
