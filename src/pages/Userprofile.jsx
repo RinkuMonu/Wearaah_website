@@ -86,6 +86,7 @@ const getAvatarUrl = (avatarPath) => {
   if (!avatarPath) return "/image/avatar.jpg";
   if (/^https?:\/\//i.test(avatarPath)) return avatarPath;
   const baseUrl = api?.defaults?.baseURL || "http://localhost:5000";
+  console.log("Avatar URL:", `${baseUrl}${avatarPath}`);
   return `${baseUrl}${avatarPath}`;
 };
 
@@ -176,6 +177,7 @@ export default function UserProfilePage() {
   const handleSidebarClick = (tabId) => {
     if (tabId === "logout") {
       localStorage.removeItem("token");
+      localStorage.removeItem("user");
       setUser(null);
       setLoginOpen(true);
       navigate("/");

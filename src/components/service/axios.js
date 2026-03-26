@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: "http://localhost:5000/api",
-    // baseURL: "https://vmm9pgj8-5000.inc1.devtunnels.ms/api",
+    // baseURL: "http://localhost:5000/api",
+    baseURL: "https://lrd46c05-5000.inc1.devtunnels.ms/api",
 });
 
 /* =====================

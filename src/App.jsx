@@ -19,44 +19,58 @@ import Kids from "./pages/Kids.jsx";
 import BecomeAPartner from "./pages/BecomeAPartner.jsx";
 import ScrollToTop from "./components/Scrolltop.jsx";
 import BecomeARider from "./pages/BecomeARider.jsx";
-
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ToastContainer } from 'react-toastify';
 function App() {
+  const queryClient = new QueryClient();
   return (
-
-<>
-    <ScrollToTop />
-    <Routes>
-      <Route path="/" element={<Layout />}>
-        <Route index element={<Home />} />
-        {/* <Route path="cart" element={<CartOffCanvas />} /> */}
-        <Route path="login" element={<LoginModal />} />
-        <Route path="userprofile" element={<UserProfilePage />} />
-        <Route path="wishlist" element={<Wishlist />} />
-        <Route path="cart" element={<LoginModal />} />
-        <Route path="productlist" element={<ProductListingPage />} />
-        <Route path="productdetail" element={<ProductDetailPage />} />
-        <Route path="product/:id" element={<ProductDetailPage />} />
-        <Route path="checkout" element={<CheckoutPage />} />
-        <Route path="privacy" element={<PrivacyPolicy />} />
-        <Route path="terms" element={<TermsConditions />} />
-        <Route path="refund" element={<RefundPolicy />} />
-        <Route path="add" element={<AddProductWithVariant />} />
-        <Route path="partner" element={<PartnerPage />} />
-        <Route path="faq" element={<Faq />} />
-        <Route path="kids" element={<Kids />} />
-        <Route path="becomeapartner" element={<BecomeAPartner />} />
-        <Route path="becomearider" element={<BecomeARider />} />
-        <Route
-          path="*"
-          element={
-            <div className="text-center py-20">
-              <h1 className="text-6xl font-bold text-gray-400">404</h1>
-              <p className="text-xl text-gray-500">Page Not Found</p>
-            </div>
-          }
-        />
-      </Route>
-    </Routes>
+    <>
+      <QueryClientProvider client={queryClient}>
+        <ScrollToTop />
+        <ToastContainer
+         position="top-center"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark" />
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Home />} />
+            {/* <Route path="cart" element={<CartOffCanvas />} /> */}
+            <Route path="login" element={<LoginModal />} />
+            <Route path="userprofile" element={<UserProfilePage />} />
+            <Route path="wishlist" element={<Wishlist />} />
+            <Route path="cart" element={<LoginModal />} />
+            <Route path="productlist" element={<ProductListingPage />} />
+            <Route path="productdetail" element={<ProductDetailPage />} />
+            <Route path="product/:id" element={<ProductDetailPage />} />
+            <Route path="checkout" element={<CheckoutPage />} />
+            <Route path="privacy" element={<PrivacyPolicy />} />
+            <Route path="terms" element={<TermsConditions />} />
+            <Route path="refund" element={<RefundPolicy />} />
+            <Route path="add" element={<AddProductWithVariant />} />
+            <Route path="partner" element={<PartnerPage />} />
+            <Route path="faq" element={<Faq />} />
+            <Route path="kids" element={<Kids />} />
+            <Route path="becomeapartner" element={<BecomeAPartner />} />
+            <Route path="becomearider" element={<BecomeARider />} />
+            <Route
+              path="*"
+              element={
+                <div className="text-center py-20">
+                  <h1 className="text-6xl font-bold text-gray-400">404</h1>
+                  <p className="text-xl text-gray-500">Page Not Found</p>
+                </div>
+              }
+            />
+          </Route>
+        </Routes>
+      </QueryClientProvider>
     </>
   );
 }
