@@ -173,7 +173,7 @@ export default function Header() {
                   <Link
                     to={to}
                     className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all group-hover:text-[#d6b28a]"
-                  >
+                  > 
                     <span>{label}</span>
                     {to !== "/" && to !== "/kids" && <MdKeyboardArrowDown />}
                   </Link>
