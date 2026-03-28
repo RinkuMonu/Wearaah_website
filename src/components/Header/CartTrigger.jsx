@@ -1,45 +1,65 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { FiShoppingBag } from "react-icons/fi";
 import { CART_UPDATED_EVENT, getCartCount } from "../../utils/cartStorage";
-import api from "../service/axios";
-import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../service/AuthContext";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchCartItems } from "../../features/Cart/cartSlice";
 
 export default function CartTrigger({ onOpen }) {
   const { user } = useAuth();
-
+  const dispatch = useDispatch();
+  
+  // Redux state
+  const { cartItems: reduxCartItems, status } = useSelector((state) => state.cart);
+  
   const [cartCount, setCartCount] = useState(0);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // 🔹 API Call
-  const fetchCart = async () => {
-    const { data } = await api.get("/cart");
-    return data;
-  };
+  // Memoized count calculation
+  const getCount = useCallback(() => {
+    if (user) {
+      return reduxCartItems?.length || 0;
+    } else {
+      return getCartCount();
+    }
+  }, [user, reduxCartItems]);
 
-  // 🔹 React Query (only when logged in)
-  const { data: apiCart } = useQuery({
-    queryKey: ["cart"],
-    queryFn: fetchCart,
-    enabled: !!user,
-  });
+  // Initial fetch when user logs in
+  useEffect(() => {
+    if (user && !isInitialized) {
+      dispatch(fetchCartItems());
+      setIsInitialized(true);
+    }
+  }, [user, dispatch, isInitialized]);
 
-  // 🔹 Sync Count
+  // Update count when Redux cart changes
   useEffect(() => {
     if (user) {
-      // ✅ Logged-in → API count
-      const apiCount = apiCart?.data?.items?.length || 0;
-      setCartCount(apiCount);
-    } else {
-      // ✅ Guest → Local storage count
-      setCartCount(getCartCount());
+      const newCount = reduxCartItems?.length || 0;
+      if (cartCount !== newCount) {
+        setCartCount(newCount);
+      }
     }
-  }, [user, apiCart]);
+  }, [user, reduxCartItems, cartCount]);
 
-  // 🔹 Listen for local cart changes (guest only)
+  // Update count for guest users
   useEffect(() => {
-    if (user) return; // ❌ skip for logged-in
+    if (!user) {
+      const newCount = getCartCount();
+      if (cartCount !== newCount) {
+        setCartCount(newCount);
+      }
+    }
+  }, [user, cartCount]);
 
-    const syncCount = () => setCartCount(getCartCount());
+  // Listen for localStorage cart changes (guest only)
+  useEffect(() => {
+    if (user) return;
+
+    const syncCount = () => {
+      const newCount = getCartCount();
+      setCartCount(newCount);
+    };
 
     window.addEventListener(CART_UPDATED_EVENT, syncCount);
     window.addEventListener("storage", syncCount);
@@ -50,20 +70,46 @@ export default function CartTrigger({ onOpen }) {
     };
   }, [user]);
 
+  // Optional: Poll for cart updates every few seconds (for real-time sync)
+  useEffect(() => {
+    if (!user) return;
+
+    const interval = setInterval(() => {
+      const currentCount = reduxCartItems?.length || 0;
+      if (cartCount !== currentCount) {
+        setCartCount(currentCount);
+      }
+    }, 2000); // Poll every 2 seconds
+
+    return () => clearInterval(interval);
+  }, [user, reduxCartItems, cartCount]);
+
+  // Display count with max limit
+  const displayCount = useMemo(() => {
+    if (cartCount === 0) return null;
+    return cartCount > 99 ? '99+' : cartCount;
+  }, [cartCount]);
+
   return (
     <button
       onClick={onOpen}
-      className="flex flex-col items-center relative focus:outline-none cursor-pointer"
+      className="flex flex-col items-center relative focus:outline-none cursor-pointer group"
+      aria-label="Shopping cart"
     >
-      <FiShoppingBag size={18} className="group-hover:scale-110 transition-transform" />
+      <FiShoppingBag 
+        size={18} 
+        className="group-hover:scale-110 transition-transform duration-200" 
+      />
 
-      {cartCount > 0 && (
-        <span className="absolute -top-2 -right-2 min-w-4 h-4 px-1 rounded-full bg-red-600 text-white text-[10px] leading-4">
-          {cartCount}
+      {displayCount && (
+        <span className="absolute -top-2 -right-2 min-w-4 h-4 px-1 rounded-full bg-red-600 text-white text-[10px] leading-4 animate-pulse">
+          {displayCount}
         </span>
       )}
 
-      <span className="hidden sm:block lg:inline">Basket</span>
+      <span className="hidden sm:block lg:inline text-xs font-medium mt-0.5">
+        Basket
+      </span>
     </button>
   );
 }
