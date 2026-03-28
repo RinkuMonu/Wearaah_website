@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   FaRegSave,
   FaTimes,
@@ -41,35 +41,6 @@ const SIDEBAR_ITEMS = [
   { id: "logout", label: "Log out", icon: RiLogoutCircleLine },
 ];
 
-const ADDRESS_BOOK = [
-  {
-    id: "addr-1",
-    type: "Home",
-    name: "Nandini Singh",
-    phone: "+91 98765 43210",
-    line1: "C-102, Vaishali Nagar",
-    line2: "Near Central Park, Jaipur, Rajasthan - 302021",
-    isDefault: true,
-  },
-  {
-    id: "addr-2",
-    type: "Work",
-    name: "Nandini Singh",
-    phone: "+91 98765 43210",
-    line1: "4th Floor, Tech Hub",
-    line2: "Malviya Nagar, Jaipur, Rajasthan - 302017",
-    isDefault: false,
-  },
-];
-
-const createEmptyAddressForm = (rawUser) => ({
-  type: "Home",
-  name: rawUser?.user?.name || "",
-  phone: rawUser?.user?.mobile || "",
-  line1: "",
-  line2: "",
-});
-
 const mapUserToForm = (rawUser) => {
   const profile = rawUser?.user || {};
   const nameParts = (profile.name || "").trim().split(" ").filter(Boolean);
@@ -86,46 +57,50 @@ const getAvatarUrl = (avatarPath) => {
   if (!avatarPath) return "/image/avatar.jpg";
   if (/^https?:\/\//i.test(avatarPath)) return avatarPath;
   const baseUrl = api?.defaults?.baseURL || "http://localhost:5000";
-  console.log("Avatar URL:", `${baseUrl}${avatarPath}`);
   return `${baseUrl}${avatarPath}`;
 };
 
 export default function UserProfilePage() {
   const { user, setLoginOpen, setUser } = useAuth();
   const navigate = useNavigate();
+  const token = localStorage.getItem("token");
 
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState(mapUserToForm(user));
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("Overview");
-  const [addresses, setAddresses] = useState(ADDRESS_BOOK);
-  const [selectedAddressId, setSelectedAddressId] = useState(
-    ADDRESS_BOOK.find((item) => item.isDefault)?.id || ADDRESS_BOOK[0]?.id || null,
-  );
+  
+  // Address state
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState(null);
-  const [addressForm, setAddressForm] = useState(createEmptyAddressForm(user));
+  const [addressForm, setAddressForm] = useState({
+    label: "home",
+    fullName: "",
+    mobile: "",
+    alternateMobile: "",
+    street: "",
+    landmark: "",
+    city: "",
+    state: "",
+    pincode: "",
+    country: "India",
+    lat: "",
+    lng: "",
+    isDefault: false,
+  });
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
     if (!token) {
       setLoginOpen(true);
       navigate("/");
     }
-  }, [navigate, setLoginOpen]);
+  }, [navigate, setLoginOpen, token]);
 
   useEffect(() => {
     setFormData(mapUserToForm(user));
   }, [user]);
-
-  useEffect(() => {
-    if (!showAddressForm || editingAddressId) return;
-    setAddressForm((prev) => ({
-      ...prev,
-      name: user?.user?.name || prev.name,
-      phone: user?.user?.mobile || prev.phone,
-    }));
-  }, [user, showAddressForm, editingAddressId]);
 
   const avatarSrc = useMemo(() => getAvatarUrl(user?.user?.avatar), [user]);
 
@@ -187,102 +162,249 @@ export default function UserProfilePage() {
     setActiveTab(tabId);
   };
 
-  const openAddAddressForm = () => {
+  // Fetch Addresses
+  const fetchAddresses = async () => {
+    try {
+      const res = await api.get("/address", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAddresses(res.data.data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useLayoutEffect(() => {
+    if (token) {
+      fetchAddresses();
+    }
+  }, [token]);
+
+  // Input Change - Handle both text inputs and checkboxes
+  const onAddressInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    
+    // Handle checkbox inputs
+    if (type === 'checkbox') {
+      setAddressForm((prev) => ({ ...prev, [name]: checked }));
+    } else {
+      // Handle text inputs
+      setAddressForm((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const getCurrentLocation = () => {
+  if (!navigator.geolocation) {
+    alert("Geolocation is not supported by your browser");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const { latitude, longitude } = position.coords;
+
+      setAddressForm((prev) => ({
+        ...prev,
+        lat: latitude,
+        lng: longitude,
+      }));
+
+      console.log("Lat:", latitude, "Lng:", longitude);
+    },
+    (error) => {
+      console.error(error);
+      alert("Unable to fetch location");
+    }
+  );
+};
+
+  // Add New
+  const onAddNew = () => {
+    setShowAddressForm(true);
     setEditingAddressId(null);
-    setAddressForm(createEmptyAddressForm(user));
-    setShowAddressForm(true);
-  };
-
-  const openEditAddressForm = (address) => {
-    setEditingAddressId(address.id);
+    // Pre-fill with user data if available
     setAddressForm({
-      type: address.type,
-      name: address.name,
-      phone: address.phone,
-      line1: address.line1,
-      line2: address.line2,
+      label: "home",
+      fullName: user?.user?.name || "",
+      mobile:  "",
+      alternateMobile: "",
+      street: "",
+      landmark: "",
+      city: "",
+      state: "",
+      pincode: "",
+      country: "India",
+      lat: "",
+      lng: "",
+      isDefault: addresses.length === 0, // Make default if no addresses exist
     });
-    setShowAddressForm(true);
+    getCurrentLocation();
   };
 
-  const closeAddressForm = () => {
+  // Validate Address Form
+  const validateAddressForm = () => {
+    const requiredFields = ['fullName', 'mobile', 'street', 'landmark', 'city', 'state', 'pincode'];
+    const missingFields = requiredFields.filter(field => {
+      const value = addressForm[field];
+      // Check if value exists and is a string with content after trimming
+      return !value || typeof value !== 'string' || !value.trim();
+    });
+    
+    if (missingFields.length > 0) {
+      alert(`Please fill in all required fields: ${missingFields.join(', ')}`);
+      return false;
+    }
+    
+    // Validate mobile number (basic validation)
+    const mobileStr = String(addressForm.mobile || '').replace(/\D/g, '');
+    if (mobileStr.length !== 10) {
+      alert('Please enter a valid 10-digit mobile number');
+      return false;
+    }
+    
+    // Validate pincode
+    const pincodeStr = String(addressForm.pincode || '');
+    if (!/^\d{6}$/.test(pincodeStr)) {
+      alert('Please enter a valid 6-digit pincode');
+      return false;
+    }
+    
+    return true;
+  };
+
+  // Save Address (POST / PUT)
+  const onSaveAddress = async () => {
+    // Validate form before submission
+    if (!validateAddressForm()) {
+      return;
+    }
+
+    try {
+      // Create payload with proper data types
+      const payload = {
+        label: addressForm.label || 'home',
+        fullName: String(addressForm.fullName || '').trim(),
+        mobile: String(addressForm.mobile || '').trim(),
+        alternateMobile: addressForm.alternateMobile ? String(addressForm.alternateMobile).trim() : "",
+        street: String(addressForm.street || '').trim(),
+        landmark: String(addressForm.landmark || '').trim(),
+        city: String(addressForm.city || '').trim(),
+        state: String(addressForm.state || '').trim(),
+        pincode: String(addressForm.pincode || '').trim(),
+        country: addressForm.country || "India",
+        coordinates: addressForm.lat && addressForm.lng ? [
+          Number(addressForm.lng),
+          Number(addressForm.lat),
+        ] : [0, 0],
+        isDefault: Boolean(addressForm.isDefault),
+      };
+
+      if (editingAddressId) {
+        await api.put(
+          `/address/${editingAddressId}`,
+          payload,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+      } else {
+        await api.post(
+          "/address",
+          payload,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+      }
+
+      await fetchAddresses(); // Refresh the list
+      onCloseAddressForm();
+      alert(editingAddressId ? "Address updated successfully!" : "Address added successfully!");
+    } catch (err) {
+      console.error("Error saving address:", err);
+      const errorMessage = err.response?.data?.message || "Failed to save address. Please try again.";
+      alert(errorMessage);
+    }
+  };
+
+  // Close Form
+  const onCloseAddressForm = () => {
     setShowAddressForm(false);
     setEditingAddressId(null);
-    setAddressForm(createEmptyAddressForm(user));
+    // Reset form to default values with proper data types
+    setAddressForm({
+      label: "home",
+      fullName: "",
+      mobile: "",
+      alternateMobile: "",
+      street: "",
+      landmark: "",
+      city: "",
+      state: "",
+      pincode: "",
+      country: "India",
+      lat: "",
+      lng: "",
+      isDefault: false,
+    });
   };
 
-  const handleAddressInputChange = (e) => {
-    const { name, value } = e.target;
-    setAddressForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSaveAddress = () => {
-    const payload = {
-      type: addressForm.type.trim(),
-      name: addressForm.name.trim(),
-      phone: addressForm.phone.trim(),
-      line1: addressForm.line1.trim(),
-      line2: addressForm.line2.trim(),
-    };
-
-    if (!payload.name || !payload.phone || !payload.line1 || !payload.line2) {
-      alert("Please fill all address details.");
-      return;
-    }
-
-    if (editingAddressId) {
-      setAddresses((prev) =>
-        prev.map((item) =>
-          item.id === editingAddressId ? { ...item, ...payload } : item,
-        ),
-      );
-      closeAddressForm();
-      return;
-    }
-
-    const newId = `addr-${Date.now()}`;
-    const shouldBeDefault = addresses.length === 0;
-    const newAddress = {
-      id: newId,
-      ...payload,
-      isDefault: shouldBeDefault,
-    };
-
-    setAddresses((prev) => [...prev, newAddress]);
-    if (shouldBeDefault) {
-      setSelectedAddressId(newId);
-    }
-    closeAddressForm();
-  };
-
-  const handleRemoveAddress = (id) => {
-    const addressToDelete = addresses.find((item) => item.id === id);
-    let next = addresses.filter((item) => item.id !== id);
-
-    if (next.length === 0) {
-      setAddresses([]);
-      setSelectedAddressId(null);
-      return;
-    }
-
-    if (addressToDelete?.isDefault) {
-      next = next.map((item, index) => ({
-        ...item,
-        isDefault: index === 0,
-      }));
-      setSelectedAddressId(next[0].id);
-    } else if (selectedAddressId === id) {
-      setSelectedAddressId(next.find((item) => item.isDefault)?.id || next[0].id);
-    }
-
-    setAddresses(next);
-  };
-
-  const handleSetDefault = (id) => {
-    setAddresses((prev) =>
-      prev.map((item) => ({ ...item, isDefault: item.id === id })),
-    );
+  // Select Address
+  const onSelectAddress = (id) => {
     setSelectedAddressId(id);
+  };
+
+  // Edit Address
+  const onEditAddress = (address) => {
+    setEditingAddressId(address._id);
+    setShowAddressForm(true);
+
+    setAddressForm({
+      label: address.label || "home",
+      fullName: address.fullName || "",
+      mobile: address.mobile || "",
+      alternateMobile: address.alternateMobile || "",
+      street: address.street || "",
+      landmark: address.landmark || "",
+      city: address.city || "",
+      state: address.state || "",
+      pincode: address.pincode || "",
+      country: address.country || "India",
+      lat: address.coordinates?.[1] || "",
+      lng: address.coordinates?.[0] || "",
+      isDefault: Boolean(address.isDefault),
+    });
+  };
+
+  // Delete Address
+  const onRemoveAddress = async (id) => {
+    if (window.confirm("Are you sure you want to delete this address?")) {
+      try {
+        await api.delete(`/address/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        await fetchAddresses();
+        alert("Address deleted successfully!");
+      } catch (err) {
+        console.error("Error deleting address:", err);
+        alert(err.response?.data?.message || "Failed to delete address. Please try again.");
+      }
+    }
+  };
+
+  // Set Default
+  const onSetDefault = async (id) => {
+    try {
+      await api.patch(
+        `/address/set-default/${id}`,
+       
+      );
+      await fetchAddresses();
+      alert("Default address updated successfully!");
+    } catch (err) {
+      console.error("Error setting default address:", err);
+      alert(err.response?.data?.message || "Failed to set default address. Please try again.");
+    }
   };
 
   const overviewActions = [
@@ -364,10 +486,11 @@ export default function UserProfilePage() {
                 <button
                   key={item.id}
                   onClick={() => handleSidebarClick(item.id)}
-                  className={`group flex shrink-0 items-center gap-2 rounded-2xl p-2 px-3 transition-all lg:mb-3 lg:w-full ${activeTab === item.id
-                    ? "text-blue-400"
-                    : "text-black hover:rounded-br-[40px] hover:rounded-tl-[40px] hover:bg-gray-50 hover:text-blue-600"
-                    }`}
+                  className={`group flex shrink-0 items-center gap-2 rounded-2xl p-2 px-3 transition-all lg:mb-3 lg:w-full ${
+                    activeTab === item.id
+                      ? "text-blue-400"
+                      : "text-black hover:rounded-br-[40px] hover:rounded-tl-[40px] hover:bg-gray-50 hover:text-blue-600"
+                  }`}
                 >
                   <item.icon className="text-xl" />
                   <span className="whitespace-nowrap text-sm lg:text-lg">{item.label}</span>
@@ -389,8 +512,7 @@ export default function UserProfilePage() {
                     Personal Data
                   </h1>
                   <p className="mt-2 text-gray-600">
-                    Enter personal data so you do not fill it manually when placing
-                    order
+                    Enter personal data so you do not fill it manually when placing order
                   </p>
                 </div>
 
@@ -425,8 +547,8 @@ export default function UserProfilePage() {
                         {loading
                           ? "Saving..."
                           : editMode
-                            ? "Save Changes"
-                            : "Edit Profile"}
+                          ? "Save Changes"
+                          : "Edit Profile"}
                       </button>
 
                       {editMode && (
@@ -460,7 +582,7 @@ export default function UserProfilePage() {
                         <div>
                           <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-700">
                             <LuUserRound className="text-black" />
-                            Second Name
+                            Last Name
                           </label>
                           <input
                             name="lastName"
@@ -517,7 +639,6 @@ export default function UserProfilePage() {
                             className="w-full rounded-xl border border-gray-300 px-4 py-3"
                           >
                             <option value="">Select Country</option>
-                            <option value="Ukraine">Ukraine</option>
                             <option value="India">India</option>
                           </select>
                         </div>
@@ -574,16 +695,24 @@ export default function UserProfilePage() {
                 <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {overviewActions.map((item) => {
                     const Content = (
-                      <div className={`group flex items-center justify-between gap-3 rounded-2xl rounded-br-[40px] rounded-tl-[40px] border p-4 text-center transition-all hover:border-blue-100 sm:p-6 ${item.borderClass}`}>
+                      <div
+                        className={`group flex items-center justify-between gap-3 rounded-2xl rounded-br-[40px] rounded-tl-[40px] border p-4 text-center transition-all hover:border-blue-100 sm:p-6 ${item.borderClass}`}
+                      >
                         <div className="flex items-center gap-3">
                           {item.Icon ? (
-                            <item.Icon className={`text-2xl ${item.iconClass} group-hover:text-blue-600`} />
+                            <item.Icon
+                              className={`text-2xl ${item.iconClass} group-hover:text-blue-600`}
+                            />
                           ) : (
-                            <div className={`mb-1 rounded-xl border px-3 py-1 text-xl font-bold ${item.valueClass}`}>
+                            <div
+                              className={`mb-1 rounded-xl border px-3 py-1 text-xl font-bold ${item.valueClass}`}
+                            >
                               {item.value}
                             </div>
                           )}
-                          <div className={`text-sm font-medium ${item.labelClass} group-hover:text-blue-600`}>
+                          <div
+                            className={`text-sm font-medium ${item.labelClass} group-hover:text-blue-600`}
+                          >
                             {item.label}
                           </div>
                         </div>
@@ -628,14 +757,14 @@ export default function UserProfilePage() {
                 showAddressForm={showAddressForm}
                 editingAddressId={editingAddressId}
                 addressForm={addressForm}
-                onAddNew={openAddAddressForm}
-                onAddressInputChange={handleAddressInputChange}
-                onSaveAddress={handleSaveAddress}
-                onCloseAddressForm={closeAddressForm}
-                onSelectAddress={setSelectedAddressId}
-                onEditAddress={openEditAddressForm}
-                onRemoveAddress={handleRemoveAddress}
-                onSetDefault={handleSetDefault}
+                onAddNew={onAddNew}
+                onAddressInputChange={onAddressInputChange}
+                onSaveAddress={onSaveAddress}
+                onCloseAddressForm={onCloseAddressForm}
+                onSelectAddress={onSelectAddress}
+                onEditAddress={onEditAddress}
+                onRemoveAddress={onRemoveAddress}
+                onSetDefault={onSetDefault}
               />
             )}
             {activeTab === "offers" && <UserOffer />}

@@ -236,7 +236,7 @@ const CheckoutPage = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </div> 
         </div>
       </div>
     </>
