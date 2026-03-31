@@ -21,7 +21,7 @@ console.log(products, "products from top product component state");
 React.useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const res = await api.get("/product");
+                const res = await api.get("/product/web");
                 // console.log(res.data, "products from top product component");?
                const data = res.data;
 
