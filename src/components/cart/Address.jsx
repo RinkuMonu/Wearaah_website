@@ -17,6 +17,7 @@ const Address = ({ onAddressChange }) => {
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [useSaved, setUseSaved] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState(null);
+  const [saveAddressForNextTime, setSaveAddressForNextTime] = useState(false); 
   const autocompleteRef = useRef(null);
   console.log(savedAddresses, "saved address from address component");
 
@@ -82,7 +83,21 @@ console.log("Selected address data:", updatedData);
     setFormData(updatedData);
 
     // ✅ send selected address also
-    onAddressChange && onAddressChange(updatedData);
+    onAddressChange && onAddressChange({
+      ...updatedData,
+      saveAddress: false
+    });
+  };
+
+   const handleSaveAddressToggle = (e) => {
+    const isChecked = e.target.checked;
+    setSaveAddressForNextTime(isChecked);
+    
+    // Update parent with new save preference
+    onAddressChange && onAddressChange({
+      ...formData,
+      saveAddress: isChecked
+    });
   };
 
   return (
@@ -305,6 +320,8 @@ console.log("Selected address data:", updatedData);
           <input
             id="save-address"
             type="checkbox"
+            checked={saveAddressForNextTime}
+            onChange={handleSaveAddressToggle}
             className="w-4 h-4 text-[#927f68] border-gray-300 rounded focus:ring-[#927f68]"
           />
           <label

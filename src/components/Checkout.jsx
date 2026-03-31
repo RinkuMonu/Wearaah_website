@@ -416,7 +416,7 @@ const CheckoutPage = () => {
           message: response.data?.message || "Order placed successfully",
         });
       }
-
+        
       // Optional: redirect to success page
       // navigate("/order-success");
     } catch (error) {
