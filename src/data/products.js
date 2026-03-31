@@ -47,7 +47,7 @@ export const getSizeChartRows = (sizeSystem) => {
   if (sizeSystem === "BOTTOMWEAR_ALPHA") return BOTTOMWEAR_ALPHA_CHART_ROWS;
   return TOPWEAR_CHART_ROWS;
 };
-
+ 
 export const toDisplaySize = (inKey, system, sizeSystem) => {
   const conv = getSizeConversion(sizeSystem);
   return conv[inKey]?.[system] ?? inKey;

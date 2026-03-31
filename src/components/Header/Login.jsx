@@ -2,9 +2,11 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import api from "../service/axios";
 import { useAuth } from "../service/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export default function LoginModal({ isOpen, onClose }) {
   const { settoken } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState("phone");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
@@ -45,7 +47,7 @@ export default function LoginModal({ isOpen, onClose }) {
     try {
       setLoading(true);
       setError("");
-      const res = await api.post("/auth/verifyotp", {
+      const res = await api.post("/auth/register/via/otp", {
         mobile: phone,
         otp: Number(otp),
       });
@@ -53,6 +55,7 @@ export default function LoginModal({ isOpen, onClose }) {
         localStorage.setItem("token", res.data?.token);
         settoken(res.data?.token);
         localStorage.setItem("user", JSON.stringify(res.data?.user));
+         navigate("/");
       }
       setStep("phone");
       onClose();
