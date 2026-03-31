@@ -67,22 +67,28 @@ export const removeAllCart = createAsyncThunk(
 
 export const incrementDecrementItemQuantity = createAsyncThunk(
   "cart/incrementDecrementItemQuantity",
-  async ({ productId, action }, { dispatch, rejectWithValue }) => {
+  async ({ variantId, action, quantity }, { dispatch, rejectWithValue }) => {  // Added quantity parameter
     try {
-      // Using the endpoint from your existing code: /cart/updateCart
-      // Calculate new quantity based on action
-      let newQuantity;
-      if (action === 'increment') {
-        newQuantity = { increment: 1 };
+      let payload;
+      
+      // If quantity is directly provided, use it
+      if (quantity !== undefined) {
+        payload = { quantity: quantity };
+      } 
+      // Otherwise calculate based on action
+      else if (action === 'increment') {
+        payload = { increment: 1 };
       } else if (action === 'decrement') {
-        newQuantity = { decrement: 1 };
+        payload = { decrement: 1 };
+      } else if (action === 'quantity') {
+        payload = { increment: 1 }; // Default to increment
       } else {
-        newQuantity = { quantity: action };
+        payload = { quantity: action };
       }
       
       const response = await api.put(`/cart/updateCart`, { 
-        variantId: productId, 
-        ...newQuantity 
+        variantId: variantId,
+        ...payload 
       });
       console.log(response.data, "update from redux toolkit");
       dispatch(fetchCartItems());
@@ -93,7 +99,6 @@ export const incrementDecrementItemQuantity = createAsyncThunk(
     }
   }
 );
-
 const initialState = {
   error: null,
   cartItems: [],

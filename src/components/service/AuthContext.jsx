@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import api from "./axios";
 import { useDispatch } from "react-redux";
 import { syncLocalCartToAPI } from "../../utils/cartSync";
@@ -12,7 +12,12 @@ export const AuthProvider = ({ children }) => {
   const [loginOpen, setLoginOpen] = useState(false);
   const [pareantcategory, setPareantcategory] = useState([]);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [wallet1, setWallet] = useState({
+    availableBalance: 0,
+    superCoinBalance: 0,
+  });
    const dispatch = useDispatch();
+   const hasSynced = useRef(false);
   useEffect(() => {
     const handleForceLogout = () => {
       setLoginOpen(true);
@@ -25,11 +30,25 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  useEffect(() => {
-    if (token) {
+useEffect(() => {
+    // ❌ prevent first call without token
+    if (!token) return;
+
+    // ❌ prevent duplicate calls
+    if (hasSynced.current) return;
+
+    const localCart = JSON.parse(localStorage.getItem("lionies_cart_v1") || "[]");
+
+    if (localCart.length === 0) return;
+
+    const timer = setTimeout(() => {
       syncLocalCartToAPI(token);
-    }
+      hasSynced.current = true; // ✅ only once
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, [token]);
+
     // Function to sync cart after login
   const syncCartAfterLogin = async () => {
     try {
@@ -42,7 +61,7 @@ export const AuthProvider = ({ children }) => {
         console.log(`Found ${localCart.length} items in local cart, syncing to API...`);
         
         // Sync local cart to API
-        const syncResult = await syncLocalCartToAPI();
+        const syncResult = await syncLocalCartToAPI(token);
         
         if (syncResult.success && syncResult.synced > 0) {
           console.log(`Successfully synced ${syncResult.synced} items to cart`);
@@ -117,6 +136,21 @@ export const AuthProvider = ({ children }) => {
     parentCate();
   }, []);
 
+
+const getWallet = async () => {
+    try {
+      const res = await api.get("auth/get/wallet");
+       setWallet({
+        availableBalance: res.data.availableBalance,
+        superCoinBalance: res.data.superCoinBalance,
+      });
+    } catch (err) {
+      console.error("Failed to fetch wallet balance", err);
+      return 0;
+    }
+  };
+
+
   return (
     <AuthContext.Provider
       value={{
@@ -127,7 +161,9 @@ export const AuthProvider = ({ children }) => {
         setLoginOpen,
         pareantcategory,
         settoken,
-        syncCartAfterLogin
+        syncCartAfterLogin,
+        getWallet,
+        wallet1,
       }}
     >
       {children}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { X, Minus, Plus, ShoppingBag } from "lucide-react";
 import {
@@ -42,6 +42,15 @@ export default function CartOffCanvas({ isOpen, onClose }) {
     return foundColor || "Black";
   };
 
+  // Helper function to get stock from item
+  const getItemStock = (item) => {
+    if (user && item.variant) {
+      return item.variant.stock || 0;
+    }
+    // For guest users, you might want to store stock in localStorage or fetch it
+    return item.stock || 999; // Default high number if not available
+  };
+
   // Function to normalize items for guest users
   const normalizeGuestItems = (items) => {
     if (!items || !Array.isArray(items)) return [];
@@ -57,6 +66,7 @@ export default function CartOffCanvas({ isOpen, onClose }) {
       image: item.image || "/placeholder-image.jpg",
       size: item.size || "M",
       color: item.color || "Black",
+      stock: item.stock || 999,
     }));
   };
 
@@ -69,7 +79,7 @@ export default function CartOffCanvas({ isOpen, onClose }) {
   }, [user, isOpen]);
 
   // Fetch cart items when user is logged in and cart is open
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (user && isOpen) {
       dispatch(fetchCartItems());
     }
@@ -107,6 +117,7 @@ export default function CartOffCanvas({ isOpen, onClose }) {
       size: item.size,
       color: item.color,
       lineId: item.lineId,
+      stock: item.stock,
     }));
     setCartItems(itemsToStore);
     setLocalCartItems(updatedItems);
@@ -143,7 +154,39 @@ export default function CartOffCanvas({ isOpen, onClose }) {
   const increaseQty = (productId, variantId) => {
     if (user) {
       // For logged-in users, use Redux with variantId
-      dispatch(incrementDecrementItemQuantity({ productId: variantId, action: 'increment' }))
+      const currentItem = reduxCartItems.find(item => 
+        item.variant?._id === variantId || item.variantId === variantId
+      );
+      
+      const currentStock = currentItem?.variant?.stock || 0;
+      const currentQuantity = currentItem?.quantity || 0;
+      
+      // Check if stock is available
+      if (currentStock === 0) {
+        setToast({
+          type: "error",
+          message: "This item is out of stock"
+        });
+        setTimeout(() => setToast(null), 3000);
+        return;
+      }
+      
+      // Check if adding one more would exceed available stock
+      if (currentQuantity >= currentStock) {
+        setToast({
+          type: "error",
+          message: `Only ${currentStock} item(s) available in stock`
+        });
+        setTimeout(() => setToast(null), 3000);
+        return;
+      }
+      
+      const newQuantity = currentQuantity + 1;
+      
+      dispatch(incrementDecrementItemQuantity({ 
+        variantId: variantId,
+        quantity: newQuantity
+      }))
         .unwrap()
         .catch((error) => {
           setToast({
@@ -154,6 +197,30 @@ export default function CartOffCanvas({ isOpen, onClose }) {
         });
     } else {
       // For guest users, update localStorage
+      const currentItem = localCartItems.find(item => item.variantId === variantId);
+      const currentStock = currentItem?.stock || 999;
+      const currentQuantity = currentItem?.quantity || 0;
+      
+      // Check if stock is available
+      if (currentStock === 0) {
+        setToast({
+          type: "error",
+          message: "This item is out of stock"
+        });
+        setTimeout(() => setToast(null), 3000);
+        return;
+      }
+      
+      // Check if adding one more would exceed available stock
+      if (currentQuantity >= currentStock) {
+        setToast({
+          type: "error",
+          message: `Only ${currentStock} item(s) available in stock`
+        });
+        setTimeout(() => setToast(null), 3000);
+        return;
+      }
+      
       const updatedItems = localCartItems.map(item =>
         item.variantId === variantId
           ? { ...item, quantity: item.quantity + 1 }
@@ -166,7 +233,15 @@ export default function CartOffCanvas({ isOpen, onClose }) {
   const decreaseQty = (productId, variantId) => {
     if (user) {
       // For logged-in users, use Redux with variantId
-      dispatch(incrementDecrementItemQuantity({ productId: variantId, action: 'decrement' }))
+      const currentItem = reduxCartItems.find(item => 
+        item.variant?._id === variantId || item.variantId === variantId
+      );
+      const newQuantity = Math.max(1, (currentItem?.quantity || 0) - 1);
+      
+      dispatch(incrementDecrementItemQuantity({ 
+        variantId: variantId,
+        quantity: newQuantity
+      }))
         .unwrap()
         .catch((error) => {
           setToast({
@@ -307,11 +382,18 @@ export default function CartOffCanvas({ isOpen, onClose }) {
                     const color = isLoggedInUser 
                       ? extractColorFromVariant(item.variant?.name) 
                       : item.color;
+                    const stock = isLoggedInUser 
+                      ? (item.variant?.stock || 0)
+                      : (item.stock || 0);
+                    const isOutOfStock = stock === 0;
+                    const isMaxQuantityReached = item.quantity >= stock;
                     
                     return (
                       <div
                         key={item._id || item.lineId || variantId}
-                        className="group bg-white/50 hover:bg-white p-6 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 border-b border-[#cccc]"
+                        className={`group bg-white/50 hover:bg-white p-6 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 border-b border-[#cccc] ${
+                          isOutOfStock ? 'opacity-60' : ''
+                        }`}
                       >
                         <div className="flex items-start gap-4 lg:gap-6">
                           <div className="shrink-0">
@@ -319,9 +401,6 @@ export default function CartOffCanvas({ isOpen, onClose }) {
                               src={imageUrl?.startsWith('http') ? imageUrl : `https://lrd46c05-5000.inc1.devtunnels.ms${imageUrl}`}
                               className="w-20 h-24 lg:w-24 lg:h-28 rounded-2xl object-cover shadow-lg group-hover:scale-[1.02] transition-transform duration-200"
                               alt={name}
-                              // onError={(e) => {
-                              //   e.target.src = "/placeholder-image.jpg";
-                              // }}
                             />
                           </div>
 
@@ -340,12 +419,22 @@ export default function CartOffCanvas({ isOpen, onClose }) {
                                   {color}
                                 </span>
                               )}
+                              {isOutOfStock && (
+                                <span className="px-3 py-1.5 bg-red-100 text-red-700 rounded-2xl text-xs lg:text-sm font-semibold">
+                                  Out of Stock
+                                </span>
+                              )}
+                              {!isOutOfStock && stock <= 5 && (
+                                <span className="px-3 py-1.5 bg-orange-100 text-orange-700 rounded-2xl text-xs lg:text-sm font-semibold">
+                                  Only {stock} left
+                                </span>
+                              )}
                             </div>
 
                             <div className="flex items-center gap-3">
                               <button
                                 onClick={() => decreaseQty(productId, variantId)}
-                                disabled={isLoading}
+                                disabled={isLoading || isOutOfStock}
                                 className="w-11 h-11 rounded-2xl border-2 border-gray-200 flex items-center justify-center hover:bg-gray-50 hover:border-[#927f68] transition-all duration-200 text-gray-700 hover:text-[#927f68] shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <Minus size={18} />
@@ -355,7 +444,7 @@ export default function CartOffCanvas({ isOpen, onClose }) {
                               </span>
                               <button
                                 onClick={() => increaseQty(productId, variantId)}
-                                disabled={isLoading}
+                                disabled={isLoading || isOutOfStock || isMaxQuantityReached}
                                 className="w-11 h-11 rounded-2xl border-2 border-gray-200 flex items-center justify-center hover:bg-gray-50 hover:border-[#927f68] transition-all duration-200 text-gray-700 hover:text-[#927f68] shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <Plus size={18} />
@@ -455,23 +544,73 @@ export default function CartOffCanvas({ isOpen, onClose }) {
                   onClick={() => {
                     if (!currentCartItems?.length) return;
 
+                    // Check if any item is out of stock
+                    const hasOutOfStock = currentCartItems.some(item => {
+                      const stock = user ? (item.variant?.stock || 0) : (item.stock || 0);
+                      return stock === 0;
+                    });
+
+                    if (hasOutOfStock) {
+                      setToast({
+                        type: "error",
+                        message: "Some items in your cart are out of stock. Please remove them to proceed."
+                      });
+                      setTimeout(() => setToast(null), 3000);
+                      return;
+                    }
+
                     if (!user) {
                       setLoginOpen(true);
                       localStorage.setItem("redirectAfterLogin", "/checkout");
                     } else {
+                      // Transform cart data for checkout
+                      const checkoutCartData = currentCartItems.map((item, index) => {
+                        const isLoggedInUser = user && item.variant;
+                        
+                        return {
+                          id: item._id || item.lineId || index,
+                          name: isLoggedInUser ? item.product?.title : item.name,
+                          price: isLoggedInUser ? item.variant?.sellingPrice : item.price,
+                          qty: item.quantity || 1,
+                          image: isLoggedInUser 
+                            ? item.variant?.variantImages?.[0] 
+                            : item.image,
+                          size: isLoggedInUser 
+                            ? extractSizeFromVariant(item.variant?.name) 
+                            : item.size,
+                          color: isLoggedInUser 
+                            ? extractColorFromVariant(item.variant?.name) 
+                            : item.color,
+                          variantId: isLoggedInUser ? item.variant?._id : item.variantId,
+                          productId: isLoggedInUser ? item.product?._id : item.productId,
+                          stock: isLoggedInUser ? (item.variant?.stock || 0) : (item.stock || 0)
+                        };
+                      });
+                      
                       onClose();
-                      navigate("/checkout");
+                      navigate("/checkout", { state: { cartData: checkoutCartData } });
                     }
                   }}
-                  disabled={isLoading}
+                  disabled={isLoading || currentCartItems?.some(item => {
+                    const stock = user ? (item.variant?.stock || 0) : (item.stock || 0);
+                    return stock === 0;
+                  })}
                   className={`block w-full text-center py-3 px-8 rounded-md text-base transition-all duration-300 ${
-                    currentCartItems?.length && !isLoading
+                    currentCartItems?.length && !isLoading && !currentCartItems?.some(item => {
+                      const stock = user ? (item.variant?.stock || 0) : (item.stock || 0);
+                      return stock === 0;
+                    })
                       ? "bg-linear-to-r from-[#927f68] to-[#A68A6D] text-white hover:-translate-y-0.5"
                       : "bg-gray-200 text-gray-400 cursor-not-allowed shadow-none"
                   }`}
                 >
                   {isLoading
                     ? "Loading..."
+                    : currentCartItems?.some(item => {
+                        const stock = user ? (item.variant?.stock || 0) : (item.stock || 0);
+                        return stock === 0;
+                      })
+                    ? "Out of Stock Items in Cart"
                     : currentCartItems?.length
                     ? "Proceed to Checkout →"
                     : "Proceed to Checkout"}
