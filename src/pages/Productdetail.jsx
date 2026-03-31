@@ -10,9 +10,10 @@ import {
   getProductById,
 } from "../data/products";
 import { useAuth } from "../components/service/AuthContext";
-import { getCartItems, setCartItems } from "../utils/cartStorage";
+import { CART_UPDATED_EVENT, getCartItems, setCartItems } from "../utils/cartStorage";
 import { getWishlist, setWishlist } from "../utils/wishlistStorage";
 import api from "../components/service/axios";
+import { fetchCartItems } from "../features/Cart/cartSlice";
 
 const RECENTLY_VIEWED_KEY = "lionies_recently_viewed_v1";
 const CURRENCY_FORMATTER = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2, minimumFractionDigits: 2 });
@@ -700,19 +701,23 @@ const ProductDetailPage = () => {
 
         if (response.data?.success) {
           setToast("Added to bag ✓");
-          // Optionally refresh cart from server
-          // await fetchCartItems(); // If you have this function
+
+          await fetchCartItems(); 
+          
+             // Also dispatch a custom event for any other components listening
+        window.dispatchEvent(new CustomEvent(CART_UPDATED_EVENT));
         } else {
-          setToast(response.data?.message || "Failed to add to cart");
+          // setToast(response.data?.message || "Failed to add to cart");
         }
       } catch (error) {
-        console.error("Add to cart error:", error?.response?.data || error.message);
-
+       
+        const errorMessage = error?.response?.data?.message ;
+        setToast(errorMessage);
         if (error?.response?.status === 401) {
           setLoginOpen(true);
           setToast("Please login to add items to cart");
         } else {
-          setToast("Failed to add to cart. Please try again.");
+          setToast(errorMessage);
         }
       }
     } else {
@@ -727,6 +732,9 @@ const ProductDetailPage = () => {
       }
 
       setCartItems(items);
+         // IMPORTANT: Dispatch events for guest cart
+    window.dispatchEvent(new CustomEvent(CART_UPDATED_EVENT));
+    window.dispatchEvent(new CustomEvent("cart-item-added"));
       setToast("Added to bag ✓");
     }
   };

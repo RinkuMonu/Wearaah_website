@@ -5,7 +5,7 @@ import { useAuth } from "../service/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 export default function LoginModal({ isOpen, onClose }) {
-  const { settoken } = useAuth();
+  const { settoken,syncCartAfterLogin } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState("phone");
   const [phone, setPhone] = useState("");
@@ -51,6 +51,7 @@ export default function LoginModal({ isOpen, onClose }) {
         mobile: phone,
         otp: Number(otp),
       });
+      await syncCartAfterLogin();
       if (res.data?.token) {
         localStorage.setItem("token", res.data?.token);
         settoken(res.data?.token);
