@@ -16,6 +16,8 @@ import CartOffCanvas from "./CartOffCanvas";
 import LoginModal from "./Login";
 import { useAuth } from "../service/AuthContext";
 import { MdKeyboardArrowDown } from "react-icons/md";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchCategories } from "../../features/Category/categorySlice";
 
 const MENU_LINKS = [
   { to: "/", label: "Home" },
@@ -64,12 +66,17 @@ const TOP_CATEGORIES = [
 const MEN_DRAWER_SECTIONS = ["polotshirts", "tracksuits", "overshirts"];
 
 export default function Header() {
+  const BASE_URL = import.meta.env.VITE_BASE_URL;
+  const dispatch = useDispatch();
+  const { categories, loading, error } = useSelector((state) => state.category);
+
   const { loginOpen, setLoginOpen, user } = useAuth();
   const [cartOpen, setCartOpen] = useState(false);
   const [showAllMenu, setShowAllMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openAccordion, setOpenAccordion] = useState(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [allCategory, setAllCategory] = useState();
 
   const lastScrollYRef = useRef(0);
   const [isVisible, setIsVisible] = useState(true);
@@ -117,6 +124,18 @@ export default function Header() {
     e.currentTarget.src = "../images/placeholder.png";
   }, []);
 
+  useEffect(() => {
+    dispatch(fetchCategories());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (categories?.categories) {
+      setAllCategory(categories.categories);
+    }
+  }, [categories]);
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error: {error}</p>;
 
   return (
     <>
@@ -173,7 +192,7 @@ export default function Header() {
                   <Link
                     to={to}
                     className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all group-hover:text-[#d6b28a]"
-                  > 
+                  >
                     <span>{label}</span>
                     {to !== "/" && to !== "/kids" && <MdKeyboardArrowDown />}
                   </Link>
@@ -242,13 +261,34 @@ export default function Header() {
                         <div className="w-[60%]  border-t border-gray-200 py-10 h-[-webkit-fill-available]">
                           <div className="grid grid-cols-5 divide-x divide-gray-300 h-[inherit]">
                             <div className="space-y-4 px-6">
-                              <Link
-                                to="/dresses"
-                                className="block hover:underline font-medium"
-                              >
-                                Dresses and jumpsuits
-                              </Link>
-                              <Link
+                              {allCategory
+                                ?.filter((item) => item?.isActive) // only active
+                                ?.sort(
+                                  (a, b) => a.displayOrder - b.displayOrder,
+                                ) // sort by displayOrder
+                                ?.map((data, index) => {
+                                  return (
+                                    <Link
+                                      key={data?._id}
+                                      to={{
+                                        pathname: "/productlist",
+                                        search: `?category=${data.slug}&ctd=${data._id}`,
+                                      }}
+                                      className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded"
+                                    >
+                                      <img
+                                        src={`${BASE_URL}${data?.smallimage}`}
+                                        alt={data?.name}
+                                        className="w-10 h-10 object-cover rounded"
+                                      />
+
+                                      <span className="font-medium">
+                                        {data?.name}
+                                      </span>
+                                    </Link>
+                                  );
+                                })}
+                              {/* <Link
                                 to="/blouses"
                                 className="block hover:underline font-medium"
                               >
@@ -259,9 +299,9 @@ export default function Header() {
                                 className="block hover:underline font-medium"
                               >
                                 Tops
-                              </Link>
+                              </Link> */}
                             </div>
-                            <div className="space-y-4 px-6">
+                            {/* <div className="space-y-4 px-6">
                               <Link
                                 to="/jackets"
                                 className="block hover:underline font-medium"
@@ -334,7 +374,7 @@ export default function Header() {
                               >
                                 Shop all
                               </Link>
-                            </div>
+                            </div> */}
                           </div>
                         </div>
                         <div className="w-[40%] h-[420px] overflow-hidden shadow-2xl">
@@ -715,9 +755,7 @@ export default function Header() {
           <div className="fixed right-4 top-24 sm:top-28 z-10000 w-[-webkit-fill-available] max-w-[94vw] bg-white shadow-2xl rounded-2xl p-6 border max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-lg">Quick Actions</h3>
-              <button
-                onClick={closeMobileMenus}
-              >
+              <button onClick={closeMobileMenus}>
                 <X size={24} className="text-gray-500 hover:text-gray-700" />
               </button>
             </div>
@@ -726,7 +764,7 @@ export default function Header() {
               <Link
                 to="/wishlist"
                 className="flex items-center gap-4 p-4 hover:bg-gray-50 rounded-xl transition-all"
-                    onClick={closeMobileMenus}
+                onClick={closeMobileMenus}
               >
                 <FiHeart size={20} className="text-gray-700" />
                 <div>
@@ -1020,8 +1058,9 @@ export default function Header() {
         className={`fixed inset-0 z-60 ${showAllMenu ? "visible" : "invisible"}`}
       >
         <div
-          className={`absolute inset-0 bg-black/50 transition-opacity ${showAllMenu ? "opacity-100" : "opacity-0"
-            }`}
+          className={`absolute inset-0 bg-black/50 transition-opacity ${
+            showAllMenu ? "opacity-100" : "opacity-0"
+          }`}
           onClick={() => setShowAllMenu(false)}
         />
         <div
