@@ -11,6 +11,9 @@ import {
 } from "react-icons/fi";
 import { CiFilter } from "react-icons/ci";
 import api from "./service/axios";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchProducts } from "../features/Productlist/ProductSlice";
+import { fatchSubCategoryByCategoryId } from "../features/subCategory/subCategorySlice";
 
 const PAGE_SIZE = 8;
 
@@ -27,10 +30,23 @@ const emptyFilters = () => ({
 
 const ProductListingPage = () => {
   const BASE_URL = import.meta.env.VITE_BASE_URL;
+  const dispatch = useDispatch();
+  const { products, status, error } = useSelector((state) => state.products);
+  const { subcategoriesById, dynamicFilters } = useSelector(
+    (state) => state.subCategory,
+  );
+
+  const SubCategory = subcategoriesById;
+
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const category = searchParams.get("category");
   const categoryId = searchParams.get("ctd");
+  const subCategoryId = searchParams.get("subCategoryId");
+  const hasCategory = !!searchParams.get("ctd");
+  const hasSubCategory = !!searchParams.get("subCategoryId");
+  const showSubCategoryFilter = hasCategory;
+  const isSubCategoryOnlyPage = !hasCategory && hasSubCategory;
 
   const [sortBy, setSortBy] = useState(searchParams.get("sort"));
   const [viewMode, setViewMode] = useState("grid");
@@ -45,12 +61,9 @@ const ProductListingPage = () => {
     discount: true,
   });
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [loadState, setLoadState] = useState("loading");
-  const [products, setProducts] = useState([]);
+  const loadState = status;
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [dynamicFilters, setDynamicFilters] = useState({});
-  const [SubCategory, setSubCategory] = useState();
 
   const [filters, setFilters] = useState(() => ({
     ...emptyFilters(),
@@ -70,7 +83,7 @@ const ProductListingPage = () => {
   const buildParams = () => {
     const params = {
       category: categoryId,
-      subCategory: filters.subCategoryId,
+      subCategory: subCategoryId,
       minPrice: filters.minPrice,
       maxPrice: filters.maxPrice,
       sort: sortBy,
@@ -79,8 +92,6 @@ const ProductListingPage = () => {
     };
 
     Object.entries(filters).forEach(([key, value]) => {
-      console.log(key);
-
       if (!value || (Array.isArray(value) && value.length === 0)) return;
 
       // skip already handled keys
@@ -91,71 +102,35 @@ const ProductListingPage = () => {
     return params;
   };
 
-  const loadProducts = async () => {
-    try {
-      setLoadState("loading");
-
-      const res = await api.get("product/web", {
-        params: buildParams(),
-      });
-      const data = res?.data?.products;
-      setProducts(data);
-      setLoadState("success");
-    } catch (err) {
-      console.error(err);
-      setLoadState("error");
-    }
-  };
-
-  const loadSubCategoryFilters = async () => {
-    try {
-      // if (!categoryId) return;
-
-      const res = await api.get(`/subcategory/by-category/${categoryId}`);
-      const data = res?.data.subcategories;
-
-      setSubCategory(data);
-
-      const attrs = data[0]?.attributes || {};
-      const formatted = {};
-
-      Object.entries(attrs).forEach(([key, val]) => {
-        if (val.filterable) {
-          formatted[key] = val.values;
-        }
-      });
-
-      // add variant attributes
-      if (data.variantAttributes?.includes("size")) {
-        formatted.size = ["S", "M", "L", "XL"];
-      }
-      if (data.variantAttributes?.includes("color")) {
-        formatted.color = ["Black", "White", "Blue"];
-      }
-
-      setDynamicFilters(formatted);
-    } catch (err) {
-      console.error("Subcategory filter error", err);
-    }
-  };
+  useEffect(() => {
+    dispatch(fetchProducts(buildParams()));
+  }, [filters, category, categoryId, sortBy, subCategoryId]);
 
   useEffect(() => {
-    setFilters({
-      subCategoryId: "",
-      subCategory: "",
+    if (categoryId) {
+      dispatch(fatchSubCategoryByCategoryId(categoryId));
+    }
+  }, [filters, category, categoryId, sortBy]);
+
+  useEffect(() => {
+    const subCategoryIdFromURL = searchParams.get("subCategoryId");
+    const subCategoryFromURL = searchParams.get("subCategory");
+
+    setFilters((prev) => ({
+      ...prev,
+
+      // ✅ subcategory sirf tab reset ho jab URL me na ho
+      subCategoryId: subCategoryIdFromURL || "",
+      subCategory: subCategoryFromURL || "",
+
       brand: [],
       size: [],
       color: [],
       price: "",
       minDiscount: "",
       minRating: "",
-    });
+    }));
   }, [categoryId]);
-
-  useEffect(() => {
-    loadProducts();
-    loadSubCategoryFilters();
-  }, [filters, category, categoryId, sortBy]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -291,7 +266,7 @@ const ProductListingPage = () => {
           Retry or continue with fallback products.
         </p>
         <button
-          onClick={loadProducts}
+          onClick={() => dispatch(fetchProducts(buildParams()))}
           className="mt-6 px-6 py-3 rounded-xl bg-[#d18736] text-white font-semibold"
         >
           Retry
@@ -354,26 +329,27 @@ const ProductListingPage = () => {
         <div className="flex flex-col px-10 lg:flex-row justify-between mt-5 items-start lg:items-center gap-4 mb-6 pb-4 border-b border-gray-200">
           <div className="overflow-x-auto mb-6 -mx-4 sm:-mx-6 lg:mx-0 lg:pb-0 lg:overflow-visible">
             <div className="flex gap-4 px-4 sm:px-6 lg:px-0 min-w-max">
-              {SubCategory?.map((tile) => (
-                <button
-                  key={tile._id}
-                  type="button"
-                  className="flex flex-col items-center gap-2 px-2 py-1 shrink-0"
-                  onClick={() => toggleSubCategory(tile)}
-                >
-                  <span className="w-14 h-14 rounded-full overflow-hidden shadow">
-                    <img
-                      src={`${BASE_URL}${tile?.smallimage}`}
-                      alt={tile.name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  </span>
-                  <span className="text-xs font-semibold text-gray-700">
-                    {tile.name}
-                  </span>
-                </button>
-              ))}
+              {!isSubCategoryOnlyPage &&
+                SubCategory?.map((tile) => (
+                  <button
+                    key={tile._id}
+                    type="button"
+                    className="flex flex-col items-center gap-2 px-2 py-1 shrink-0"
+                    onClick={() => toggleSubCategory(tile)}
+                  >
+                    <span className="w-14 h-14 rounded-full overflow-hidden shadow">
+                      <img
+                        src={`${BASE_URL}${tile?.smallimage}`}
+                        alt={tile.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </span>
+                    <span className="text-xs font-semibold text-gray-700">
+                      {tile.name}
+                    </span>
+                  </button>
+                ))}
             </div>
           </div>
           <button
@@ -431,7 +407,9 @@ const ProductListingPage = () => {
                 Filters
               </h2>
               {[
-                ["subCategory", SubCategory],
+                ...(showSubCategoryFilter
+                  ? [["subCategory", SubCategory]]
+                  : []),
 
                 ...(filters.subCategoryId
                   ? Object.entries(dynamicFilters).filter(
@@ -440,18 +418,14 @@ const ProductListingPage = () => {
                   : []),
 
                 ...(SubCategory?.length > 0 ? [["size", dynamicSizes]] : []),
+
+                ...(hasSubCategory
+                  ? [["gender", ["Men", "Women", "Unisex"]]]
+                  : []),
+
                 [
                   "color",
-                  [
-                    "Black",
-                    "White",
-                    "Grey",
-                    "Blue",
-                    "Red",
-                    "Navy",
-                    "Green",
-                    "Silver",
-                  ],
+                  ["Black", "White", "Grey", "Blue", "Red", "Navy", "Green"],
                 ],
               ].map((item, index) => {
                 return (

@@ -18,57 +18,23 @@ import { useAuth } from "../service/AuthContext";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCategories } from "../../features/Category/categorySlice";
+import { fatchSubCategory } from "../../features/subCategory/subCategorySlice";
+import { fatchBrands } from "../../features/Brands/brandSlice";
 
 const MENU_LINKS = [
   { to: "/", label: "Home" },
   { to: "/kids", label: "Kids" },
   { to: "/productlist", label: "Mens" },
-  { to: "/new-arrivals", label: "New Arrivals" },
+  // { to: "/new-arrivals", label: "New Arrivals" },
   { to: "/brands", label: "Brands" },
 ];
-
-const MEN_CATEGORY_DATA = {
-  highlights: [
-    { title: "Polo Tshirts", img: "../extra/new.png" },
-    { title: "Track Suits", img: "../extra/hot.png" },
-    { title: "Overshirts", img: "../extra/anime.png" },
-    { title: "shirts", img: "../extra/harry.png" },
-    { title: "jeans", img: "../extra/marvel.png" },
-    { title: "Trousers", img: "../extra/anime.png" },
-    { title: "Lower", img: "../extra/hot.png" },
-    { title: "Kurta", img: "../extra/new.png" },
-    { title: "Blazers", img: "../extra/marvel.png" },
-  ],
-  polotshirts: [
-    { title: "Polo Tshirts 1", img: "../extra/anime.png" },
-    { title: "Polo Tshirts 2", img: "../extra/marvel.png" },
-    { title: "Polo Tshirts 3", img: "../extra/harry.png" },
-  ],
-  tracksuits: [
-    { title: "Track Suits 1", img: "../extra/hot.png" },
-    { title: "Track Suits 2", img: "../extra/new.png" },
-  ],
-  overshirts: [
-    { title: "Overshirts 1", img: "../extra/anime.png" },
-    { title: "Overshirts 2", img: "../extra/marvel.png" },
-  ],
-};
-
-const TOP_CATEGORIES = [
-  { name: "Kids", image: "../images/Kids/B1.webp" },
-  { name: "T-Shirts", image: "../images/23.jpg" },
-  { name: "Hoodies", image: "../images/hoddies.webp" },
-  { name: "Track Pants", image: "../images/22.webp" },
-  { name: "Shorts", image: "../images/26.jpg" },
-  { name: "Sweatshirts", image: "../images/jacket.webp" },
-];
-
-const MEN_DRAWER_SECTIONS = ["polotshirts", "tracksuits", "overshirts"];
 
 export default function Header() {
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const dispatch = useDispatch();
   const { categories, loading, error } = useSelector((state) => state.category);
+  const { subcategories } = useSelector((state) => state.subCategory);
+  const { brands } = useSelector((state) => state.brands);
 
   const { loginOpen, setLoginOpen, user } = useAuth();
   const [cartOpen, setCartOpen] = useState(false);
@@ -121,11 +87,15 @@ export default function Header() {
   }, []);
 
   const handleImageError = useCallback((e) => {
+    if (e.currentTarget.src.includes("placeholder.png")) return;
+
     e.currentTarget.src = "../images/placeholder.png";
   }, []);
 
   useEffect(() => {
     dispatch(fetchCategories());
+    dispatch(fatchSubCategory());
+    dispatch(fatchBrands());
   }, [dispatch]);
 
   useEffect(() => {
@@ -262,7 +232,7 @@ export default function Header() {
                           <div className="grid grid-cols-5 divide-x divide-gray-300 h-[inherit]">
                             <div className="space-y-4 px-6">
                               {allCategory
-                                ?.filter((item) => item?.isActive) // only active
+                                ?.filter((item) => item?.isActive)
                                 ?.sort(
                                   (a, b) => a.displayOrder - b.displayOrder,
                                 ) // sort by displayOrder
@@ -415,141 +385,23 @@ export default function Header() {
                       <div className="flex gap-8 max-w-6xl mx-auto">
                         <div className="flex-1 max-w-4xl">
                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                            <Link
-                              to="/brands/Louis-Philippe-Logo"
-                              className="group/item h-48 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all relative col-span-2 md:col-span-3 lg:col-span-4"
-                            >
-                              <img
-                                src="./images/Brands/banner3.jpg"
-                                alt="Louis-Philippe"
-                                className="w-full h-full object-cover group-hover/item:scale-105"
-                              />
-                              <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
-                              <div className="absolute bottom-6 left-6 text-white">
-                                <h4 className="font-bold text-xl mb-1">
-                                  Louis-Philippe
-                                </h4>
-                                <p className="text-base opacity-90">
-                                  Top Mens Brand
-                                </p>
-                              </div>
-                            </Link>
+                            {
+                              brands?.slice(0, 10)?.map((brand) => (
+                                <Link
+                                  to={`/brands/${brand.slug}`}
+                                  className="group/item  bg-gray-100"
+                                >
+                                  <div className="w-full p-6 gap-2">
+                                    <img
+                                      src={`${BASE_URL}${brand.logo}`}
+                                      alt={brand.name}
+                                      className="w-20 h-20 object-contain rounded-lg"
+                                    />
+                                  </div>
+                                </Link>
+                              ))
 
-                            <Link
-                              to="/brands/nike"
-                              className="group/item  bg-gray-100"
-                            >
-                              <div className="w-full p-6 gap-2">
-                                <img
-                                  src="./images/Brands/Allen-Solly-logo.png"
-                                  alt="Allen-Solly"
-                                  className="w-20 h-20 object-contain rounded-lg"
-                                />
-                              </div>
-                            </Link>
-
-                            <Link
-                              to="/brands/adidas"
-                              className="group/item  bg-gray-100"
-                            >
-                              <div className="w-full p-6 gap-2">
-                                <img
-                                  src="./images/Brands/Jack.png"
-                                  alt="Jack & jones"
-                                  className="w-20 h-20 object-contain rounded-lg"
-                                />
-                              </div>
-                            </Link>
-
-                            <Link
-                              to="/brands/puma"
-                              className="group/item  bg-gray-100"
-                            >
-                              <div className="w-full p-6 gap-2">
-                                <img
-                                  src="./images/Brands/logo_his_res.avif"
-                                  alt="Levis"
-                                  className="w-20 h-20 object-contain rounded-lg"
-                                />
-                              </div>
-                            </Link>
-
-                            <Link
-                              to="/brands/SNITCH"
-                              className="group/item  bg-gray-100"
-                            >
-                              <div className="w-full p-6 gap-2">
-                                <img
-                                  src="./images/Brands/SNITCH.webp"
-                                  alt="SNITCH"
-                                  className="w-20 h-20 object-contain rounded-lg"
-                                />
-                              </div>
-                            </Link>
-
-                            <Link
-                              to="/brands/new_logo_mufti"
-                              className="group/item  bg-gray-100"
-                            >
-                              <div className="w-full p-6 gap-2">
-                                <img
-                                  src="./images/Brands/new_logo_mufti.avif"
-                                  alt="new_logo_mufti"
-                                  className="w-20 h-20 object-contain rounded-lg"
-                                />
-                              </div>
-                            </Link>
-
-                            <Link
-                              to="/brands/Peter England"
-                              className="group/item  bg-gray-100"
-                            >
-                              <div className="w-full p-6 gap-2">
-                                <img
-                                  src="./images/Brands/pt.jpg"
-                                  alt="Peter England"
-                                  className="w-20 h-20 object-contain rounded-lg"
-                                />
-                              </div>
-                            </Link>
-
-                            <Link
-                              to="/brands/Spykar"
-                              className="group/item  bg-gray-100"
-                            >
-                              <div className="w-full p-6 gap-2">
-                                <img
-                                  src="./images/Brands/Spykar.avif"
-                                  alt="Spykar"
-                                  className="w-20 h-20 object-contain rounded-lg"
-                                />
-                              </div>
-                            </Link>
-
-                            <Link
-                              to="/brands/U.S.-Polo-Assn"
-                              className="group/item  bg-gray-100"
-                            >
-                              <div className="w-full p-6 gap-2">
-                                <img
-                                  src="./images/Brands/U.S.-Polo-Assn.avif"
-                                  alt="U.S.-Polo-Assn"
-                                  className="w-20 h-20 object-contain rounded-lg"
-                                />
-                              </div>
-                            </Link>
-                            <Link
-                              to="/brands/Van-Heusen"
-                              className="group/item  bg-gray-100"
-                            >
-                              <div className="w-full p-6 gap-2">
-                                <img
-                                  src="./images/Brands/Van-Heusen.png"
-                                  alt="Van-Heusen"
-                                  className="w-20 h-20 object-contain rounded-lg"
-                                />
-                              </div>
-                            </Link>
+                            }
                           </div>
                         </div>
 
@@ -685,26 +537,30 @@ export default function Header() {
                   ALL
                 </span>
               </button>
-              {TOP_CATEGORIES.map((category) => (
-                <Link
-                  key={category.name}
-                  to={`/productlist?category=${encodeURIComponent(category.name)}`}
-                  className="flex flex-col items-center gap-2 p-4 hover:scale-105 z-20 pointer-events-auto cursor-pointer transition-all group relative shrink-0"
-                  style={{ zIndex: 20 }}
-                >
-                  <div className="w-16 h-16 lg:w-[100px] lg:h-[100px] bg-linear-to-br from-gray-100 to-gray-200 rounded-full overflow-hidden group-hover:scale-110 transition-all shadow-lg hover:shadow-xl hover:border-2 hover:border-yellow-300">
-                    <img
-                      src={category.image}
-                      alt={category.name}
-                      className="w-full h-full object-cover"
-                      onError={handleImageError}
-                    />
-                  </div>
-                  <span className="text-xs font-semibold text-gray-800 px-1 whitespace-nowrap">
-                    {category.name}
-                  </span>
-                </Link>
-              ))}
+              {subcategories
+                ?.filter((item) => item?.isActive)
+                ?.sort((a, b) => a.displayOrder - b.displayOrder)
+                .slice(0, 10)
+                ?.map((category) => (
+                  <Link
+                    key={category.name}
+                    to={`/productlist?subCategory=${category.slug}&subCategoryId=${category._id}`}
+                    className="flex flex-col items-center gap-2 p-4 hover:scale-105 z-20 pointer-events-auto cursor-pointer transition-all group relative shrink-0"
+                    style={{ zIndex: 20 }}
+                  >
+                    <div className="w-16 h-16 lg:w-[100px] lg:h-[100px] bg-linear-to-br from-gray-100 to-gray-200 rounded-full overflow-hidden group-hover:scale-110 transition-all shadow-lg hover:shadow-xl hover:border-2 hover:border-yellow-300">
+                      <img
+                        src={`${BASE_URL}${category.smallimage}`}
+                        alt={category.name}
+                        className="w-full h-full object-cover"
+                        onError={handleImageError}
+                      />
+                    </div>
+                    <span className="text-xs font-semibold text-gray-800 px-1 whitespace-nowrap">
+                      {category.name}
+                    </span>
+                  </Link>
+                ))}
 
               {/* {pareantcategory?.length > 0
                 ? pareantcategory.map((item) => (
@@ -875,53 +731,21 @@ export default function Header() {
                     </button>
                     {openAccordion === "mens" && (
                       <div className="ml-4 mt-2 space-y-2 bg-gray-50 p-3 rounded-lg">
-                        <Link
-                          to="/dresses"
-                          className="block p-2 hover:bg-white rounded transition-all text-sm"
-                          onClick={closeMobileMenus}
-                        >
-                          Dresses and jumpsuits
-                        </Link>
-                        <Link
-                          to="/blouses"
-                          className="block p-2 hover:bg-white rounded transition-all text-sm"
-                          onClick={closeMobileMenus}
-                        >
-                          Blouses
-                        </Link>
-                        <Link
-                          to="/tops"
-                          className="block p-2 hover:bg-white rounded transition-all text-sm"
-                          onClick={closeMobileMenus}
-                        >
-                          Tops
-                        </Link>
-                        <Link
-                          to="/jackets"
-                          className="block p-2 hover:bg-white rounded transition-all text-sm"
-                          onClick={closeMobileMenus}
-                        >
-                          Jackets
-                        </Link>
-                        <Link
-                          to="/jeans"
-                          className="block p-2 hover:bg-white rounded transition-all text-sm"
-                          onClick={closeMobileMenus}
-                        >
-                          Jeans and trousers
-                        </Link>
-                        <Link
-                          to="/accessories"
-                          className="block p-2 hover:bg-white rounded transition-all text-sm"
-                          onClick={closeMobileMenus}
-                        >
-                          Accessories
-                        </Link>
+                        {allCategory?.slice(0, 5)?.map((item) => (
+                          <Link
+                            key={item?._id}
+                            to={`/productlist?category=${item.slug}&ctd=${item._id}`}
+                            className="block p-2 hover:bg-white rounded transition-all text-sm"
+                            onClick={closeMobileMenus}
+                          >
+                            {item?.name}
+                          </Link>
+                        ))}
                       </div>
                     )}
                   </div>
 
-                  <div>
+                  {/* <div>
                     <button
                       onClick={() =>
                         setOpenAccordion(
@@ -977,7 +801,7 @@ export default function Header() {
                         </Link>
                       </div>
                     )}
-                  </div>
+                  </div> */}
 
                   <div>
                     <button
@@ -996,54 +820,19 @@ export default function Header() {
                     </button>
                     {openAccordion === "brands" && (
                       <div className="ml-4 mt-2 space-y-2 bg-gray-50 p-3 rounded-lg max-h-48 overflow-y-auto">
-                        <Link
-                          to="/brands/Louis-Philippe-Logo"
-                          className="block p-2 hover:bg-white rounded transition-all text-sm lg:flex items-center gap-2"
-                          onClick={closeMobileMenus}
-                        >
-                          <span className="w-5 h-5 bg-gray-300 rounded-sm shrink-0"></span>
-                          Louis Philippe
-                        </Link>
-                        <Link
-                          to="/brands/nike"
-                          className="block p-2 hover:bg-white rounded transition-all text-sm lg:flex items-center gap-2"
-                          onClick={closeMobileMenus}
-                        >
-                          <span className="w-5 h-5 bg-gray-300 rounded-sm shrink-0"></span>
-                          Allen Solly
-                        </Link>
-                        <Link
-                          to="/brands/adidas"
-                          className="block p-2 hover:bg-white rounded transition-all text-sm lg:flex items-center gap-2"
-                          onClick={closeMobileMenus}
-                        >
-                          <span className="w-5 h-5 bg-gray-300 rounded-sm shrink-0"></span>
-                          Jack & Jones
-                        </Link>
-                        <Link
-                          to="/brands/puma"
-                          className="block p-2 hover:bg-white rounded transition-all text-sm lg:flex items-center gap-2"
-                          onClick={closeMobileMenus}
-                        >
-                          <span className="w-5 h-5 bg-gray-300 rounded-sm shrink-0"></span>
-                          Levi's
-                        </Link>
-                        <Link
-                          to="/brands/SNITCH"
-                          className="block p-2 hover:bg-white rounded transition-all text-sm lg:flex items-center gap-2"
-                          onClick={closeMobileMenus}
-                        >
-                          <span className="w-5 h-5 bg-gray-300 rounded-sm shrink-0"></span>
-                          SNITCH
-                        </Link>
-                        <Link
-                          to="/brands/Peter England"
-                          className="block p-2 hover:bg-white rounded transition-all text-sm lg:flex items-center gap-2"
-                          onClick={closeMobileMenus}
-                        >
-                          <span className="w-5 h-5 bg-gray-300 rounded-sm shrink-0"></span>
-                          Peter England
-                        </Link>
+                        {
+                          brands?.slice(0, 10)?.map((item) => (
+                            <Link
+                              key={item?._id}
+                              to={`/brands/${item.slug}`}
+                              className="block p-2 hover:bg-white rounded transition-all text-sm lg:flex items-center gap-2"
+                              onClick={closeMobileMenus}
+                            >
+                              <span className="w-5 h-5 bg-gray-300 rounded-sm shrink-0"></span> 
+                              {item?.name}
+                            </Link>
+                          ))
+                        }
                       </div>
                     )}
                   </div>
@@ -1083,74 +872,25 @@ export default function Header() {
           </div>
 
           <div className="px-4 py-4 border-b bg-gray-50 sticky top-[72px] z-10">
-            <h2 className="text-xl font-bold text-gray-900">MEN</h2>
+            <h2 className="text-xl font-bold text-gray-900">ALL</h2>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 px-4 py-6">
-            {MEN_CATEGORY_DATA.highlights.map((item) => (
+            {subcategories?.map((item) => (
               <Link
-                key={item.title}
-                to={`/men/${item.title.replace(/\s+/g, "-").toLowerCase()}`}
+                key={item._id}
+                to={`/productslist/${item.slug}?ctd=${item._id}`}
                 onClick={() => setShowAllMenu(false)}
                 className="text-center text-xs font-medium hover:bg-gray-50 p-3 transition-all hover:scale-105 rounded-md"
               >
                 <img
-                  src={item.img}
-                  alt={item.title}
+                  src={`${BASE_URL}${item.smallimage}`}
+                  alt={item.name}
                   className="h-14 w-14 mx-auto rounded-lg object-cover mb-2"
                 />
-                <span className="block font-semibold">{item.title}</span>
+                <span className="block font-semibold">{item.name}</span>
               </Link>
             ))}
-          </div>
-
-          <div className="px-4 divide-y text-sm font-medium pb-20">
-            {MEN_DRAWER_SECTIONS.map(
-              (section) =>
-                MEN_CATEGORY_DATA[section] && (
-                  <div key={section}>
-                    <button
-                      onClick={() =>
-                        setOpenAccordion(
-                          openAccordion === section ? null : section,
-                        )
-                      }
-                      className="flex justify-between w-full py-4 hover:bg-gray-50 px-2 rounded-lg transition-colors font-semibold"
-                    >
-                      <span className="capitalize">
-                        {section.replace(/^\w/, (c) => c.toUpperCase())}
-                      </span>
-                      <span className="text-lg font-bold">
-                        {openAccordion === section ? "−" : "+"}
-                      </span>
-                    </button>
-
-                    {openAccordion === section && (
-                      <ul className="pb-6 space-y-3 text-gray-600">
-                        {MEN_CATEGORY_DATA[section].map((item) => (
-                          <Link
-                            key={item.title}
-                            to={`/men/${item.title
-                              .replace(/\s+/g, "-")
-                              .toLowerCase()}`}
-                            onClick={() => setShowAllMenu(false)}
-                            className="flex items-center gap-3 py-3 px-3 hover:bg-gray-50 rounded-md transition-colors border-l-4 border-[#d18736]"
-                          >
-                            <img
-                              src={item.img}
-                              alt={item.title}
-                              className="h-12 w-12 rounded-lg object-cover shrink-0"
-                            />
-                            <span className="text-gray-700 font-medium flex-1">
-                              {item.title}
-                            </span>
-                          </Link>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ),
-            )}
           </div>
         </div>
       </div>
