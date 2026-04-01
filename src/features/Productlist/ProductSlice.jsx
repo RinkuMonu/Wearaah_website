@@ -1,20 +1,19 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api from "../../components/service/axios";
 
-
 // ✅ GET PRODUCT LIST
 export const fetchProducts = createAsyncThunk(
   "product/fetchProducts",
-  async (_, { rejectWithValue }) => {
+  async (params, { rejectWithValue }) => {
     try {
-      const response = await api.get("/product");
+      const response = await api.get("/product/web", { params });
       console.log(response.data, "products from redux toolkit");
-      return response.data;
+      return response.data.products;
     } catch (error) {
       console.log(error, "error fetching products");
       return rejectWithValue(error.response?.data);
     }
-  }
+  },
 );
 
 // (Optional) ✅ GET SINGLE PRODUCT
@@ -27,7 +26,7 @@ export const fetchProductById = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.response?.data);
     }
-  }
+  },
 );
 
 const initialState = {

@@ -143,10 +143,11 @@ const TopProducts = React.memo(function TopProducts() {
                     alt={`${product.name} back`}
                     className="w-full absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition duration-500"
                   />
-
-                  <span className="absolute left-2 top-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
-                    {product.discountPercent}% OFF
-                  </span>
+                  {product.discountPercent > 0 && (
+                    <span className="absolute left-2 top-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
+                      {product.discountPercent}% OFF
+                    </span>
+                  )}
                 </Link>
 
                 <div className="absolute top-3 -right-15 group-hover:right-3 transition-all duration-500">
