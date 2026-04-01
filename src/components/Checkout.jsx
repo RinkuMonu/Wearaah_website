@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import Payment from "../components/cart/Payment.jsx";
 import Address from "../components/cart/Address.jsx";
-import Delivery from "../components/cart/Delivery.jsx";
 import { useDispatch, useSelector } from "react-redux";
 import { FiCheck } from "react-icons/fi";
 import { useAuth } from "./service/AuthContext.jsx";
@@ -30,46 +28,68 @@ const CheckoutPage = () => {
     status,
     grandTotal,
   } = useSelector((state) => state.cart);
+
+  // ─── Detect checkout mode ───────────────────────────────────────────────────
+  const checkoutMode = location.state?.checkoutMode; // 'buynow' | undefined
+  const isBuyNow = checkoutMode === "buynow";
+
+  // ─── State ──────────────────────────────────────────────────────────────────
   const [toast, setToast] = useState(null);
   const [localCartItems, setLocalCartItems] = useState([]);
   const [addressData, setAddressData] = useState(null);
   const [useWallet, setUseWallet] = useState(false);
   const [useCoins, setUseCoins] = useState(false);
-
-  // Get cart data from location state (passed from CartOffCanvas)
-  const [cart, setCart] = useState(() => {
-    if (location.state?.cartData) {
-      return location.state.cartData;
-    }
-    return [];
-  });
-
   const [coupon, setCoupon] = useState("");
   const [discount, setDiscount] = useState(0);
   const [couponApplied, setCouponApplied] = useState(false);
   const [showLottie, setShowLottie] = useState(false);
   const lottieTimeoutRef = useRef(null);
 
-  // Helper functions
+  // ─── Cart initialisation ────────────────────────────────────────────────────
+  // Priority: buyNow > location.state.cartData > empty (filled by effects below)
+  const [cart, setCart] = useState(() => {
+    if (isBuyNow) {
+      try {
+        const raw = sessionStorage.getItem("buyNowItem");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          return [
+            {
+              id: parsed.id,
+              name: parsed.name,
+              price: parsed.price,
+              qty: parsed.qty,
+              image: parsed.image,
+              size: parsed.size,
+              color: parsed.color,
+              variantId: parsed.variantId,
+              productId: parsed.productId,
+            },
+          ];
+        }
+      } catch (_) {}
+    }
+    if (location.state?.cartData) {
+      return location.state.cartData;
+    }
+    return [];
+  });
+
+  // ─── Helper: transform Redux items to display format ────────────────────────
   const extractSizeFromVariant = (variantName) => {
     if (!variantName) return "M";
-    const sizeMatch = variantName.match(/\b(S|M|L|XL|XXL|XS)\b/i);
-    return sizeMatch ? sizeMatch[0].toUpperCase() : "M";
+    const m = variantName.match(/\b(S|M|L|XL|XXL|XS)\b/i);
+    return m ? m[0].toUpperCase() : "M";
   };
 
   const extractColorFromVariant = (variantName) => {
     if (!variantName) return "Black";
     const colors = ["Black", "Blue", "Red", "Green", "White", "Gray", "Brown"];
-    const foundColor = colors.find((color) =>
-      variantName.toLowerCase().includes(color.toLowerCase()),
-    );
-    return foundColor || "Black";
+    return colors.find((c) => variantName.toLowerCase().includes(c.toLowerCase())) || "Black";
   };
 
-  // Function to transform Redux cart items to display format
   const transformReduxCartToDisplay = (reduxItems) => {
     if (!reduxItems || !Array.isArray(reduxItems)) return [];
-
     return reduxItems.map((item, index) => {
       const isLoggedInUser = user && item.variant;
       return {
@@ -78,22 +98,16 @@ const CheckoutPage = () => {
         price: isLoggedInUser ? item.variant?.sellingPrice : item.price,
         qty: item.quantity || 1,
         image: isLoggedInUser ? item.variant?.variantImages?.[0] : item.image,
-        size: isLoggedInUser
-          ? extractSizeFromVariant(item.variant?.name)
-          : item.size,
-        color: isLoggedInUser
-          ? extractColorFromVariant(item.variant?.name)
-          : item.color,
+        size: isLoggedInUser ? extractSizeFromVariant(item.variant?.name) : item.size,
+        color: isLoggedInUser ? extractColorFromVariant(item.variant?.name) : item.color,
         variantId: isLoggedInUser ? item.variant?._id : item.variantId,
         productId: isLoggedInUser ? item.product?._id : item.productId,
       };
     });
   };
 
-  // Function to normalize guest items
   const normalizeGuestItems = (items) => {
     if (!items || !Array.isArray(items)) return [];
-
     return items.map((item, index) => ({
       lineId: item.lineId || `guest-item-${index}`,
       productId: item.productId,
@@ -108,7 +122,6 @@ const CheckoutPage = () => {
     }));
   };
 
-  // Update guest cart in localStorage
   const updateGuestCart = (updatedItems) => {
     const itemsToStore = updatedItems.map((item) => ({
       variantId: item.variantId,
@@ -125,7 +138,6 @@ const CheckoutPage = () => {
     setCartItems(itemsToStore);
     setLocalCartItems(updatedItems);
 
-    // Also update the display cart
     const displayCart = updatedItems.map((item, index) => ({
       id: item.lineId || index,
       name: item.name,
@@ -138,55 +150,24 @@ const CheckoutPage = () => {
       productId: item.productId,
     }));
     setCart(displayCart);
-
-    // Dispatch custom event to notify other components
     window.dispatchEvent(new Event(CART_UPDATED_EVENT));
   };
 
+  // ─── Effects ─────────────────────────────────────────────────────────────────
+
   useEffect(() => {
-    if (user) {
-      getWallet();
-    }
+    if (user) getWallet();
   }, [user]);
 
-  // Load guest cart from localStorage
+  // Load guest cart from localStorage — skip for buy now
   useEffect(() => {
+    if (isBuyNow) return;
     if (!user && (!cart || cart.length === 0)) {
       const savedCart = getCartItems();
       const normalized = normalizeGuestItems(savedCart);
       setLocalCartItems(normalized);
-
-      const displayCart = normalized.map((item, index) => ({
-        id: item.lineId || index,
-        name: item.name,
-        price: item.price,
-        qty: item.quantity,
-        image: item.image,
-        size: item.size,
-        color: item.color,
-        variantId: item.variantId,
-        productId: item.productId,
-      }));
-      setCart(displayCart);
-    }
-  }, [user]);
-
-  // Fetch cart items when user is logged in
-  useEffect(() => {
-    if (user && (!cart || cart.length === 0)) {
-      dispatch(fetchCartItems());
-    }
-  }, [user, dispatch]);
-
-  // Sync local cart with storage changes for guest users
-  useEffect(() => {
-    const syncCart = () => {
-      if (!user) {
-        const savedCart = getCartItems();
-        const normalized = normalizeGuestItems(savedCart);
-        setLocalCartItems(normalized);
-
-        const displayCart = normalized.map((item, index) => ({
+      setCart(
+        normalized.map((item, index) => ({
           id: item.lineId || index,
           name: item.name,
           price: item.price,
@@ -196,60 +177,83 @@ const CheckoutPage = () => {
           color: item.color,
           variantId: item.variantId,
           productId: item.productId,
-        }));
-        setCart(displayCart);
+        }))
+      );
+    }
+  }, [user, isBuyNow]);
+
+  // Fetch Redux cart for logged-in users — skip for buy now
+  useEffect(() => {
+    if (isBuyNow) return;
+    if (user && (!cart || cart.length === 0)) {
+      dispatch(fetchCartItems());
+    }
+  }, [user, dispatch, isBuyNow]);
+
+  // Sync cart storage events for guest users — skip for buy now
+  useEffect(() => {
+    if (isBuyNow) return;
+    const syncCart = () => {
+      if (!user) {
+        const savedCart = getCartItems();
+        const normalized = normalizeGuestItems(savedCart);
+        setLocalCartItems(normalized);
+        setCart(
+          normalized.map((item, index) => ({
+            id: item.lineId || index,
+            name: item.name,
+            price: item.price,
+            qty: item.quantity,
+            image: item.image,
+            size: item.size,
+            color: item.color,
+            variantId: item.variantId,
+            productId: item.productId,
+          }))
+        );
       }
     };
-
     window.addEventListener(CART_UPDATED_EVENT, syncCart);
     window.addEventListener("storage", syncCart);
-
     return () => {
       window.removeEventListener(CART_UPDATED_EVENT, syncCart);
       window.removeEventListener("storage", syncCart);
     };
-  }, [user]);
+  }, [user, isBuyNow]);
 
-  // Transform Redux cart items to display format and update local cart state
+  // Sync Redux cart to display — skip for buy now
   useEffect(() => {
+    if (isBuyNow) return;
     if (user && reduxCartItems) {
-      const transformedCart = transformReduxCartToDisplay(reduxCartItems);
-      setCart(transformedCart);
+      const transformed = transformReduxCartToDisplay(reduxCartItems);
+      setCart(transformed);
     }
-  }, [user, reduxCartItems]);
+  }, [user, reduxCartItems, isBuyNow]);
 
   useEffect(() => {
     return () => {
-      if (lottieTimeoutRef.current) {
-        clearTimeout(lottieTimeoutRef.current);
-      }
+      if (lottieTimeoutRef.current) clearTimeout(lottieTimeoutRef.current);
     };
   }, []);
 
-  // Cart operations
+  // ─── Cart operations (disabled for buy now) ──────────────────────────────────
+
   const removeItem = (productId, variantId) => {
+    if (isBuyNow) return;
     if (user) {
-      // For logged-in users, use Redux with variantId
       dispatch(removeFromCart({ productId: variantId }))
         .unwrap()
         .then(() => {
           setToast({ type: "success", message: "Item removed from cart" });
           setTimeout(() => setToast(null), 3000);
-          // Refresh cart display - this will trigger the useEffect above
           dispatch(fetchCartItems());
         })
         .catch((error) => {
-          setToast({
-            type: "error",
-            message: error?.message || "Failed to remove item",
-          });
+          setToast({ type: "error", message: error?.message || "Failed to remove item" });
           setTimeout(() => setToast(null), 3000);
         });
     } else {
-      // For guest users, update localStorage
-      const updatedItems = localCartItems.filter(
-        (item) => item.variantId !== variantId,
-      );
+      const updatedItems = localCartItems.filter((item) => item.variantId !== variantId);
       updateGuestCart(updatedItems);
       setToast({ type: "success", message: "Item removed from cart" });
       setTimeout(() => setToast(null), 3000);
@@ -257,113 +261,73 @@ const CheckoutPage = () => {
   };
 
   const increaseQty = (productId, variantId) => {
+    if (isBuyNow) return;
     if (user) {
-      // For logged-in users, use Redux with variantId
       const currentItem = reduxCartItems.find(
-        (item) =>
-          item.variant?._id === variantId || item.variantId === variantId,
+        (item) => item.variant?._id === variantId || item.variantId === variantId
       );
       const newQuantity = (currentItem?.quantity || 0) + 1;
-
-      dispatch(
-        incrementDecrementItemQuantity({
-          variantId: variantId,
-          quantity: newQuantity,
-        }),
-      )
+      dispatch(incrementDecrementItemQuantity({ variantId, quantity: newQuantity }))
         .unwrap()
-        .then(() => {
-          // After successful update, fetch fresh cart data
-          dispatch(fetchCartItems());
-        })
+        .then(() => dispatch(fetchCartItems()))
         .catch((error) => {
-          setToast({
-            type: "error",
-            message: error?.message || "Failed to update quantity",
-          });
+          setToast({ type: "error", message: error?.message || "Failed to update quantity" });
           setTimeout(() => setToast(null), 3000);
         });
     } else {
-      // For guest users, update localStorage
       const updatedItems = localCartItems.map((item) =>
-        item.variantId === variantId
-          ? { ...item, quantity: item.quantity + 1 }
-          : item,
+        item.variantId === variantId ? { ...item, quantity: item.quantity + 1 } : item
       );
       updateGuestCart(updatedItems);
     }
   };
 
   const decreaseQty = (productId, variantId) => {
+    if (isBuyNow) return;
     if (user) {
-      // For logged-in users, use Redux with variantId
       const currentItem = reduxCartItems.find(
-        (item) =>
-          item.variant?._id === variantId || item.variantId === variantId,
+        (item) => item.variant?._id === variantId || item.variantId === variantId
       );
       const newQuantity = Math.max(1, (currentItem?.quantity || 0) - 1);
-
-      dispatch(
-        incrementDecrementItemQuantity({
-          variantId: variantId,
-          quantity: newQuantity,
-        }),
-      )
+      dispatch(incrementDecrementItemQuantity({ variantId, quantity: newQuantity }))
         .unwrap()
-        .then(() => {
-          // After successful update, fetch fresh cart data
-          dispatch(fetchCartItems());
-        })
+        .then(() => dispatch(fetchCartItems()))
         .catch((error) => {
-          setToast({
-            type: "error",
-            message: error?.message || "Failed to update quantity",
-          });
+          setToast({ type: "error", message: error?.message || "Failed to update quantity" });
           setTimeout(() => setToast(null), 3000);
         });
     } else {
-      // For guest users, update localStorage
       const updatedItems = localCartItems.map((item) =>
         item.variantId === variantId && item.quantity > 1
           ? { ...item, quantity: item.quantity - 1 }
-          : item,
+          : item
       );
       updateGuestCart(updatedItems);
     }
   };
 
+  // ─── Pricing ─────────────────────────────────────────────────────────────────
+
   const subtotal = useMemo(() => {
-    if (user && grandTotal) {
-      return grandTotal;
-    }
+    if (!isBuyNow && user && grandTotal) return grandTotal;
     return cart.reduce((total, item) => total + item.price * item.qty, 0);
-  }, [cart, user, grandTotal]);
+  }, [cart, user, grandTotal, isBuyNow]);
 
   const { finalTotal, usedWallet, usedCoins } = useMemo(() => {
     let baseTotal = subtotal - discount;
-
     const walletBalance = wallet1?.availableBalance || 0;
     const coinBalance = wallet1?.superCoinBalance || 0;
-
     let usedWallet = 0;
     let usedCoins = 0;
-
-    // ✅ Sirf jo user select kare wahi apply hoga
     if (useWallet) {
       usedWallet = Math.min(walletBalance, baseTotal);
       baseTotal -= usedWallet;
     }
-
     if (useCoins) {
       usedCoins = Math.min(coinBalance, baseTotal);
       baseTotal -= usedCoins;
     }
-
-    return {
-      finalTotal: Math.max(0, baseTotal),
-      usedWallet,
-      usedCoins,
-    };
+    return { finalTotal: Math.max(0, baseTotal), usedWallet, usedCoins };
   }, [subtotal, discount, wallet1, useWallet, useCoins]);
 
   const applyCoupon = useCallback(() => {
@@ -371,65 +335,106 @@ const CheckoutPage = () => {
       setDiscount(subtotal * 0.1);
       setCouponApplied(true);
       setShowLottie(true);
-
-      if (lottieTimeoutRef.current) {
-        clearTimeout(lottieTimeoutRef.current);
-      }
-      lottieTimeoutRef.current = setTimeout(() => {
-        setShowLottie(false);
-      }, 2500);
+      if (lottieTimeoutRef.current) clearTimeout(lottieTimeoutRef.current);
+      lottieTimeoutRef.current = setTimeout(() => setShowLottie(false), 2500);
     }
   }, [coupon, couponApplied, subtotal]);
 
+  // ─── Place order ─────────────────────────────────────────────────────────────
+
   const handlePlaceOrder = async () => {
     try {
-      // Prepare items array from cart
-      const items = cart.map((item) => ({
-        variant: item.variantId,
-        quantity: item.qty,
-      }));
-
-      const payload = {
-        items,
-        shippingAddress: {
-          fullName: addressData?.firstName + " " + addressData.lastName,
-          mobile: addressData.phone,
-          street: addressData.address,
-          landmark: addressData.landmark,
-          city: addressData.city,
-          state: addressData.state,
-          pincode: addressData.zip,
-        },
-        paymentMethod: "UPI",
-        coinUsed: usedCoins,
-        walletUsed: usedWallet,
-      };
-
-      // console.log("Sending order payload:", payload);
-
-      const response = await api.post("/order", payload);
-      if (response.data?.success) {
-        console.log("Raw response data:", response.data);
-        // alert(response.data?.message || "Order placed successfully");
-        setToast({
-          type: "success",
-          message: response.data?.message || "Order placed successfully",
-        });
+      if (!addressData) {
+        setToast({ type: "error", message: "Please enter address" });
+        return;
       }
-        
-      // Optional: redirect to success page
-      // navigate("/order-success");
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+
+          const addressPayload = {
+            fullName: `${addressData?.firstName || ""} ${addressData?.lastName || ""}`,
+            mobile: addressData.phone,
+            altPhone: addressData.alternateMobile || "",
+            street: addressData.address,
+            landmark: addressData.landmark,
+            city: addressData.city,
+            state: addressData.state,
+            pincode: addressData.zip,
+            country: "India",
+            coordinates: [longitude, latitude],
+          };
+
+          if (addressData?.saveAddress) {
+            try {
+              await api.post("/address", addressPayload);
+            } catch (err) {
+              console.error("Address save error:", err);
+            }
+          }
+
+          // Build items — for buy now use the single item; for cart use all items
+          const items = cart.map((item) => ({
+            variant: item.variantId,
+            quantity: item.qty,
+          }));
+
+          const payload = {
+            items,
+            shippingAddress: {
+              fullName: addressPayload.fullName,
+              mobile: addressPayload.mobile,
+              altPhone: addressPayload.altPhone,
+              street: addressPayload.street,
+              landmark: addressPayload.landmark,
+              city: addressPayload.city,
+              state: addressPayload.state,
+              pincode: addressPayload.pincode,
+              coordinates: [longitude, latitude],
+            },
+            paymentMethod: "UPI",
+            coinUsed: usedCoins,
+            walletUsed: usedWallet,
+          };
+
+          const response = await api.post("/order", payload);
+
+          if (response.status === 201 || response.data?.order) {
+            // Clean up buy now item after successful order
+            if (isBuyNow) {
+              sessionStorage.removeItem("buyNowItem");
+            }
+            navigate("/order-success", {
+               state: { 
+              orderId: response.data?.order?._id,
+              orderData: response.data?.order 
+            }
+            });
+          }
+
+          setToast({
+            type: "success",
+            message: response.data?.message || "Order placed successfully",
+          });
+        },
+        (error) => {
+          console.error("Location error:", error);
+          setToast({ type: "error", message: "Please allow location access" });
+        }
+      );
     } catch (error) {
-      console.error("Order error:", error.message || error);
-      // alert(error?.response?.data?.message || "Failed to place order");
+      console.error("Order error:", error);
       setToast({
         type: "error",
-        message: error?.response?.message,
+        message: error?.response?.data?.message || "Something went wrong",
       });
     }
   };
 
-  const isLoading = user ? status === "loading" : false;
+  // ─── Derived ─────────────────────────────────────────────────────────────────
+
+  const isLoading = user && !isBuyNow ? status === "loading" : false;
 
   if ((!cart || cart.length === 0) && !isLoading) {
     return (
@@ -447,16 +452,14 @@ const CheckoutPage = () => {
     );
   }
 
+  // ─── Render ──────────────────────────────────────────────────────────────────
+
   return (
     <>
       {toast && (
         <div
           className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-full text-sm shadow-2xl flex items-center gap-2
-          ${
-            toast.type === "error"
-              ? "bg-red-600 text-white"
-              : "bg-gray-900 text-white"
-          }`}
+            ${toast.type === "error" ? "bg-red-600 text-white" : "bg-gray-900 text-white"}`}
         >
           {toast.type === "error" ? (
             <span>⚠️</span>
@@ -468,7 +471,7 @@ const CheckoutPage = () => {
       )}
 
       {showLottie && (
-        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/20">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/20">
           <iframe
             src="https://lottie.host/embed/c0ba5fdc-793b-4076-9f17-01b91cd310d5/tFXMU37AOa.lottie"
             className="w-64 h-64"
@@ -479,51 +482,50 @@ const CheckoutPage = () => {
 
       <div className="min-h-screen bg-gray-50 py-12">
         <div className="mx-auto px-4 sm:px-6 lg:px-20">
-          {/* Simple Progress Steps */}
+
+          {/* Progress steps */}
           <div className="flex items-center justify-center gap-8 mb-12 text-sm font-medium">
-            <span className="text-gray-400">1. Bag</span>
-            <div className="w-16 h-px bg-gray-200"></div>
+            <span className="text-gray-400">
+              {isBuyNow ? "1. Product" : "1. Bag"}
+            </span>
+            <div className="w-16 h-px bg-gray-200" />
             <span className="text-[#927f68] font-semibold">2. Address</span>
-            <div className="w-16 h-px bg-gray-200"></div>
+            <div className="w-16 h-px bg-gray-200" />
             <span className="text-gray-400">3. Payment</span>
           </div>
 
+          {/* Buy Now banner */}
+          {isBuyNow && (
+            <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800 flex items-center gap-2">
+              <span className="font-semibold">Buy Now</span> — you're checking out with a single item directly.
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main Content */}
+
+            {/* Main — Address */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Address Card */}
               <div className="bg-white p-6 lg:p-8 border border-gray-200">
                 <Address onAddressChange={setAddressData} />
               </div>
-
-              {/* Delivery Card */}
-              {/* <div className="bg-white p-6 lg:p-8 border border-gray-200">
-                <Delivery />
-              </div> */}
-
-              {/* Payment Card */}
-              {/* <div className="bg-white p-6 lg:p-8 border border-gray-200">
-                <Payment />
-              </div> */}
             </div>
 
-            {/* Minimal Cart Summary */}
+            {/* Sidebar — Cart summary */}
             <div className="lg:col-span-1 lg:sticky lg:top-24">
               <div className="bg-white border border-gray-200 p-6 lg:p-8">
-                {/* Cart Header */}
+
+                {/* Header */}
                 <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Your Bag ({cart.length} items)
-                    </h3>
-                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {isBuyNow ? "Your Item" : `Your Bag (${cart.length} items)`}
+                  </h3>
                 </div>
 
-                {/* Cart Items */}
+                {/* Items */}
                 <div className="space-y-4 mb-6 max-h-72 overflow-y-auto">
                   {isLoading ? (
                     <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#927f68] mx-auto"></div>
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#927f68] mx-auto" />
                     </div>
                   ) : (
                     cart.map((item) => (
@@ -550,38 +552,41 @@ const CheckoutPage = () => {
                           </p>
 
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 p-1.5 border border-gray-200 rounded-sm">
+                            {/* Quantity controls — hidden for buy now */}
+                            {isBuyNow ? (
+                              <span className="text-xs text-gray-500">Qty: {item.qty}</span>
+                            ) : (
+                              <div className="flex items-center gap-2 p-1.5 border border-gray-200 rounded-sm">
+                                <button
+                                  onClick={() => decreaseQty(item.productId, item.variantId)}
+                                  disabled={isLoading}
+                                  className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 transition-colors text-gray-600 disabled:opacity-50"
+                                >
+                                  −
+                                </button>
+                                <span className="w-6 text-center text-sm font-medium text-gray-900">
+                                  {item.qty}
+                                </span>
+                                <button
+                                  onClick={() => increaseQty(item.productId, item.variantId)}
+                                  disabled={isLoading}
+                                  className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 transition-colors text-gray-600 disabled:opacity-50"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Remove — hidden for buy now */}
+                            {!isBuyNow && (
                               <button
-                                onClick={() =>
-                                  decreaseQty(item.productId, item.variantId)
-                                }
+                                onClick={() => removeItem(item.productId, item.variantId)}
                                 disabled={isLoading}
-                                className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 transition-colors text-gray-600 disabled:opacity-50"
+                                className="text-xs text-red-500 hover:text-red-600 font-medium ml-2 disabled:opacity-50"
                               >
-                                −
+                                Remove
                               </button>
-                              <span className="w-6 text-center text-sm font-medium text-gray-900">
-                                {item.qty}
-                              </span>
-                              <button
-                                onClick={() =>
-                                  increaseQty(item.productId, item.variantId)
-                                }
-                                disabled={isLoading}
-                                className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 transition-colors text-gray-600 disabled:opacity-50"
-                              >
-                                +
-                              </button>
-                            </div>
-                            <button
-                              onClick={() =>
-                                removeItem(item.productId, item.variantId)
-                              }
-                              disabled={isLoading}
-                              className="text-xs text-red-500 hover:text-red-600 font-medium ml-2 disabled:opacity-50"
-                            >
-                              Remove
-                            </button>
+                            )}
                           </div>
                         </div>
 
@@ -593,7 +598,7 @@ const CheckoutPage = () => {
                   )}
                 </div>
 
-                {/* Coupon Section */}
+                {/* Coupon */}
                 <div className="mb-6 pb-4 border-b border-gray-100">
                   <div className="flex gap-2">
                     <input
@@ -612,23 +617,18 @@ const CheckoutPage = () => {
                     </button>
                   </div>
                   {couponApplied && (
-                    <p className="text-xs text-green-600 mt-2">
-                      Coupon applied successfully
-                    </p>
+                    <p className="text-xs text-green-600 mt-2">Coupon applied successfully</p>
                   )}
                 </div>
 
-                {/* Order Summary */}
+                {/* Order summary */}
                 <div className="space-y-2 mb-6 text-sm">
                   <div className="flex justify-between py-2 border-b border-gray-100">
                     <span>Subtotal</span>
                     <span>₹{subtotal.toLocaleString()}</span>
                   </div>
-                  {/* <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span>Shipping</span>
-                    <span>₹{SHIPPING.toLocaleString()}</span>
-                  </div> */}
-                  {wallet1.availableBalance > 0 && (
+
+                  {wallet1?.availableBalance > 0 && (
                     <div className="flex justify-between items-center py-2 border-b">
                       <div className="flex items-center gap-2">
                         <input
@@ -647,7 +647,7 @@ const CheckoutPage = () => {
                     </div>
                   )}
 
-                  {wallet1.superCoinBalance > 0 && (
+                  {wallet1?.superCoinBalance > 0 && (
                     <div className="flex justify-between items-center py-2 border-b">
                       <div className="flex items-center gap-2">
                         <input
@@ -669,29 +669,29 @@ const CheckoutPage = () => {
                   {discount > 0 && (
                     <div className="flex justify-between py-2 text-green-600 font-medium">
                       <span>Discount</span>
-                      <span>-₹{discount.toFixed(0).toLocaleString()}</span>
+                      <span>-₹{discount.toFixed(0)}</span>
                     </div>
                   )}
                 </div>
+
                 {usedWallet > 0 && (
-                  <div className="flex justify-between py-2 text-green-600">
+                  <div className="flex justify-between py-2 text-green-600 text-sm">
                     <span>Wallet Used</span>
                     <span>-₹{usedWallet.toLocaleString()}</span>
                   </div>
                 )}
 
                 {usedCoins > 0 && (
-                  <div className="flex justify-between py-2 text-green-600">
+                  <div className="flex justify-between py-2 text-green-600 text-sm">
                     <span>Coins Used</span>
                     <span>-₹{usedCoins.toLocaleString()}</span>
                   </div>
                 )}
+
                 {/* Total */}
                 <div className="border-t border-gray-100 pt-4 mb-6">
                   <div className="flex justify-between items-baseline">
-                    <span className="text-lg font-semibold text-gray-900">
-                      Total
-                    </span>
+                    <span className="text-lg font-semibold text-gray-900">Total</span>
                     <span className="text-2xl font-semibold text-[#927f68]">
                       ₹{finalTotal.toLocaleString()}
                     </span>
@@ -699,16 +699,17 @@ const CheckoutPage = () => {
                   <p className="text-xs text-gray-500 mt-1">incl. taxes</p>
                 </div>
 
-                {/* CTA Button */}
+                {/* CTA */}
                 <button
                   onClick={handlePlaceOrder}
                   disabled={isLoading}
                   className="w-full bg-[#927f68] text-white py-3 px-4 text-sm font-semibold hover:bg-[#7a6650] transition-colors border border-[#927f68] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? "Loading..." : "Place Order"}
+                  {isLoading ? "Loading..." : isBuyNow ? "Place Order" : "Place Order"}
                 </button>
               </div>
             </div>
+
           </div>
         </div>
       </div>

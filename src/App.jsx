@@ -21,6 +21,7 @@ import ScrollToTop from "./components/Scrolltop.jsx";
 import BecomeARider from "./pages/BecomeARider.jsx";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastContainer } from 'react-toastify';
+import OrderSuccess from "./components/OrderSuccess.jsx";
 function App() {
   const queryClient = new QueryClient();
   return (
@@ -59,6 +60,7 @@ function App() {
             <Route path="kids" element={<Kids />} />
             <Route path="becomeapartner" element={<BecomeAPartner />} />
             <Route path="becomearider" element={<BecomeARider />} />
+            <Route path="/order-success" element={<OrderSuccess />} />
             <Route
               path="*"
               element={

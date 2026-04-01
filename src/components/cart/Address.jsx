@@ -192,7 +192,7 @@ console.log("Selected address data:", updatedData);
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Email
@@ -215,6 +215,19 @@ console.log("Selected address data:", updatedData);
               type="tel"
               name="phone"
               value={formData.phone}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#927f68]/20 focus:border-[#927f68] transition-all"
+              placeholder="+91 98765 43210"
+            />
+          </div>
+            <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Alternate Phone 
+            </label>
+            <input
+              type="tel"
+              name="alternatePhone"
+              value={formData.alternatePhone}
               onChange={handleInputChange}
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#927f68]/20 focus:border-[#927f68] transition-all"
               placeholder="+91 98765 43210"
