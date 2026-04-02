@@ -36,6 +36,8 @@ export default function Header() {
   const { subcategories } = useSelector((state) => state.subCategory);
   const { brands } = useSelector((state) => state.brands);
 
+  
+
   const { loginOpen, setLoginOpen, user } = useAuth();
   const [cartOpen, setCartOpen] = useState(false);
   const [showAllMenu, setShowAllMenu] = useState(false);
@@ -167,7 +169,7 @@ export default function Header() {
                     {to !== "/" && to !== "/kids" && <MdKeyboardArrowDown />}
                   </Link>
 
-                  {to === "/new-arrivals" && (
+                  {/* {to === "/new-arrivals" && (
                     <div className="absolute top-full left-0 w-[95vw] bg-white shadow-2xl border border-[#cccc] p-8 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-999 mt-2 mx-4">
                       <div className="flex items-center justify-between gap-4 mb-6">
                         <h3 className="font-bold text-lg text-gray-900">
@@ -211,7 +213,7 @@ export default function Header() {
                         ))}
                       </div>
                     </div>
-                  )}
+                  )} */}
 
                   {to === "/productlist" && (
                     <div className="absolute top-full left-1/2 -translate-x-1/2 w-screen max-w-7xl bg-white shadow-2xl border border-[#cccc] p-8 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-999 mt-2">
@@ -242,7 +244,7 @@ export default function Header() {
                                       key={data?._id}
                                       to={{
                                         pathname: "/productlist",
-                                        search: `?category=${data.slug}&ctd=${data._id}`,
+                                        search: `?gender=Men&category=${data.slug}&ctd=${data._id}`,
                                       }}
                                       className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded"
                                     >
@@ -377,7 +379,7 @@ export default function Header() {
                       <div className="flex items-start justify-between gap-8 mb-8">
                         <div>
                           <h3 className="font-bold text-2xl text-gray-900 mb-2">
-                            Top Mens Brands
+                            Top  Brands
                           </h3>
                         </div>
                       </div>
@@ -385,23 +387,20 @@ export default function Header() {
                       <div className="flex gap-8 max-w-6xl mx-auto">
                         <div className="flex-1 max-w-4xl">
                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                            {
-                              brands?.slice(0, 10)?.map((brand) => (
-                                <Link
-                                  to={`/brands/${brand.slug}`}
-                                  className="group/item  bg-gray-100"
-                                >
-                                  <div className="w-full p-6 gap-2">
-                                    <img
-                                      src={`${BASE_URL}${brand.logo}`}
-                                      alt={brand.name}
-                                      className="w-20 h-20 object-contain rounded-lg"
-                                    />
-                                  </div>
-                                </Link>
-                              ))
-
-                            }
+                            {brands?.slice(0, 10)?.map((brand) => (
+                              <Link
+                                to={`/productlist?brand=${brand.slug}&brandId=${brand._id}`}
+                                className="group/item  bg-gray-100"
+                              >
+                                <div className="w-full p-6 gap-2">
+                                  <img
+                                    src={`${BASE_URL}${brand.logo}`}
+                                    alt={brand.name}
+                                    className="w-20 h-20 object-contain rounded-lg"
+                                  />
+                                </div>
+                              </Link>
+                            ))}
                           </div>
                         </div>
 
@@ -820,19 +819,17 @@ export default function Header() {
                     </button>
                     {openAccordion === "brands" && (
                       <div className="ml-4 mt-2 space-y-2 bg-gray-50 p-3 rounded-lg max-h-48 overflow-y-auto">
-                        {
-                          brands?.slice(0, 10)?.map((item) => (
-                            <Link
-                              key={item?._id}
-                              to={`/brands/${item.slug}`}
-                              className="block p-2 hover:bg-white rounded transition-all text-sm lg:flex items-center gap-2"
-                              onClick={closeMobileMenus}
-                            >
-                              <span className="w-5 h-5 bg-gray-300 rounded-sm shrink-0"></span> 
-                              {item?.name}
-                            </Link>
-                          ))
-                        }
+                        {brands?.slice(0, 10)?.map((item) => (
+                          <Link
+                            key={item?._id}
+                            to={`/brands/${item.slug}`}
+                            className="block p-2 hover:bg-white rounded transition-all text-sm lg:flex items-center gap-2"
+                            onClick={closeMobileMenus}
+                          >
+                            <span className="w-5 h-5 bg-gray-300 rounded-sm shrink-0"></span>
+                            {item?.name}
+                          </Link>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -879,7 +876,7 @@ export default function Header() {
             {subcategories?.map((item) => (
               <Link
                 key={item._id}
-                to={`/productslist/${item.slug}?ctd=${item._id}`}
+                to={`/productlist?subCategoryId=${item._id}&subCategory=${item.slug}`}
                 onClick={() => setShowAllMenu(false)}
                 className="text-center text-xs font-medium hover:bg-gray-50 p-3 transition-all hover:scale-105 rounded-md"
               >

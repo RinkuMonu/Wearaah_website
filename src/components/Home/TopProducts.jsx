@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { BsCart } from "react-icons/bs";
-import { PRODUCTS } from "../../data/products";
 import { getCartItems, setCartItems } from "../../utils/cartStorage";
-import api from "../service/axios";
+import { fetchProducts } from "../../features/Productlist/ProductSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { fatchBrands } from "../../features/Brands/brandSlice";
+import { fetchBanner } from "../../features/Banner/bannerSlice";
 
-const BANNER_IMAGE = "/images/shoip_your_size_1_1.webp";
 const CURRENCY_FORMATTER = new Intl.NumberFormat("en-IN", {
   maximumFractionDigits: 2,
   minimumFractionDigits: 2,
@@ -13,33 +14,28 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat("en-IN", {
 
 const TopProducts = React.memo(function TopProducts() {
   const BASE_URL = import.meta.env.VITE_BASE_URL;
-  const [products, setProducts] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState(null);
+  const dispatch = useDispatch();
+  const { products, error } = useSelector((state) => state.products);
+  const banners = useSelector(
+    (state) => state.banner.banners["summer-sale"] || [],
+  );
+ 
+  useEffect(() => {
+    dispatch(
+      fetchProducts({
+        isNewArrival: true,
+      }),
+    );
+    dispatch(fatchBrands());
+    dispatch(
+      fetchBanner({
+        position: "summer-sale",
+        deviceType: "desktop",
+      }),
+    );
+  }, [dispatch]);
 
   console.log(products, "products from top product component state");
-
-  React.useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await api.get("/product/web");
-        // console.log(res.data, "products from top product component");?
-        const data = res.data;
-
-        if (data.success) {
-          setProducts(data.products || []);
-        } else {
-          setError("Failed to fetch products");
-        }
-      } catch (err) {
-        setError("Something went wrong");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, []);
 
   const handleAddToCart = React.useCallback((product) => {
     const existing = getCartItems();
@@ -82,15 +78,20 @@ const TopProducts = React.memo(function TopProducts() {
           ? Math.round(((originalPrice - price) / originalPrice) * 100)
           : 0;
 
-      const imagePath = product.productImage?.[0];
+      const imagePathFront = product.productImage?.[0];
+      const imagePathBack = product.productImage?.[1];
 
       return {
         id: product._id,
         name: product.name || "No Name",
         price,
         originalPrice,
-        front: imagePath ? `${BASE_URL}${imagePath}` : "/placeholder.png",
-        back: imagePath ? `${BASE_URL}${imagePath}` : "/placeholder.png",
+        front: imagePathFront
+          ? `${BASE_URL}${imagePathFront}`
+          : "/placeholder.png",
+        back: imagePathBack
+          ? `${BASE_URL}${imagePathBack}`
+          : "/placeholder.png",
         sizes: ["M"],
         colors: ["Black"],
         discountPercent,
@@ -99,10 +100,6 @@ const TopProducts = React.memo(function TopProducts() {
       };
     });
   }, [products]);
-
-  if (loading) {
-    return <p className="text-center py-10">Loading products...</p>;
-  }
 
   if (error) {
     return <p className="text-center py-10 text-red-500">{error}</p>;
@@ -113,14 +110,14 @@ const TopProducts = React.memo(function TopProducts() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Top Summer Products
+              New Arrival Products
             </h2>
             <span className="text-sm text-gray-500">
               Shop now for ultimate comfort
             </span>
           </div>
           <Link
-            to="/productlist"
+            to={`/productlist?isNewArrival=${true}`}
             className="text-[#633426] font-semibold text-sm hover:text-orange-600 transition"
           >
             View All
@@ -130,8 +127,8 @@ const TopProducts = React.memo(function TopProducts() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
           {formattedProducts.map((product) => (
             <article key={product.id} className="group cursor-pointer">
-              <div className="relative overflow-hidden bg-gray-100">
-                <Link to={`${BASE_URL}/product/${product.id}`}>
+              <div className="relative overflow-hidden bg-gray-100 h-[260px]">
+                <Link to={`/product/${product.id}`}>
                   <img
                     src={product.front}
                     alt={product.name}
@@ -177,7 +174,7 @@ const TopProducts = React.memo(function TopProducts() {
 
       <div className="w-full my-10">
         <img
-          src={BANNER_IMAGE}
+          src={`${BASE_URL}${banners[0]?.images}`}
           alt="Shop your size banner"
           className="w-full"
           loading="lazy"
