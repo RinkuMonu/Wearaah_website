@@ -14,6 +14,8 @@ import api from "./service/axios";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts } from "../features/Productlist/ProductSlice";
 import { fatchSubCategoryByCategoryId } from "../features/subCategory/subCategorySlice";
+import { fatchBrands } from "../features/Brands/brandSlice";
+import { b, i } from "framer-motion/client";
 
 const PAGE_SIZE = 8;
 
@@ -22,6 +24,7 @@ const emptyFilters = () => ({
   subCategoryId: "",
   brand: [],
   size: [],
+  gender: [],
   color: [],
   price: "",
   minDiscount: "",
@@ -29,9 +32,11 @@ const emptyFilters = () => ({
 });
 
 const ProductListingPage = () => {
+  const isInitialLoad = useRef(true);
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const dispatch = useDispatch();
   const { products, status, error } = useSelector((state) => state.products);
+  const { brands } = useSelector((state) => state.brands);
   const { subcategoriesById, dynamicFilters } = useSelector(
     (state) => state.subCategory,
   );
@@ -43,6 +48,9 @@ const ProductListingPage = () => {
   const category = searchParams.get("category");
   const categoryId = searchParams.get("ctd");
   const subCategoryId = searchParams.get("subCategoryId");
+
+  const brandId = searchParams.get("brandId");
+  const hasBrand = !!brandId;
   const hasCategory = !!searchParams.get("ctd");
   const hasSubCategory = !!searchParams.get("subCategoryId");
   const showSubCategoryFilter = hasCategory;
@@ -70,7 +78,7 @@ const ProductListingPage = () => {
     categoryId: searchParams.get("ctd"),
     subCategory: searchParams.get("subCategory"),
     subCategoryId: searchParams.get("subCategoryId"),
-    brand: parseArray(searchParams.get("brand")),
+    brand: parseArray(brandId),
     size: parseArray(searchParams.get("size")),
     color: parseArray(searchParams.get("color")),
     minPrice: searchParams.get("minPrice") || "",
@@ -79,11 +87,15 @@ const ProductListingPage = () => {
     minRating: searchParams.get("rating") || "",
   }));
 
+  const hasGender = filters.gender?.length || searchParams.get("gender");
+
   const sentinelRef = useRef(null);
   const buildParams = () => {
     const params = {
       category: categoryId,
       subCategory: subCategoryId,
+      brand: filters.brand.length ? filters.brand : [],
+      gender: filters.gender.length ? filters.gender : [],
       minPrice: filters.minPrice,
       maxPrice: filters.maxPrice,
       sort: sortBy,
@@ -104,7 +116,11 @@ const ProductListingPage = () => {
 
   useEffect(() => {
     dispatch(fetchProducts(buildParams()));
-  }, [filters, category, categoryId, sortBy, subCategoryId]);
+  }, [filters, category, categoryId, sortBy, subCategoryId, brandId]);
+
+  useEffect(() => {
+    dispatch(fatchBrands());
+  }, []);
 
   useEffect(() => {
     if (categoryId) {
@@ -115,24 +131,29 @@ const ProductListingPage = () => {
   useEffect(() => {
     const subCategoryIdFromURL = searchParams.get("subCategoryId");
     const subCategoryFromURL = searchParams.get("subCategory");
+    const brandIdFromURL = searchParams.get("brandId");
+    const genderFromURL = searchParams.get("gender");
 
     setFilters((prev) => ({
       ...prev,
-
-      // ✅ subcategory sirf tab reset ho jab URL me na ho
       subCategoryId: subCategoryIdFromURL || "",
       subCategory: subCategoryFromURL || "",
 
-      brand: [],
+      brand: brandIdFromURL ? brandIdFromURL.split(",") : [],
+      gender: genderFromURL ? genderFromURL.split(",") : [],
       size: [],
       color: [],
       price: "",
       minDiscount: "",
       minRating: "",
     }));
-  }, [categoryId]);
+  }, [location.search]);
 
   useEffect(() => {
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+      return;
+    }
     const params = new URLSearchParams();
 
     // ✅ category
@@ -144,12 +165,23 @@ const ProductListingPage = () => {
       params.set("subCategoryId", filters.subCategoryId);
       params.set("subCategory", filters.subCategory);
     }
+    if (filters.brand?.length) {
+      if (filters.brand?.length) {
+        const selectedBrands = brands.filter((b) =>
+          filters.brand.includes(b._id),
+        );
 
+        params.set("brand", selectedBrands.map((b) => b.slug).join(","));
+
+        params.set("brandId", selectedBrands.map((b) => b._id).join(","));
+      }
+    }
     // 🔥 ALL FILTERS (dynamic + static)
     Object.entries(filters).forEach(([key, value]) => {
       if (!value || (Array.isArray(value) && value.length === 0)) return;
 
-      if (["categoryId", "subCategoryId", "subCategory"].includes(key)) return;
+      if (["categoryId", "subCategoryId", "subCategory", "brand"].includes(key))
+        return;
 
       if (Array.isArray(value)) {
         params.set(key, value.join(","));
@@ -162,7 +194,8 @@ const ProductListingPage = () => {
     if (sortBy) params.set("sort", sortBy);
 
     setSearchParams(params, { replace: true });
-  }, [filters, sortBy, category, categoryId]);
+  }, [filters, sortBy, category, categoryId, brands]);
+
   useEffect(() => setVisibleCount(PAGE_SIZE), [filters, sortBy]);
 
   useEffect(() => {
@@ -221,6 +254,24 @@ const ProductListingPage = () => {
         params.set("subCategoryId", item._id);
         return params;
       });
+    }
+  };
+
+  const toggleBrand = (brand) => {
+    const isSelected = filters.brand.includes(brand._id);
+
+    if (isSelected) {
+      // ❌ remove
+      setFilters((prev) => ({
+        ...prev,
+        brand: prev.brand.filter((id) => id !== brand._id),
+      }));
+    } else {
+      // ✅ add
+      setFilters((prev) => ({
+        ...prev,
+        brand: [...prev.brand, brand._id],
+      }));
     }
   };
 
@@ -410,7 +461,8 @@ const ProductListingPage = () => {
                 ...(showSubCategoryFilter
                   ? [["subCategory", SubCategory]]
                   : []),
-
+                ["brand", brands],
+                ["gender", ["Men", "Women", "Boys", "Girls", "Unisex"]],
                 ...(filters.subCategoryId
                   ? Object.entries(dynamicFilters).filter(
                       ([key]) => !["size", "color"].includes(key),
@@ -418,10 +470,6 @@ const ProductListingPage = () => {
                   : []),
 
                 ...(SubCategory?.length > 0 ? [["size", dynamicSizes]] : []),
-
-                ...(hasSubCategory
-                  ? [["gender", ["Men", "Women", "Unisex"]]]
-                  : []),
 
                 [
                   "color",
@@ -464,11 +512,15 @@ const ProductListingPage = () => {
                                 checked={
                                   item[0] === "subCategory"
                                     ? filters.subCategoryId === op._id
-                                    : filters[item[0]]?.includes(value)
+                                    : item[0] === "brand"
+                                      ? filters.brand.includes(op._id)
+                                      : filters[item[0]]?.includes(value)
                                 }
                                 onChange={() => {
                                   if (item[0] === "subCategory") {
                                     toggleSubCategory(op);
+                                  } else if (item[0] === "brand") {
+                                    toggleBrand(op);
                                   } else {
                                     toggleFilter(item[0], value);
                                   }

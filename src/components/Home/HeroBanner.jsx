@@ -1,129 +1,133 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { fetchBanner } from "../../features/Banner/bannerSlice";
 
 const SWIPER_MODULES = [Autoplay, Navigation];
-const AUTOPLAY_CONFIG = {
-    delay: 3000,
-    disableOnInteraction: false,
-    pauseOnMouseEnter: true,
-};
-const SWIPER_BREAKPOINTS = {
-    0: {
-        slidesPerView: 1,
-        spaceBetween: 20,
-    },
-    640: {
-        slidesPerView: 2,
-        spaceBetween: 30,
-    },
-    768: {
-        slidesPerView: 3,
-        spaceBetween: 30,
-    },
-    1024: {
-        slidesPerView: 3,
-        spaceBetween: 40,
-    },
-    1440: {
-        slidesPerView: 3,
-        spaceBetween: 10,
-    },
-};
 
-const banners = [
-    {
-        id: 1,
-        title: "Winter Collection",
-        subtitle: "Up to 50% OFF",
-        cta: "Shop Now",
-        image: "/images/Herobanner/B2.webp",
-    },
-    {
-        id: 2,
-        title: "New Arrivals",
-        subtitle: "Latest Trends",
-        cta: "Explore",
-        image: "/images/Herobanner/Kids/B1.webp",
-    },
-    {
-        id: 3,
-        title: "Summer Sale",
-        subtitle: "Everything 30% OFF",
-        cta: "Grab Deals",
-        image: "/images/Herobanner/All/B1.webp",
-    },
-    {
-        id: 4,
-        title: "Summer Sale",
-        subtitle: "Everything 30% OFF",
-        cta: "Hurry Up",
-        image: "/images/Herobanner/All/B3.webp",
-    },
-    {
-        id: 5,
-        title: "Summer Sale",
-        subtitle: "Everything 30% OFF",
-        cta: "Grab Deals",
-        image: "/images/Herobanner/Womans/B2.webp",
-    },
-    {
-        id: 6,
-        title: "Summer Sale",
-        subtitle: "Everything 30% OFF",
-        cta: "Grab Deals",
-        image: "/images/Herobanner/B7.webp",
-    },
-    {
-        id: 7,
-        title: "Summer Sale",
-        subtitle: "Everything 30% OFF",
-        cta: "Grab Deals",
-        image: "/images/Herobanner/Womans/B1.webp",
-    },
-    {
-        id: 8,
-        title: "Summer Sale",
-        subtitle: "Everything 30% OFF",
-        cta: "Grab Deals",
-        image: "/images/Herobanner/B9.webp",
-    },
-];
+const SWIPER_BREAKPOINTS = {
+  0: {
+    slidesPerView: 1,
+    spaceBetween: 20,
+  },
+  640: {
+    slidesPerView: 2,
+    spaceBetween: 30,
+  },
+  768: {
+    slidesPerView: 3,
+    spaceBetween: 30,
+  },
+  1024: {
+    slidesPerView: 3,
+    spaceBetween: 40,
+  },
+  1440: {
+    slidesPerView: 3,
+    spaceBetween: 10,
+  },
+};
 
 const HeroBanner = React.memo(function HeroBanner() {
-    return (
-        <section className="z-10 overflow-hidden">
-            <Swiper
-                modules={SWIPER_MODULES}
-                slidesPerView={3}
-                spaceBetween={30}
-                loop={true}
-                autoplay={AUTOPLAY_CONFIG}
-                breakpoints={SWIPER_BREAKPOINTS}
+  const BASE_URL = import.meta.env.VITE_BASE_URL;
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-                className="mySwiper"
-            >
-                {banners.map((banner) => (
-                    <SwiperSlide key={banner.id} className="h-screen">
-                        <div className="w-full h-[80vh] relative flex items-center justify-center">
-                            <div
-                                className="absolute inset-0 w-full"
-                                style={{
-                                    backgroundImage: `url(${banner.image})`,
-                                    backgroundSize: "cover",
-                                    backgroundPosition: "center",
-                                    backgroundRepeat: "no-repeat",
-                                }}
-                            />
-                        </div>
-                    </SwiperSlide>
-                ))}
-
-            </Swiper>
-        </section>
+  const banners = useSelector(
+    (state) => state.banner.banners["homepage-top"] || {},
+  );
+ 
+  useEffect(() => {
+    dispatch(
+      fetchBanner({
+        position: "homepage-top",
+        deviceType: "desktop",
+      }),
     );
+  }, [dispatch]);
+
+  const handleBannerClick = (banner) => {
+    const { redirectType } = banner;
+
+    if (!redirectType || redirectType === "none") return;
+
+    switch (redirectType) {
+      case "category":
+        navigate(
+          `/productlist?category=${banner?.category?.slug}&ctd=${banner?.category?._id}`,
+        );
+        break;
+
+      case "subcategory":
+        navigate(
+          `/productlist?subCategoryId=${banner?.subcategory?._id}&subCategory=${banner?.subcategory?.slug}`,
+        );
+        break;
+
+      case "brand":
+        navigate(
+          `/productlist?brand=${banner?.brand?.slug}&brandId=${banner?.brand?._id}`,
+        );
+        break;
+
+      case "external":
+        window.open(banner.redirectValue, "_blank");
+        break;
+
+      default:
+        break;
+    }
+  };
+
+  if (status === "loading") {
+    return (
+      <div className="h-[80vh] flex items-center justify-center">
+        Loading...
+      </div>
+    );
+  }
+
+  if (!banners.length) return null;
+  return (
+    <section className="z-10 overflow-hidden w-full">
+      <Swiper
+        modules={SWIPER_MODULES}
+        slidesPerView={3}
+        spaceBetween={20}
+        loop={banners.length > 3}
+        slidesPerGroup={1}
+        autoplay={{
+          delay: 2500,
+          disableOnInteraction: false,
+          pauseOnMouseEnter: true,
+        }}
+        speed={800} // 🔥 smooth slide
+        breakpoints={SWIPER_BREAKPOINTS}
+        className="mySwiper w-full"
+      >
+        {banners.map((banner) => (
+          <SwiperSlide key={banner._id} className="h-full">
+            <div className="w-full h-[80vh] relative flex items-center justify-center">
+              <div
+                onClick={() => handleBannerClick(banner)}
+                className="w-full h-full cursor-pointer"
+                style={{
+                  backgroundImage: `url(${BASE_URL}${banner.images})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  backgroundRepeat: "no-repeat",
+                }}
+              />
+            </div>
+          </SwiperSlide>
+        ))}
+      </Swiper>
+    </section>
+  );
 });
 
 export default HeroBanner;
