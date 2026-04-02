@@ -1,15 +1,67 @@
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { CiDeliveryTruck } from 'react-icons/ci';
-import { FaRegStar, FaRegCopy, FaFileDownload, FaStar, FaCheck } from 'react-icons/fa';
+import { FaRegStar, FaRegCopy, FaFileDownload, FaStar, FaCheck, FaChevronRight, FaChevronLeft } from 'react-icons/fa';
 import { PiMapPinSimpleArea, PiArrowLeft } from 'react-icons/pi';
 import api from './service/axios';
 import { Link } from 'react-router-dom';
 
 // API service function
-const fetchMyOrders = async () => {
-  const response = await api.get('/order/my');
+const fetchMyOrders = async ({ page = 1, limit = 10 }) => {
+  const response = await api.get(`/order/my?page=${page}&limit=${limit}`);
   return response.data;
+};
+
+
+// Helper function to transform API order data to match your existing UI structure
+const transformOrderData = (apiOrder) => {
+  // Calculate total items count
+  const totalItems = apiOrder.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+  
+  // Get the first item for product display
+  const firstItem = apiOrder.items?.[0];
+  
+  // Map order status to display status
+  const statusMap = {
+    'placed': 'Placed',
+    'confirmed': 'Confirmed',
+    'shipped': 'Shipped',
+    'delivered': 'Delivered',
+    'cancelled': 'Cancelled',
+    'pending': 'Pending'
+  };
+  
+  return {
+    id: apiOrder.orderNumber || apiOrder._id,
+    product: firstItem?.productName || 'Product',
+    brand: firstItem?.productName?.split(' ')[0] || 'Brand',
+    rating: 4.0, // You'll need to add rating to your API or calculate from reviews
+    status: statusMap[apiOrder.orderStatus] || apiOrder.orderStatus,
+    date: apiOrder.createdAt ? new Date(apiOrder.createdAt).toLocaleDateString() : '',
+    price: apiOrder.finalAmoutAfterCoinDeliverycharges || apiOrder.totalAmount,
+    items: apiOrder.items?.map(item => ({
+      productId: item.productId,
+      name: item.productName,
+      qty: item.quantity,
+      price: item.sellingPrice,
+      image: getProductImage(item), // You'll need to add image URL to your API
+      size: item.size,
+      color: item.color,
+      sku: item.sku
+    })) || [],
+    hasReviewed: false, // You'll need to track this from your API
+    rawData: apiOrder // Keep raw data for detailed view
+  };
+};
+
+// Helper function to get product image - you can enhance this based on your data structure
+const getProductImage = (item) => {
+  // If you have images in your API response, use them
+  if (item.images && item.images.length > 0) {
+    return item.images[0];
+  }
+  // Default placeholder image
+  return '../images/plain.webp';
 };
 
 const OrdersList = () => {
@@ -17,7 +69,7 @@ const OrdersList = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-
+   const [currentPage, setCurrentPage] = useState(1);
   // React Query hook
   const {
     data: response,
@@ -26,10 +78,10 @@ const OrdersList = () => {
     error,
     refetch
   } = useQuery({
-    queryKey: ['myOrders'],
-    queryFn: fetchMyOrders,
-    staleTime: 5 * 60 * 1000, // Data considered fresh for 5 minutes
-    cacheTime: 10 * 60 * 1000, // Cache for 10 minutes
+    queryKey: ['myOrders', currentPage],
+    queryFn: () => fetchMyOrders({ page: currentPage, limit: 10 }),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   // Extract orders from response
@@ -38,11 +90,13 @@ const OrdersList = () => {
     return response.orders.map(order => transformOrderData(order));
   }, [response]);
 
+  const totalPages = response?.totalPages || 1;
+  const totalCount = response?.totalCount || 0;
+
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
   const filteredOrders = useMemo(
     () =>
       orders.filter((order) => {
-        console.log(order, 'order in filter');
         const matchesSearch =
           order.id.toLowerCase().includes(normalizedSearchTerm) ||
           order.product.toLowerCase().includes(normalizedSearchTerm);
@@ -62,6 +116,13 @@ const OrdersList = () => {
     setSelectedOrder(order);
     setViewMode('details');
   }, []);
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   // Loading state
   if (isLoading) {
@@ -129,12 +190,64 @@ const OrdersList = () => {
           />
         ))}
       </div>
+         {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2 mt-8">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-4 py-2 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+          >
+            <FaChevronLeft className="text-sm" />
+          </button>
+          
+          <div className="flex gap-2">
+            {[...Array(totalPages)].map((_, idx) => {
+              const pageNum = idx + 1;
+              // Show first page, last page, and pages around current page
+              if (
+                pageNum === 1 ||
+                pageNum === totalPages ||
+                (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+              ) {
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => handlePageChange(pageNum)}
+                    className={`w-10 h-10 rounded-lg transition ${
+                      currentPage === pageNum
+                        ? 'bg-blue-500 text-white'
+                        : 'border hover:bg-gray-50'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              } else if (
+                (pageNum === currentPage - 2 && currentPage > 3) ||
+                (pageNum === currentPage + 2 && currentPage < totalPages - 2)
+              ) {
+                return <span key={pageNum} className="w-10 h-10 flex items-center justify-center">...</span>;
+              }
+              return null;
+            })}
+          </div>
+          
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+          >
+            <FaChevronRight className="text-sm" />
+          </button>
+        </div>
+      )}
 
       {filteredOrders.length === 0 && (
-        <div className="text-center">
-          <div className="flex items-center justify-center mx-auto">
+        <div className="text-center py-12">
+          <div className="flex items-center justify-center mx-auto mb-4">
             <iframe
-              className="lg:w-[400px] lh:h-[500px]"
+              className="lg:w-[400px] h-[300px]"
               src="https://lottie.host/embed/424c2a72-0548-4d23-a52b-e36d79336d43/QHunyzsZme.lottie"
               title="No orders animation"
             />
@@ -149,47 +262,6 @@ const OrdersList = () => {
       )}
     </div>
   );
-};
-
-// Helper function to transform API order data to match your existing UI structure
-const transformOrderData = (apiOrder) => {
-  // Calculate total items count
-  const totalItems = apiOrder.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-  
-  // Get the first item for product display
-  const firstItem = apiOrder.items?.[0];
-  
-  // Map order status to display status
-  const statusMap = {
-    'placed': 'Placed',
-    'confirmed': 'Confirmed',
-    'shipped': 'Shipped',
-    'delivered': 'Delivered',
-    'cancelled': 'Cancelled',
-    'pending': 'Pending'
-  };
-  
-  return {
-    id: apiOrder.orderNumber || apiOrder._id,
-    product: firstItem?.productName || 'Product',
-    brand: firstItem?.productName?.split(' ')[0] || 'Brand', // Extract brand from product name
-    rating: 4.0, // You'll need to add rating to your API or calculate from reviews
-    status: statusMap[apiOrder.orderStatus] || apiOrder.orderStatus,
-    date: apiOrder.createdAt ? new Date(apiOrder.createdAt).toLocaleDateString() : '',
-    price: apiOrder.finalAmoutAfterCoinDeliverycharges || apiOrder.totalAmount,
-    items: apiOrder.items?.map(item => ({
-        productId: item.productId,
-      name: item.productName,
-      qty: item.quantity,
-      price: item.sellingPrice,
-      image: '../images/plain.webp', // You'll need to add image URL to your API
-      size: item.size,
-      color: item.color,
-      sku: item.sku
-    })) || [],
-    hasReviewed: false, // You'll need to track this from your API
-    rawData: apiOrder // Keep raw data for detailed view
-  };
 };
 
 const OrderDetailsPage = ({ order, onBack }) => {
@@ -276,31 +348,30 @@ const OrderDetailsPage = ({ order, onBack }) => {
             <div className="space-y-3 max-h-80 overflow-y-auto">
               {order.items.map((item, index) => (
                 <Link key={index} to={`/product/${item.productId}`}>
-                {console.log(item.productId, 'order item from order details page')}
-                <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
-                  <div className="w-14 h-14 bg-linear-to-br from-gray-100 rounded-lg flex items-center justify-center text-2xl shrink-0 overflow-hidden">
-                    <img 
-                      src={item.image} 
-                      alt={item.name} 
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.src = '../images/plain.webp';
-                      }}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm text-gray-900 truncate">{item.name}</div>
-                    <div className="text-xs text-gray-500">
-                      ₹{item.price.toLocaleString()}
-                      {item.size && <span className="ml-2">Size: {item.size}</span>}
-                      {item.color && <span className="ml-2">Color: {item.color}</span>}
+                  <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
+                    <div className="w-14 h-14 bg-linear-to-br from-gray-100 rounded-lg flex items-center justify-center text-2xl shrink-0 overflow-hidden">
+                      <img 
+                        src={item.image} 
+                        alt={item.name} 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.src = '../images/plain.webp';
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm text-gray-900 truncate">{item.name}</div>
+                      <div className="text-xs text-gray-500">
+                        ₹{item.price.toLocaleString()}
+                        {item.size && <span className="ml-2">Size: {item.size}</span>}
+                        {item.color && <span className="ml-2">Color: {item.color}</span>}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold text-sm text-gray-900">x{item.qty}</div>
+                      <div className="text-xs text-gray-500">₹{(item.price * item.qty).toLocaleString()}</div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-semibold text-sm text-gray-900">x{item.qty}</div>
-                    <div className="text-xs text-gray-500">₹{(item.price * item.qty).toLocaleString()}</div>
-                  </div>
-                </div>
                 </Link>
               ))}
             </div>
