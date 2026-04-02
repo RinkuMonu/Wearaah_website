@@ -22,6 +22,7 @@ import BecomeARider from "./pages/BecomeARider.jsx";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastContainer } from 'react-toastify';
 import OrderSuccess from "./components/OrderSuccess.jsx";
+import ReviewPage from "./components/Reviewpage.jsx";
 function App() {
   const queryClient = new QueryClient();
   return (
@@ -45,6 +46,7 @@ function App() {
             {/* <Route path="cart" element={<CartOffCanvas />} /> */}
             <Route path="login" element={<LoginModal />} />
             <Route path="userprofile" element={<UserProfilePage />} />
+            <Route path="/reviews" element={<ReviewPage />} />
             <Route path="wishlist" element={<Wishlist />} />
             <Route path="cart" element={<LoginModal />} />
             <Route path="productlist" element={<ProductListingPage />} />

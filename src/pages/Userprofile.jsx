@@ -14,6 +14,7 @@
   import { RiLogoutCircleLine } from "react-icons/ri";
   import { MdArrowForward, MdLocationOn, MdOutlineDeleteSweep } from "react-icons/md";
   import { BsArrowClockwise } from "react-icons/bs";
+  import { VscPreview } from "react-icons/vsc";
   import { useAuth } from "../components/service/AuthContext";
   import api from "../components/service/axios";
   import { Link, useNavigate } from "react-router-dom";
@@ -31,6 +32,7 @@
     { id: "profile", label: "Profile", icon: LuUserRound },
     { id: "address", label: "Addresses", icon: MdLocationOn },
     { id: "Orders", label: "Orders", icon: BsArrowClockwise },
+    { id: "Reviews", label: "Reviews", icon: VscPreview },
     {
       id: "offers",
       label: "Discounts & Bonuses",
@@ -238,7 +240,10 @@ useEffect(() => {
         navigate("/");
         return;
       }
-
+ if (tabId === "Reviews") {
+    navigate("/reviews"); // ✅ THIS IS MISSING
+    return;
+  }
       setActiveTab(tabId);
     };
 
