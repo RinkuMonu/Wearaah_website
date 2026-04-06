@@ -35,7 +35,10 @@ const ProductListingPage = () => {
   const isInitialLoad = useRef(true);
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const dispatch = useDispatch();
-  const { products, status, error } = useSelector((state) => state.products);
+  const { status } = useSelector((state) => state.products);
+  const products = useSelector((state) => state.products.products["all"]);
+
+
   const { brands } = useSelector((state) => state.brands);
   const { subcategoriesById, dynamicFilters } = useSelector(
     (state) => state.subCategory,

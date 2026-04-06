@@ -1,87 +1,32 @@
-import React from 'react'
+import React, { useEffect } from "react";
 import { MdOutlineRemoveRedEye } from "react-icons/md";
 import { FaRegHeart } from "react-icons/fa";
-
-
-const trends = [
-  {
-    id: 1,
-    image: '../images/D11.webp',
-    name: 'Fleece Hoodie',
-    price: '₹89',
-    rating: 4.8,
-    reviews: 120
-  },
-  {
-    id: 2,
-    image: '../images/D12.webp',
-    name: 'Embroidered Dress',
-    price: '₹129',
-    rating: 4.7,
-    reviews: 89
-  },
-  {
-    id: 3,
-    image: '../images/D13.webp',
-    name: 'Modal-blend Top',
-    price: '₹13.00 - ₹30.00',
-    rating: 4.9,
-    reviews: 45
-  },
-  {
-    id: 4,
-    image: '../images/D14.webp',
-    name: 'Model Tshirt',
-    price: '₹59',
-    rating: 4.6,
-    reviews: 67
-  },
-  {
-    id: 5,
-    image: '../images/D11.webp',
-    name: 'Fleece Hoodie',
-    price: '₹89',
-    rating: 4.8,
-    reviews: 120
-  },
-  {
-    id: 6,
-    image: '../images/D12.webp',
-    name: 'Embroidered Dress',
-    price: '₹129',
-    rating: 4.7,
-    reviews: 89
-  },
-  {
-    id: 7,
-    image: '../images/D13.webp',
-    name: 'Modal-blend Top',
-    price: '₹13.00 - ₹30.00',
-    rating: 4.9,
-    reviews: 45
-  },
-  {
-    id: 8,
-    image: '../images/D14.webp',
-    name: 'Model Tshirt',
-    price: '₹59',
-    rating: 4.6,
-    reviews: 67
-  },
-]
+import { useDispatch, useSelector } from "react-redux";
+import { fetchProducts } from "../../features/Productlist/ProductSlice";
+import { Link } from "react-router-dom";
 
 export default function DesignerShirts() {
+  const categoryId = "69c50b8293df3e7bd375833a";
+  const BASE_URL = import.meta.env.VITE_BASE_URL;
+  const dispatch = useDispatch();
+  const products = useSelector((state) => state.products.products["all"]);
+
+  useEffect(() => {
+    dispatch(
+      fetchProducts({
+        category: categoryId,
+      }),
+    );
+  }, [dispatch]);
   return (
     <section className="py-16 bg-linear-to-b from-white via-gray-50 to-white">
       <div className="mx-auto px-8">
-      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Designer Shirts 
+              Designer Shirts
             </h2>
-            <span className="text-sm text-gray-500">
-              Browse Popular Shirts
-            </span>
+            <span className="text-sm text-gray-500">Browse Popular Shirts</span>
           </div>
           <button className="text-[#633426] font-semibold text-sm hover:text-orange-600 transition">
             View All →
@@ -90,19 +35,23 @@ export default function DesignerShirts() {
 
         {/* 4-Column Grid with Hover Effects */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {trends.map((trend) => (
-            <div key={trend.id} className="group relative cursor-pointer">
+          {products?.map((trend) => (
+            <Link
+              to={`/product/${trend._id}`}
+              key={trend._id}
+              className="group relative cursor-pointer"
+            >
               {/* Image Container */}
               <div className="relative overflow-hidden  shadow-lg group-hover:shadow-2xl transition-all duration-500">
                 <img
-                  src={trend.image}
+                  src={`${BASE_URL}${trend.productImage[0]}`}
                   alt={trend.name}
                   className="w-full h-72 md:h-80 object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-                
+
                 {/* Price Badge */}
                 <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-lg text-sm font-bold text-gray-900 z-20">
-                  {trend.price}
+                  {trend.startingPrice}
                 </div>
 
                 {/* Hover Overlay + Buttons */}
@@ -113,9 +62,9 @@ export default function DesignerShirts() {
                       <div className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 cursor-pointer">
                         <MdOutlineRemoveRedEye />
                       </div>
-                      
+
                       <div className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 cursor-pointer">
-                       <FaRegHeart />
+                        <FaRegHeart />
                       </div>
                     </div>
 
@@ -133,14 +82,18 @@ export default function DesignerShirts() {
                   {trend.name}
                 </h3>
                 <div className="flex items-center gap-1 text-xs text-yellow-400 mb-1">
-                  <span>★</span><span>★</span><span>★</span><span>★</span><span>☆</span>
-                  <span className="text-gray-500 ml-1">({trend.reviews})</span>
+                  <span>★</span>
+                  <span>★</span>
+                  <span>★</span>
+                  <span>★</span>
+                  <span>☆</span>
+                  <span className="text-gray-500 ml-1">({trend?.rating})</span>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
     </section>
-  )
+  );
 }
