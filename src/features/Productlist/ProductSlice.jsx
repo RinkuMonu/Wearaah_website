@@ -13,6 +13,7 @@ export const fetchProducts = createAsyncThunk(
       if (params.isNewArrival) key = "isNewArrival";
       else if (params.isTrending) key = "isTrending";
       else if (params.category) key = `category-${params.category}`;
+      else if (params.subCategory) key = `subCategory-${params.subCategory}`;
       return {
         key,
         data: response.data.products,

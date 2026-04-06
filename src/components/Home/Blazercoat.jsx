@@ -8,7 +8,7 @@ const Blazercoat = () => {
   const categoryId = "69c50b8293df3e7bd375833a";
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const dispatch = useDispatch();
-  const products = useSelector((state) => state.products.products["all"]);
+  const products = useSelector((state) => state.products.products[`category-${categoryId}`]);
 
   useEffect(() => {
     dispatch(
@@ -17,6 +17,9 @@ const Blazercoat = () => {
       }),
     );
   }, [dispatch]);
+  if (products?.length === 0) {
+    return;
+  }
   return (
     <>
       <div className="mx-auto px-8 py-10">
@@ -34,7 +37,7 @@ const Blazercoat = () => {
           </button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-          {products?.slice(0, 9).map((product) => (
+          {products?.slice(0, 10).map((product) => (
             <Link
               to={`/product/${product._id}`}
               key={product._id}
@@ -54,14 +57,14 @@ const Blazercoat = () => {
                 />
 
                 <div className="absolute top-3 -right-15 group-hover:right-3 transition-all duration-500 flex flex-col gap-2">
-                  <div className="relative group/cart">
+                  {/* <div className="relative group/cart">
                     <div className="bg-white p-2 rounded-full shadow-lg cursor-pointer hover:bg-gray-50 transition-colors duration-200">
                       <BsCart size={18} className="text-gray-800" />
                     </div>
                     <span className="absolute right-12 top-1/2 -translate-y-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover/cart:opacity-100 transition whitespace-nowrap shadow-lg z-20">
                       Add to cart
                     </span>
-                  </div>
+                  </div> */}
 
                   <div className="relative group/quickview">
                     <div className="bg-white p-2 rounded-full shadow-lg cursor-pointer hover:bg-gray-50 transition-colors duration-200">

@@ -13,7 +13,10 @@ import { CiFilter } from "react-icons/ci";
 import api from "./service/axios";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts } from "../features/Productlist/ProductSlice";
-import { fatchSubCategoryByCategoryId } from "../features/subCategory/subCategorySlice";
+import {
+  fatchSubCategory,
+  fatchSubCategoryByCategoryId,
+} from "../features/subCategory/subCategorySlice";
 import { fatchBrands } from "../features/Brands/brandSlice";
 import { b, i } from "framer-motion/client";
 
@@ -26,6 +29,7 @@ const emptyFilters = () => ({
   size: [],
   gender: [],
   color: [],
+  isNewArrival: false,
   price: "",
   minDiscount: "",
   minRating: "",
@@ -36,15 +40,15 @@ const ProductListingPage = () => {
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const dispatch = useDispatch();
   const { status } = useSelector((state) => state.products);
-  const products = useSelector((state) => state.products.products["all"]);
-
 
   const { brands } = useSelector((state) => state.brands);
   const { subcategoriesById, dynamicFilters } = useSelector(
     (state) => state.subCategory,
   );
+  const { subcategories } = useSelector((state) => state.subCategory);
 
-  const SubCategory = subcategoriesById;
+  const SubCategory =
+    subcategoriesById.length > 0 ? subcategoriesById : subcategories;
 
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -56,7 +60,7 @@ const ProductListingPage = () => {
   const hasBrand = !!brandId;
   const hasCategory = !!searchParams.get("ctd");
   const hasSubCategory = !!searchParams.get("subCategoryId");
-  const showSubCategoryFilter = hasCategory;
+  const showSubCategoryFilter = true;
   const isSubCategoryOnlyPage = !hasCategory && hasSubCategory;
 
   const [sortBy, setSortBy] = useState(searchParams.get("sort"));
@@ -84,11 +88,23 @@ const ProductListingPage = () => {
     brand: parseArray(brandId),
     size: parseArray(searchParams.get("size")),
     color: parseArray(searchParams.get("color")),
+    isNewArrival: searchParams.get("isNewArrival") === "true",
     minPrice: searchParams.get("minPrice") || "",
     maxPrice: searchParams.get("maxPrice") || "",
     minDiscount: searchParams.get("discount") || "",
     minRating: searchParams.get("rating") || "",
   }));
+
+  const getKey = () => {
+    if (filters.isNewArrival) return "isNewArrival";
+    if (categoryId) return `category-${categoryId}`;
+    if (subCategoryId) return `subCategory-${subCategoryId}`;
+    return "all";
+  };
+
+  const allProducts = useSelector((state) => state.products.products);
+  const products = allProducts[getKey()] || [];
+  console.log(products);
 
   const hasGender = filters.gender?.length || searchParams.get("gender");
 
@@ -105,6 +121,9 @@ const ProductListingPage = () => {
       page: 1,
       limit: 10,
     };
+    if (filters.isNewArrival) {
+      params.isNewArrival = true;
+    }
 
     Object.entries(filters).forEach(([key, value]) => {
       if (!value || (Array.isArray(value) && value.length === 0)) return;
@@ -130,6 +149,11 @@ const ProductListingPage = () => {
       dispatch(fatchSubCategoryByCategoryId(categoryId));
     }
   }, [filters, category, categoryId, sortBy]);
+  useEffect(() => {
+    if (!categoryId) {
+      dispatch(fatchSubCategory());
+    }
+  }, [filters, category, sortBy]);
 
   useEffect(() => {
     const subCategoryIdFromURL = searchParams.get("subCategoryId");
@@ -168,6 +192,9 @@ const ProductListingPage = () => {
       params.set("subCategoryId", filters.subCategoryId);
       params.set("subCategory", filters.subCategory);
     }
+    if (filters.isNewArrival) {
+      params.set("isNewArrival", "true");
+    }
     if (filters.brand?.length) {
       if (filters.brand?.length) {
         const selectedBrands = brands.filter((b) =>
@@ -183,7 +210,15 @@ const ProductListingPage = () => {
     Object.entries(filters).forEach(([key, value]) => {
       if (!value || (Array.isArray(value) && value.length === 0)) return;
 
-      if (["categoryId", "subCategoryId", "subCategory", "brand"].includes(key))
+      if (
+        [
+          "categoryId",
+          "subCategoryId",
+          "subCategory",
+          "brand",
+          "isNewArrival",
+        ].includes(key)
+      )
         return;
 
       if (Array.isArray(value)) {
@@ -493,7 +528,7 @@ const ProductListingPage = () => {
                         }))
                       }
                     >
-                      {item[0]}
+                      {item[0].toUpperCase()}
                       <FiChevronDown
                         className={openFilters[item[0]] ? "rotate-180" : ""}
                       />
@@ -662,7 +697,7 @@ const ProductListingPage = () => {
               </div>
             )}
             <div ref={sentinelRef} className="h-6" />
-            {visibleCount < products.length && (
+            {visibleCount < products?.length && (
               <div className="text-center mt-8">
                 <button
                   onClick={() =>

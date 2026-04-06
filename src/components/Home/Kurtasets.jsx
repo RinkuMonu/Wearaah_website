@@ -9,7 +9,7 @@ export default function DesignerShirts() {
   const categoryId = "69c50b8293df3e7bd375833a";
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const dispatch = useDispatch();
-  const products = useSelector((state) => state.products.products["all"]);
+  const products = useSelector((state) => state.products.products[`category-${categoryId}`]);
 
   useEffect(() => {
     dispatch(
@@ -18,6 +18,10 @@ export default function DesignerShirts() {
       }),
     );
   }, [dispatch]);
+
+    if (products?.length === 0) {
+    return;
+  }
   return (
     <section className="py-16 bg-linear-to-b from-white via-gray-50 to-white">
       <div className="mx-auto px-8">
