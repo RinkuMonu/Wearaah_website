@@ -8,8 +8,9 @@ export default function JoggersSection() {
   const subCategoryId = "69c23c0df1295fef10514873";
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const dispatch = useDispatch();
-  const products = useSelector((state) => state.products.products["all"]);
-  console.log(products);
+  const products = useSelector(
+    (state) => state.products.products[`subCategory-${subCategoryId}`],
+  );
 
   useEffect(() => {
     dispatch(
@@ -19,6 +20,9 @@ export default function JoggersSection() {
     );
   }, [dispatch]);
 
+  if (products?.length === 0) {
+    return;
+  }
   return (
     <section className="py-12 bg-white">
       <div className="mx-auto px-8">
@@ -31,14 +35,22 @@ export default function JoggersSection() {
               Shop now for ultimate comfort
             </span>
           </div>
-          <Link to={"/productlist?subCategoryId=69c23c0df1295fef10514873&subCategory=jeans"} className="text-[#633426] font-semibold text-sm hover:text-orange-600 transition">
+          <Link
+            to={
+              "/productlist?subCategoryId=69c23c0df1295fef10514873&subCategory=jeans"
+            }
+            className="text-[#633426] font-semibold text-sm hover:text-orange-600 transition"
+          >
             View All →
           </Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-          {products?.slice(0,4)?.map((product) => (
+          {products?.slice(0, 4)?.map((product) => (
             <div key={product._id} className="group cursor-pointer">
-              <Link to={`/product/${product._id}`} className="block  overflow-hidden ">
+              <Link
+                to={`/product/${product._id}`}
+                className="block  overflow-hidden "
+              >
                 <div className="relative h-full">
                   <div className="absolute top-0 left-0 z-20">
                     <span className="text-white text-xs px-2 py-1 font-bold  bg-green-500/90">
@@ -53,7 +65,7 @@ export default function JoggersSection() {
                   />
 
                   <div className="absolute top-3 -right-20 group-hover:right-3 transition-all duration-500 flex flex-col gap-1 z-30">
-                    <div className="relative group/cart">
+                    {/* <div className="relative group/cart">
                       <div className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50 transition-colors duration-200">
                         <BsCart size={16} className="text-gray-800" />
                       </div>
@@ -63,7 +75,7 @@ export default function JoggersSection() {
                       >
                         Add to cart
                       </span>
-                    </div>
+                    </div> */}
 
                     <div className="relative group/qv">
                       <div className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50 transition-colors duration-200">
@@ -88,7 +100,7 @@ export default function JoggersSection() {
                         </svg>
                       </div>
                       <Link
-                      to={`/product/${product._id}`}
+                        to={`/product/${product._id}`}
                         className="absolute -right-28 top-1/2 -translate-y-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 
                                                            group-hover/qv:opacity-100 transition-all duration-200 whitespace-nowrap shadow-lg z-10"
                       >

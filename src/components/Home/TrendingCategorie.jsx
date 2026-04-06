@@ -31,9 +31,9 @@ export default function TrendingCategorie() {
               Latest trends you love
             </span>
           </div>
-          <button className="text-[#633426] font-semibold text-sm hover:text-orange-600 transition">
+          <Link to={"/productlist"} className="text-[#633426] font-semibold text-sm hover:text-orange-600 transition">
             View All →
-          </button>
+          </Link>
         </div>
 
         <Swiper

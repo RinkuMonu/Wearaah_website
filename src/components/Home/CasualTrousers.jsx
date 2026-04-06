@@ -8,7 +8,9 @@ export default function CasualTrousers() {
   const categoryId = "69c50b8293df3e7bd375833a";
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const dispatch = useDispatch();
-  const products = useSelector((state) => state.products.products["all"]);
+  const products = useSelector(
+    (state) => state.products.products[`category-${categoryId}`],
+  );
 
   useEffect(() => {
     dispatch(
@@ -17,6 +19,10 @@ export default function CasualTrousers() {
       }),
     );
   }, [dispatch]);
+
+  if (products?.length === 0) {
+    return;
+  }
   return (
     <section className="py-12 bg-white">
       <div className="mx-auto px-8">
@@ -29,9 +35,14 @@ export default function CasualTrousers() {
               Shop now for ultimate comfort
             </span>
           </div>
-          <button className="text-[#633426] font-semibold text-sm hover:text-orange-600 transition">
+          <Link
+            to={
+              "/productlist?category=formal-wear&ctd=69c50b8293df3e7bd375833a"
+            }
+            className="text-[#633426] font-semibold text-sm hover:text-orange-600 transition"
+          >
             View All →
-          </button>
+          </Link>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
@@ -58,14 +69,14 @@ export default function CasualTrousers() {
                   />
 
                   <div className="absolute top-3 -right-20 group-hover:right-3 transition-all duration-500 flex flex-col gap-1 z-30">
-                    <div className="relative group/cart">
+                    {/* <div className="relative group/cart">
                       <div className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50 transition-colors duration-200">
                         <BsCart size={16} className="text-gray-800" />
                       </div>
                       <span className="absolute right-12 top-1/2 -translate-y-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover/cart:opacity-100 transition-all whitespace-nowrap shadow-lg z-10">
                         Add to cart
                       </span>
-                    </div>
+                    </div> */}
 
                     <div className="relative group/qv">
                       <div className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50 transition-colors duration-200">
