@@ -15,11 +15,14 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat("en-IN", {
 const TopProducts = React.memo(function TopProducts() {
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const dispatch = useDispatch();
-  const { products, error } = useSelector((state) => state.products);
+  const products = useSelector(
+    (state) => state.products.products["isNewArrival"],
+  );
+
   const banners = useSelector(
     (state) => state.banner.banners["summer-sale"] || [],
   );
- 
+
   useEffect(() => {
     dispatch(
       fetchProducts({
@@ -100,10 +103,14 @@ const TopProducts = React.memo(function TopProducts() {
       };
     });
   }, [products]);
-
-  if (error) {
-    return <p className="text-center py-10 text-red-500">{error}</p>;
+  if (products?.length == 0) {
+    return;
   }
+
+  // if (error) {
+  //   return <p className="text-center py-10 text-red-500">{error}</p>;
+  // }
+
   return (
     <>
       <div className=" mx-auto px-8 py-10">
@@ -125,7 +132,7 @@ const TopProducts = React.memo(function TopProducts() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-          {formattedProducts.map((product) => (
+          {formattedProducts.slice(0, 4).map((product) => (
             <article key={product.id} className="group cursor-pointer">
               <div className="relative overflow-hidden bg-gray-100 h-[260px]">
                 <Link to={`/product/${product.id}`}>

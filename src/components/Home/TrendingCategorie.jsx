@@ -1,20 +1,24 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
 import { Link } from "react-router-dom";
-
-const images = [
-  "../images/21.webp",
-  "../images/22.webp",
-  "../images/23.jpg",
-  "../images/24.webp",
-  "../images/25.webp",
-  "../images/26.jpg",
-];
+import { useDispatch, useSelector } from "react-redux";
+import { fetchCategories } from "../../features/Category/categorySlice";
 
 export default function TrendingCategorie() {
+  const BASE_URL = import.meta.env.VITE_BASE_URL;
+  const dispatch = useDispatch();
+  const { categories, loading, error } = useSelector((state) => state.category.categories);
+  console.log(categories);
+  
+  useEffect(() => {
+    dispatch(fetchCategories());
+  }, [dispatch]);
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error: {error}</p>;
+
   return (
     <section className="py-12 bg-white">
       <div className="mx-auto px-8">
@@ -40,7 +44,7 @@ export default function TrendingCategorie() {
             disableOnInteraction: false,
             pauseOnMouseEnter: true,
           }}
-          modules={[ Autoplay]}
+          modules={[Autoplay]}
           className="mySwiper"
           breakpoints={{
             320: { slidesPerView: 1, spaceBetween: 20 },
@@ -48,11 +52,14 @@ export default function TrendingCategorie() {
             1024: { slidesPerView: 3, spaceBetween: 30 },
           }}
         >
-          {images.map((image, index) => (
+          {categories?.map((data, index) => (
             <SwiperSlide key={index}>
-              <Link to={"#"} className="w-full h-full  overflow-hidden cursor-pointer">
+              <Link
+                to={`/productlist?category=${data?.slug}&ctd=${data?._id}`}
+                className="w-full h-full  overflow-hidden cursor-pointer"
+              >
                 <img
-                  src={image}
+                  src={`${BASE_URL}${data?.smallimage}`}
                   alt={`Trend ${index + 1}`}
                   className="w-full h-full object-cover"
                 />

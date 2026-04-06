@@ -257,7 +257,7 @@ const ProductDetailPage = () => {
     []
   );
 
-  const BASE_URL = "https://lrd46c05-5000.inc1.devtunnels.ms";
+    const BASE_URL = import.meta.env.VITE_BASE_URL;
 
   const getImageUrl = (path) => {
     if (!path) return "";
