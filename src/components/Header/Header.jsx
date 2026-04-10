@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   FiTruck,
   FiGift,
@@ -20,6 +20,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchCategories } from "../../features/Category/categorySlice";
 import { fatchSubCategory } from "../../features/subCategory/subCategorySlice";
 import { fatchBrands } from "../../features/Brands/brandSlice";
+import axios from "axios";
+import api from "../service/axios";
+import { fetchProducts } from "../../features/Productlist/ProductSlice";
 
 const MENU_LINKS = [
   { to: "/", label: "Home" },
@@ -49,6 +52,73 @@ export default function Header() {
   const lastScrollYRef = useRef(0);
   const [isVisible, setIsVisible] = useState(true);
   const [isSticky, setIsSticky] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const navigate = useNavigate();
+  const searchRef = useRef(null);
+  const debounceRef = useRef(null);
+
+const [searchParams] = useSearchParams();
+
+const search = searchParams.get("search");
+const subCategoryId = searchParams.get("subCategoryId");
+const category = searchParams.get("ctd");
+const brand = searchParams.get("brandId");
+
+// then in your fetch/thunk call:
+dispatch(fetchProducts({ search, subCategoryId, category, brand }));
+
+ const fetchSuggestions = useCallback(async (query) => {
+  if (!query.trim() || query.length < 2) {
+    setSuggestions([]);
+    setShowSuggestions(false);
+    return;
+  }
+
+  setSearchLoading(true);
+  try {
+    const res = await api.get(
+      `/variant/autosuggest?q=${encodeURIComponent(query)}`
+    );
+   setSuggestions(res.data?.data || []);
+    setShowSuggestions(true);
+  } catch (err) {
+    console.error("Search error:", err);
+    setSuggestions([]);
+  } finally {
+    setSearchLoading(false);
+  }
+}, []);
+
+// Debounced input handler
+const handleSearchChange = (e) => {
+  const value = e.target.value;
+  setSearchQuery(value);
+
+  clearTimeout(debounceRef.current);
+  debounceRef.current = setTimeout(() => {
+    fetchSuggestions(value);
+  }, 300); // 300ms debounce
+};
+
+// Close suggestions on outside click
+useEffect(() => {
+  const handleClickOutside = (e) => {
+    if (searchRef.current && !searchRef.current.contains(e.target)) {
+      setShowSuggestions(false);
+    }
+  };
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, []);
+
+// Cleanup debounce on unmount
+useEffect(() => {
+  return () => clearTimeout(debounceRef.current);
+}, []);
+
 
   useEffect(() => {
     let ticking = false;
@@ -435,27 +505,63 @@ export default function Header() {
             </div>
 
             <div className="flex items-center gap-4 ml-auto w-[-webkit-fill-available]">
-              <div className="flex-1 w-100 hidden lg:block">
-                <input
-                  type="text"
-                  placeholder="What are you looking for?"
-                  className="w-full bg-gray-50/50 px-4 py-2.5 text-sm outline-none border border-gray-200 focus:border-[#d6b28a] focus:ring-2 focus:ring-[#d6b28a]/20 transition-all"
-                />
-              </div>
+              {/* ✅ DESKTOP SEARCH — replace the existing input div */}
+<div className="flex-1 w-100 hidden lg:block relative" ref={searchRef}>
+  <input
+    type="text"
+    value={searchQuery}
+    onChange={handleSearchChange}
+    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+     onKeyDown={(e) => {
+    if (e.key === "Enter" && searchQuery.trim()) {
+      navigate(`/productlist?search=${encodeURIComponent(searchQuery)}`);
+      setShowSuggestions(false);
+    }
+  }}
+    placeholder="What are you looking for?"
+    className="w-full bg-gray-50/50 px-4 py-2.5 text-sm outline-none border border-gray-200 focus:border-[#d6b28a] focus:ring-2 focus:ring-[#d6b28a]/20 transition-all"
+  />
 
-              <div className="lg:hidden flex items-center gap-3 flex-1">
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="flex-1 bg-gray-50 px-3 py-2 text-sm outline-none border border-gray-200 focus:border-[#d6b28a] focus:ring-2 focus:ring-[#d6b28a]/20 rounded-lg"
-                />
-                <button
-                  onClick={() => setMobileMenuOpen(true)}
-                  className="p-2 hover:bg-gray-100 rounded-lg"
-                >
-                  <FiMenu size={20} />
-                </button>
-              </div>
+  {/* Suggestions Dropdown */}
+  {showSuggestions && (
+    <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 shadow-xl z-[999] max-h-80 overflow-y-auto mt-1 rounded-b-lg">
+      {searchLoading ? (
+        <div className="px-4 py-3 text-sm text-gray-400 flex items-center gap-2">
+          <div className="w-4 h-4 border-2 border-[#d6b28a] border-t-transparent rounded-full animate-spin" />
+          Searching...
+        </div>
+      ) : suggestions.length > 0 ? (
+        suggestions.map((item, index) => (
+          <Link
+            key={item._id || index}
+            to={`/productlist?search=${encodeURIComponent(item)}`} 
+              onClick={() => {
+                setSearchQuery(item);   // fill input with selected suggestion
+                setShowSuggestions(false);
+              }}
+            className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-all border-b border-gray-100 last:border-0"
+          >
+              {/* Search icon prefix */}
+              <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+              </svg>
+              {/* Highlight matched query inside suggestion */}
+              <span dangerouslySetInnerHTML={{
+                __html: item.replace(
+                  new RegExp(`(${searchQuery})`, "gi"),
+                  '<strong class="text-[#d6b28a]">$1</strong>'
+                )
+              }} />
+          </Link>
+        ))
+      ) : (
+        <div className="px-4 py-3 text-sm text-gray-400">
+          No results found for "{searchQuery}"
+        </div>
+      )}
+    </div>
+  )}
+</div>
 
               <div className="items-center gap-3 hidden lg:flex">
                 <Link
