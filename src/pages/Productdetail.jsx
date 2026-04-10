@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   FiCheck, FiChevronDown, FiCopy, FiHeart, FiInfo,
-  FiShoppingCart, FiStar, FiTruck, FiZoomIn,
+  FiShoppingCart, FiStar, FiThumbsDown, FiThumbsUp, FiTruck, FiZoomIn,
 } from "react-icons/fi";
 import {
   PRODUCTS, SIZE_SYSTEMS,
@@ -14,6 +14,8 @@ import { CART_UPDATED_EVENT, getCartItems, setCartItems } from "../utils/cartSto
 import { getWishlist, setWishlist } from "../utils/wishlistStorage";
 import api from "../components/service/axios";
 import { fetchCartItems } from "../features/Cart/cartSlice";
+import { addToWishlist, removeFromWishlist, selectIsInWishlist } from "../features/Wishlist/wishlistSlice";
+import { useDispatch, useSelector } from "react-redux";
 
 const RECENTLY_VIEWED_KEY = "lionies_recently_viewed_v1";
 const CURRENCY_FORMATTER = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2, minimumFractionDigits: 2 });
@@ -240,6 +242,7 @@ const ProductDetailPage = () => {
   const [openSection, setOpenSection] = useState("details");
   const [reviewSort, setReviewSort] = useState("helpful");
   const [shareCopied, setShareCopied] = useState(false);
+    const [updatingWishlist, setUpdatingWishlist] = useState(false);
   const [wishlist, setWishlistState] = useState(() => {
     const saved = localStorage.getItem("wishlist");
     return saved ? JSON.parse(saved) : [];
@@ -247,8 +250,13 @@ const ProductDetailPage = () => {
   const [variants, setVariants] = useState([]);
   const [loadingVariants, setLoadingVariants] = useState(false);
 
+  const [reviews, setReviews] = useState([]);
+const [reviewStats, setReviewStats] = useState(null);
+const [loadingReviews, setLoadingReviews] = useState(false);
+const [reviewPage, setReviewPage] = useState(1);
+const [hasMoreReviews, setHasMoreReviews] = useState(true);
   const isLoggedIn = Boolean(user?.user || user);
-
+const dispatch = useDispatch();
   const formatColor = useMemo(
     () => (color) => {
       if (!color) return "";
@@ -340,12 +348,139 @@ const ProductDetailPage = () => {
       .slice(0, 8);
   }, [product?.id]);
 
-  const sortedReviews = useMemo(() => {
-    if (reviewSort === "latest") {
-      return [...REVIEW_DATA].sort((a, b) => new Date(b.date) - new Date(a.date));
+ const sortedReviews = useMemo(() => {
+  if (!reviews.length) return [];
+  
+  let sorted = [...reviews];
+  
+  if (reviewSort === "latest") {
+    return sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+  
+  // Default: sort by helpful (likes)
+  return sorted.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+}, [reviews, reviewSort]);
+
+
+const handleReviewLike = async (reviewId, currentAction) => {
+  if (!isLoggedIn) {
+    setLoginOpen(true);
+    setToast("Please login to like reviews");
+    return;
+  }
+
+  try {
+    // Determine new action
+    let newAction = 'like';
+    if (currentAction === 'liked') {
+      newAction = 'unlike';
+    } else if (currentAction === 'disliked') {
+      newAction = 'like'; // Remove dislike and add like
     }
-    return [...REVIEW_DATA].sort((a, b) => b.helpful - a.helpful);
-  }, [reviewSort]);
+
+    const response = await api.post(`/review/like/${reviewId}`, {
+      action: newAction
+    });
+
+    if (response.data.success) {
+      // Update the review in state
+      setReviews(prevReviews => 
+        prevReviews.map(review => {
+          if (review._id === reviewId) {
+            let updatedLikes = review.likes || 0;
+            let updatedDislikes = review.dislikes || 0;
+            let userAction = newAction === 'unlike' ? null : newAction;
+            
+            if (currentAction === 'liked' && newAction === 'unlike') {
+              updatedLikes = Math.max(0, updatedLikes - 1);
+              userAction = null;
+            } else if (currentAction === 'disliked' && newAction === 'like') {
+              updatedDislikes = Math.max(0, updatedDislikes - 1);
+              updatedLikes = (review.likes || 0) + 1;
+              userAction = 'liked';
+            } else if (newAction === 'like') {
+              updatedLikes = (review.likes || 0) + 1;
+              userAction = 'liked';
+            }
+            
+            return {
+              ...review,
+              likes: updatedLikes,
+              dislikes: updatedDislikes,
+              userAction: userAction
+            };
+          }
+          return review;
+        })
+      );
+      
+      setToast(newAction === 'like' ? "Liked review ✓" : "Removed like");
+    }
+  } catch (error) {
+    console.error("Error liking review:", error);
+    setToast(error?.response?.data?.message || "Failed to like review");
+  }
+};
+
+const handleReviewDislike = async (reviewId, currentAction) => {
+  if (!isLoggedIn) {
+    setLoginOpen(true);
+    setToast("Please login to dislike reviews");
+    return;
+  }
+
+  try {
+    // Determine new action
+    let newAction = 'dislike';
+    if (currentAction === 'disliked') {
+      newAction = 'undislike';
+    } else if (currentAction === 'liked') {
+      newAction = 'dislike'; // Remove like and add dislike
+    }
+
+    const response = await api.post(`/review/like/${reviewId}`, {
+      action: newAction
+    });
+
+    if (response.data.success) {
+      // Update the review in state
+      setReviews(prevReviews => 
+        prevReviews.map(review => {
+          if (review._id === reviewId) {
+            let updatedLikes = review.likes || 0;
+            let updatedDislikes = review.dislikes || 0;
+            let userAction = newAction === 'undislike' ? null : newAction;
+            
+            if (currentAction === 'disliked' && newAction === 'undislike') {
+              updatedDislikes = Math.max(0, updatedDislikes - 1);
+              userAction = null;
+            } else if (currentAction === 'liked' && newAction === 'dislike') {
+              updatedLikes = Math.max(0, updatedLikes - 1);
+              updatedDislikes = (review.dislikes || 0) + 1;
+              userAction = 'disliked';
+            } else if (newAction === 'dislike') {
+              updatedDislikes = (review.dislikes || 0) + 1;
+              userAction = 'disliked';
+            }
+            
+            return {
+              ...review,
+              likes: updatedLikes,
+              dislikes: updatedDislikes,
+              userAction: userAction
+            };
+          }
+          return review;
+        })
+      );
+      
+      setToast(newAction === 'dislike' ? "Disliked review" : "Removed dislike");
+    }
+  } catch (error) {
+    console.error("Error disliking review:", error);
+    setToast(error?.response?.data?.message || "Failed to dislike review");
+  }
+};
 
   const gridImages = useMemo(() => {
     if (selectedVariant?.variantImages?.length) {
@@ -393,7 +528,7 @@ const ProductDetailPage = () => {
   };
 
   const isSizeOutOfStock = (size) => unavailableSizes.includes(size);
-  const isWishlisted = wishlist.includes(product?.id);
+  // const isWishlisted = wishlist.includes(product?.id);
 
   const getColorImage = (color) => {
     if (variants.length) {
@@ -672,20 +807,110 @@ const ProductDetailPage = () => {
     });
   };
 
-  // ─── Wishlist / share / delivery ─────────────────────────────────────────────
-
-  const toggleWishlist = () => {
-    if (!isLoggedIn) {
-      setLoginOpen(true);
+const fetchReviews = async (page = 1, reset = true) => {
+  if (!product?._id && !id) return;
+  
+  try {
+    setLoadingReviews(true);
+    const variantId = selectedVariant?._id || variants[0]?._id;
+    
+    if (!variantId) {
+      console.warn("No variant ID available for fetching reviews");
       return;
     }
-    const next = isWishlisted
-      ? wishlist.filter((i) => i !== product.id)
-      : [...wishlist, product.id];
-    setWishlistState(next);
-    localStorage.setItem("wishlist", JSON.stringify(next));
-    setToast(isWishlisted ? "Removed from wishlist" : "Added to wishlist ♥");
-  };
+    
+    const response = await api.get(`/review`, {
+      params: {
+        variantId: variantId,
+        page: page,
+        limit: 10
+      }
+    });
+    
+    if (response.data.success) {
+      // Add userAction field to each review (if your API returns user's interaction)
+      const reviewsWithUserAction = (response.data.reviews || []).map(review => ({
+        ...review,
+        userAction: review.userAction || null // 'liked', 'disliked', or null
+      }));
+      
+      if (reset) {
+        setReviews(reviewsWithUserAction);
+      } else {
+        setReviews(prev => [...prev, ...reviewsWithUserAction]);
+      }
+      
+      setReviewStats(response.data.stats);
+      setHasMoreReviews(response.data.reviews?.length === response.data.limit);
+      setReviewPage(response.data.page);
+    }
+  } catch (error) {
+    console.error("Error fetching reviews:", error);
+    setToast("Failed to load reviews");
+  } finally {
+    setLoadingReviews(false);
+  }
+};
+
+const loadMoreReviews = () => {
+  if (!loadingReviews && hasMoreReviews) {
+    fetchReviews(reviewPage + 1, false);
+  }
+};
+
+useEffect(() => {
+  if (selectedVariant?._id || variants[0]?._id) {
+    fetchReviews(1, true);
+  }
+}, [selectedVariant, variants]);
+  // ─── Wishlist / share / delivery ─────────────────────────────────────────────
+const isInWishlist = useSelector(selectIsInWishlist(selectedVariant?._id));
+  const isWishlisted = useMemo(() => {
+    if (!selectedVariant) return false;
+    return selectedVariant.isWishlisted || false;
+  }, [selectedVariant]);
+// ─── Wishlist Toggle (Using same API for add/remove) ─────────────────────────────
+const toggleWishlist = async () => {
+  if (!isLoggedIn) {
+    setLoginOpen(true);
+    setToast("Please login to add items to wishlist");
+    return;
+  }
+
+  if (!selectedVariant?._id) {
+    setToast("Please select a variant first");
+    return;
+  }
+
+  setUpdatingWishlist(true);
+
+  try {
+    // Use the same POST API for both add and remove (backend toggles)
+    const response = await api.post("/wishlist", { variantId: selectedVariant._id });
+    
+    if (response.data.success) {
+      // Update the variant's isWishlisted status in the variants array
+      // Toggle the value based on current state
+      setVariants(prevVariants =>
+        prevVariants.map(variant =>
+          variant._id === selectedVariant._id
+            ? { ...variant, isWishlisted: !variant.isWishlisted }
+            : variant
+        )
+      );
+      
+      // Show appropriate toast message
+      const newStatus = !selectedVariant.isWishlisted;
+      setToast(newStatus ? "Added to wishlist ♥" : "Removed from wishlist");
+    }
+  } catch (error) {
+    console.error("Wishlist error:", error);
+    setToast(error?.response?.data?.message || "Failed to update wishlist");
+  } finally {
+    setUpdatingWishlist(false);
+  }
+};
+
 
   const checkDelivery = () => {
     if (!navigator.onLine) {
@@ -869,14 +1094,22 @@ const ProductDetailPage = () => {
                   <h1 className="text-xl font-bold text-gray-900 leading-snug">{product.name}</h1>
                   <p className="text-sm text-gray-500 mt-2 leading-relaxed">{product.description}</p>
                 </div>
-                <button type="button" onClick={toggleWishlist}
-                  className={`shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${
-                    isWishlisted
-                      ? "border-[#e4a156] bg-[#fff5ee] text-[#e4a156]"
-                      : "border-gray-200 text-gray-400 hover:border-[#e4a156] hover:text-[#e4a156]"
-                  }`}>
-                  <FiHeart size={17} className={isWishlisted ? "fill-[#e4a156]" : ""} />
-                </button>
+                <button 
+            type="button" 
+            onClick={toggleWishlist}
+            disabled={updatingWishlist || !selectedVariant}
+            className={`shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${
+              isWishlisted
+                ? "border-red-500 bg-red-50 text-red-500"
+                : "border-gray-200 text-gray-400 hover:border-[#e4a156] hover:text-[#e4a156]"
+            } ${(updatingWishlist || !selectedVariant) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+          >
+            {updatingWishlist ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+            ) : (
+              <FiHeart size={17} className={isWishlisted ? "fill-red-500" : ""} />
+            )}
+          </button>
               </div>
               <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-50">
                 <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
@@ -1160,54 +1393,150 @@ const ProductDetailPage = () => {
             </div>
 
             {/* Reviews */}
-            <div className="bg-white shadow-sm p-6">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-base font-bold text-gray-900">Ratings & Reviews</h2>
-                <select value={reviewSort} onChange={(e) => setReviewSort(e.target.value)}
-                  className="h-9 border-2 border-gray-200 rounded-xl px-3 text-xs focus:outline-none focus:border-[#e4a156] text-gray-600">
-                  <option value="helpful">Most Helpful</option>
-                  <option value="latest">Latest First</option>
-                </select>
+            {/* Reviews - Updated Section */}
+<div className="bg-white shadow-sm p-6">
+  <div className="flex items-center justify-between mb-5">
+    <h2 className="text-base font-bold text-gray-900">Ratings & Reviews</h2>
+    <select value={reviewSort} onChange={(e) => setReviewSort(e.target.value)}
+      className="h-9 border-2 border-gray-200 rounded-xl px-3 text-xs focus:outline-none focus:border-[#e4a156] text-gray-600">
+      <option value="helpful">Most Helpful</option>
+      <option value="latest">Latest First</option>
+    </select>
+  </div>
+  
+  {reviewStats && (
+    <div className="flex gap-8 mb-6 bg-gray-50 p-4">
+      <div className="text-center shrink-0">
+        <p className="text-5xl font-black text-gray-900 leading-none">
+          {reviewStats.avgRating?.toFixed(1) || "0.0"}
+        </p>
+        <Stars rating={reviewStats.avgRating || 0} size={15} />
+        <p className="text-xs text-gray-400 mt-1">{reviewStats.totalReviews || 0} reviews</p>
+      </div>
+      <div className="flex-1 space-y-2">
+        {/* Optional: Add detailed rating breakdown if available */}
+        {reviewStats.avgQuality && (
+          <div className="text-xs text-gray-600">
+            <div>Quality: {reviewStats.avgQuality?.toFixed(1)} ★</div>
+            <div>Fit: {reviewStats.avgFit?.toFixed(1)} ★</div>
+            <div>Value: {reviewStats.avgValue?.toFixed(1)} ★</div>
+          </div>
+        )}
+      </div>
+    </div>
+  )}
+  
+  {loadingReviews && reviews.length === 0 ? (
+    <div className="flex justify-center py-8">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e4a156]" />
+    </div>
+  ) : (
+    <div className="space-y-5">
+      {sortedReviews.map((review) => (
+        <article key={review._id} className="border-t border-gray-50 pt-5">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-200 to-orange-300 flex items-center justify-center text-xs font-bold text-white">
+                {review.user?.name?.[0] || review.user?.email?.[0] || "U"}
               </div>
-              <div className="flex gap-8 mb-6 bg-gray-50 p-4">
-                <div className="text-center shrink-0">
-                  <p className="text-5xl font-black text-gray-900 leading-none">{product.rating}</p>
-                  <Stars rating={product.rating} size={15} />
-                  <p className="text-xs text-gray-400 mt-1">{product.reviews} reviews</p>
-                </div>
-                <div className="flex-1 space-y-2">
-                  <RatingBar label="5 ★" pct={72} />
-                  <RatingBar label="4 ★" pct={18} />
-                  <RatingBar label="3 ★" pct={6} />
-                  <RatingBar label="2 ★" pct={2} />
-                  <RatingBar label="1 ★" pct={2} />
-                </div>
-              </div>
-              <div className="space-y-5">
-                {sortedReviews.map((review) => (
-                  <article key={review.id} className="border-t border-gray-50 pt-5">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-200 to-orange-300 flex items-center justify-center text-xs font-bold text-white">
-                          {review.author[0]}
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-gray-800 leading-none">{review.author}</p>
-                          <span className="inline-flex items-center gap-1 bg-emerald-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded mt-0.5">
-                            {review.rating} <FiStar size={9} className="fill-white" />
-                          </span>
-                        </div>
-                      </div>
-                      <span className="text-xs text-gray-400">
-                        {new Date(review.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" })}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 leading-relaxed">{review.comment}</p>
-                    <p className="text-xs text-gray-400 mt-2">{review.helpful} found this helpful</p>
-                  </article>
-                ))}
+              <div>
+                <p className="text-sm font-semibold text-gray-800 leading-none">
+                  {review.user?.name || review.user?.email?.split('@')[0] || "Anonymous"}
+                </p>
+                <span className="inline-flex items-center gap-1 bg-emerald-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded mt-0.5">
+                  {review.rating} <FiStar size={9} className="fill-white" />
+                </span>
               </div>
             </div>
+            <span className="text-xs text-gray-400">
+              {new Date(review.createdAt).toLocaleDateString("en-IN", { 
+                day: "2-digit", 
+                month: "short", 
+                year: "2-digit" 
+              })}
+            </span>
+          </div>
+          
+          {review.title && (
+            <p className="text-sm font-semibold text-gray-700 mt-1">{review.title}</p>
+          )}
+          
+          <p className="text-sm text-gray-600 leading-relaxed mt-1">{review.comment}</p>
+          
+          {review.ratingBreakdown && (
+            <div className="flex gap-3 mt-2 text-xs text-gray-500">
+              {review.ratingBreakdown.quality && (
+                <span>Quality: {review.ratingBreakdown.quality}★</span>
+              )}
+              {review.ratingBreakdown.fit && (
+                <span>Fit: {review.ratingBreakdown.fit}★</span>
+              )}
+              {review.ratingBreakdown.valueForMoney && (
+                <span>Value: {review.ratingBreakdown.valueForMoney}★</span>
+              )}
+            </div>
+          )}
+          
+         <div className="flex items-center gap-4 mt-3">
+  <button 
+    onClick={() => handleReviewLike(review._id, review.userAction)}
+    className={`text-xs flex items-center gap-1.5 transition-colors ${
+      review.userAction === 'liked' 
+        ? 'text-[#e4a156] font-semibold' 
+        : 'text-gray-400 hover:text-[#e4a156]'
+    }`}
+  >
+    <FiThumbsUp 
+      size={14} 
+      className={review.userAction === 'liked' ? 'fill-[#e4a156]' : ''} 
+    />
+    <span>Helpful</span>
+    {review.likes > 0 && (
+      <span className="text-xs font-medium">({review.likes})</span>
+    )}
+  </button>
+  
+  <button 
+    onClick={() => handleReviewDislike(review._id, review.userAction)}
+    className={`text-xs flex items-center gap-1.5 transition-colors ${
+      review.userAction === 'disliked' 
+        ? 'text-red-500 font-semibold' 
+        : 'text-gray-400 hover:text-red-500'
+    }`}
+  >
+    <FiThumbsDown 
+      size={14} 
+      className={review.userAction === 'disliked' ? 'fill-red-500' : ''} 
+    />
+    <span>Not helpful</span>
+    {review.dislikes > 0 && (
+      <span className="text-xs font-medium">({review.dislikes})</span>
+    )}
+  </button>
+</div>
+        </article>
+      ))}
+      
+      {hasMoreReviews && reviews.length > 0 && (
+        <div className="text-center pt-4">
+          <button 
+            onClick={loadMoreReviews}
+            disabled={loadingReviews}
+            className="px-6 py-2 rounded-xl border-2 border-[#e4a156] text-[#e4a156] text-sm font-semibold hover:bg-amber-50 disabled:opacity-50"
+          >
+            {loadingReviews ? "Loading..." : "Load More Reviews"}
+          </button>
+        </div>
+      )}
+      
+      {!loadingReviews && reviews.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          <p>No reviews yet. Be the first to review this product!</p>
+        </div>
+      )}
+    </div>
+  )}
+</div>
           </div>
         </div>
 

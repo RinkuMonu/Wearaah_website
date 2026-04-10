@@ -10,7 +10,7 @@ import {
 } from "react-icons/md";
 import { SiRazorpay, SiPaypal } from "react-icons/si";
 
-const Payment = () => {
+const Payment = ({ onPaymentChange }) => {
   const [selectedMethod, setSelectedMethod] = useState("card");
   const [cardData, setCardData] = useState({
     number: "",
@@ -18,7 +18,11 @@ const Payment = () => {
     cvv: "",
     name: ""
   });
-
+  // call this wherever selectedMethod changes:
+  const handleMethodChange = (method) => {
+    setSelectedMethod(method);
+    onPaymentChange?.({ method });
+  };
   const paymentMethods = [
     { 
       id: "card", 

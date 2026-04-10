@@ -1,8 +1,15 @@
 import { useState } from "react";
 
-const Delivery = () => {
+const Delivery = ({ onDeliveryChange }) => {
   const [selectedMethod, setSelectedMethod] = useState("standard");
-
+  const handleChange = (value) => {
+    setSelectedMethod(value);
+    onDeliveryChange?.({
+      method: value,
+      price: value === "express" ? 99 : 0,
+    });
+  };
+  
   const deliveryOptions = [
     {
       id: "standard",
@@ -51,7 +58,7 @@ const Delivery = () => {
               name="delivery"
               value={option.id}
               checked={selectedMethod === option.id}
-              onChange={() => setSelectedMethod(option.id)}
+              onChange={() => handleChange(option.id)}
               className="sr-only peer"
             />
             <div className="text-2xl">{option.icon}</div>
