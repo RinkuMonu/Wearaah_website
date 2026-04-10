@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Address from "../components/cart/Address.jsx";
+import Payment from "../components/cart/Payment.jsx";
+import Delivery from "../components/cart/Delivery.jsx"; 
 import { useDispatch, useSelector } from "react-redux";
 import { FiCheck } from "react-icons/fi";
 import { useAuth } from "./service/AuthContext.jsx";
@@ -43,6 +45,8 @@ const CheckoutPage = () => {
   const [discount, setDiscount] = useState(0);
   const [couponApplied, setCouponApplied] = useState(false);
   const [showLottie, setShowLottie] = useState(false);
+  const [deliveryData, setDeliveryData] = useState({ method: "standard", price: 0 });
+  const [paymentData, setPaymentData] = useState({ method: "card" });
   const lottieTimeoutRef = useRef(null);
 
   // ─── Cart initialisation ────────────────────────────────────────────────────
@@ -308,10 +312,18 @@ const CheckoutPage = () => {
 
   // ─── Pricing ─────────────────────────────────────────────────────────────────
 
-  const subtotal = useMemo(() => {
-    if (!isBuyNow && user && grandTotal) return grandTotal;
-    return cart.reduce((total, item) => total + item.price * item.qty, 0);
-  }, [cart, user, grandTotal, isBuyNow]);
+  // const subtotal = useMemo(() => {
+  //   if (!isBuyNow && user && grandTotal) return grandTotal;
+  //   return cart.reduce((total, item) => total + item.price * item.qty, 0);
+  // }, [cart, user, grandTotal, isBuyNow]);
+
+  // Add delivery cost to pricing
+const subtotal = useMemo(() => {
+  const base = (!isBuyNow && user && grandTotal)
+    ? grandTotal
+    : cart.reduce((t, item) => t + item.price * item.qty, 0);
+  return base + (deliveryData?.price || 0);
+}, [cart, user, grandTotal, isBuyNow, deliveryData]);
 
   const { finalTotal, usedWallet, usedCoins } = useMemo(() => {
     let baseTotal = subtotal - discount;
@@ -380,6 +392,12 @@ const CheckoutPage = () => {
             quantity: item.qty,
           }));
 
+          const methodMap = {
+           card: "CARD",
+           upi: "UPI",
+           netbanking: "NETBANKING",
+           wallet: "WALLET",
+          };
           const payload = {
             items,
             shippingAddress: {
@@ -393,7 +411,8 @@ const CheckoutPage = () => {
               pincode: addressPayload.pincode,
               coordinates: [longitude, latitude],
             },
-            paymentMethod: "UPI",
+            paymentMethod:methodMap[paymentData?.method] || "UPI",
+            deliveryMethod: deliveryData?.method || "standard",
             coinUsed: usedCoins,
             walletUsed: usedWallet,
           };
@@ -507,6 +526,15 @@ const CheckoutPage = () => {
             <div className="lg:col-span-2 space-y-6">
               <div className="bg-white p-6 lg:p-8 border border-gray-200">
                 <Address onAddressChange={setAddressData} />
+              </div>
+               {/* Delivery Card */}
+              <div className="bg-white p-6 lg:p-8 border border-gray-200">
+                <Delivery onDeliveryChange={setDeliveryData}/>
+              </div>
+
+              {/* Payment Card */}
+              <div className="bg-white p-6 lg:p-8 border border-gray-200">
+                <Payment onPaymentChange={setPaymentData}/>
               </div>
             </div>
 
@@ -627,7 +655,12 @@ const CheckoutPage = () => {
                     <span>Subtotal</span>
                     <span>₹{subtotal.toLocaleString()}</span>
                   </div>
-
+                  <div className="flex justify-between py-2 border-b border-gray-100">
+  <span>Delivery</span>
+  <span className={deliveryData.price === 0 ? "text-green-600 font-medium" : ""}>
+    {deliveryData.price === 0 ? "FREE" : `₹${deliveryData.price}`}
+  </span>
+</div>
                   {wallet1?.availableBalance > 0 && (
                     <div className="flex justify-between items-center py-2 border-b">
                       <div className="flex items-center gap-2">

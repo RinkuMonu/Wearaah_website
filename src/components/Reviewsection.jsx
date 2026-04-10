@@ -118,7 +118,6 @@ const ReviewModal = ({ item, existingReview, onClose, onSuccess }) => {
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
       <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10 rounded-t-2xl">
           <div>
             <h2 className="text-base font-bold text-gray-900">
@@ -137,7 +136,6 @@ const ReviewModal = ({ item, existingReview, onClose, onSuccess }) => {
         </div>
 
         <div className="px-6 py-5 space-y-5">
-          {/* Overall */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Overall Rating *
@@ -145,7 +143,6 @@ const ReviewModal = ({ item, existingReview, onClose, onSuccess }) => {
             <StarPicker value={form.rating} onChange={(v) => set("rating", v)} size={28} />
           </div>
 
-          {/* Title */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
               Review Title
@@ -158,7 +155,6 @@ const ReviewModal = ({ item, existingReview, onClose, onSuccess }) => {
             />
           </div>
 
-          {/* Comment */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
               Your Review *
@@ -172,14 +168,13 @@ const ReviewModal = ({ item, existingReview, onClose, onSuccess }) => {
             />
           </div>
 
-          {/* Breakdown */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-3">
               Detailed Ratings
             </label>
             <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-              <BreakdownRow label="Fit"             value={form.ratingBreakdown.fit}           onChange={(v) => setBreakdown("fit", v)} />
-              <BreakdownRow label="Quality"         value={form.ratingBreakdown.quality}        onChange={(v) => setBreakdown("quality", v)} />
+              <BreakdownRow label="Fit" value={form.ratingBreakdown.fit} onChange={(v) => setBreakdown("fit", v)} />
+              <BreakdownRow label="Quality" value={form.ratingBreakdown.quality} onChange={(v) => setBreakdown("quality", v)} />
               <BreakdownRow label="Value for Money" value={form.ratingBreakdown.valueForMoney} onChange={(v) => setBreakdown("valueForMoney", v)} />
             </div>
           </div>
@@ -213,8 +208,7 @@ const ReviewModal = ({ item, existingReview, onClose, onSuccess }) => {
 };
 
 /* ═══════════════════════════════════════════════════════════
-   REVIEW CARD (existing review in "My Reviews" tab)
-   review.user = { name, email }  ← from actual API response
+   REVIEW CARD
 ═══════════════════════════════════════════════════════════ */
 const ReviewCard = ({ review, onEdit, onDelete, onLike }) => {
   const [likeLoading, setLikeLoading] = useState(false);
@@ -228,11 +222,10 @@ const ReviewCard = ({ review, onEdit, onDelete, onLike }) => {
 
   return (
     <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-      {/* Top row */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-300 to-orange-400 flex items-center justify-center text-white text-sm font-bold shrink-0">
-            {review.title?.[0]?.toUpperCase() || review.user?.name?.[0]?.toUpperCase() || "R"}
+            {review.title?.[0]?.toUpperCase() || "R"}
           </div>
           <div>
             <p className="text-sm font-semibold text-gray-900 leading-tight">
@@ -256,7 +249,6 @@ const ReviewCard = ({ review, onEdit, onDelete, onLike }) => {
 
       <p className="text-sm text-gray-600 leading-relaxed mt-2.5 mb-3">{review.comment}</p>
 
-      {/* Breakdown pills */}
       {(bd.fit || bd.quality || bd.valueForMoney) ? (
         <div className="flex flex-wrap gap-1.5 mb-3">
           {bd.fit > 0 && (
@@ -277,7 +269,6 @@ const ReviewCard = ({ review, onEdit, onDelete, onLike }) => {
         </div>
       ) : null}
 
-      {/* Footer */}
       <div className="flex items-center justify-between pt-3 border-t border-gray-50">
         <button
           onClick={handleLike}
@@ -309,7 +300,7 @@ const ReviewCard = ({ review, onEdit, onDelete, onLike }) => {
   );
 };
 
-/* ─── Order item row (pending review) ──────────────────────── */
+/* ─── Order item row ───────────────────────────────────────── */
 const OrderItemRow = ({ item, order, hasReview, onWriteReview }) => (
   <div className="flex items-center justify-between gap-4 p-4 bg-gray-50 hover:bg-amber-50/50 rounded-xl border border-gray-100 hover:border-amber-200 transition-all group">
     <div className="flex items-center gap-3 min-w-0">
@@ -343,32 +334,49 @@ const OrderItemRow = ({ item, order, hasReview, onWriteReview }) => (
 );
 
 /* ═══════════════════════════════════════════════════════════
-   MAIN PAGE  —  /reviews
+   MAIN PAGE
 ═══════════════════════════════════════════════════════════ */
 const ReviewPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const currentUserEmail = user?.email || user?.user?.email || null;
+  const currentUserId = user?._id || user?.user?._id || null;
+
+  // User's reviews (from /review/getreviews)
+  const [userReviews, setUserReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
 
   // Orders
-  const [orders, setOrders]           = useState([]);
+  const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages]   = useState(1);
-
-  // Reviews keyed by variantId → array from API
-  const [reviewsByVariant, setReviewsByVariant] = useState({});
+  const [totalPages, setTotalPages] = useState(1);
 
   // UI
-  const [activeTab, setActiveTab]     = useState("pending");
-  const [modal, setModal]             = useState(null); // { item, order, existingReview }
+  const [activeTab, setActiveTab] = useState("pending");
+  const [modal, setModal] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [toast, setToast]             = useState(null);
+  const [toast, setToast] = useState(null);
 
   const showToast = useCallback((message, type = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   }, []);
+
+  /* ── Fetch user's reviews ── */
+  const fetchUserReviews = useCallback(async () => {
+    if (!currentUserId) return;
+    try {
+      const res = await api.get("/review/getreviews");
+      const reviews = res.data?.reviews || [];
+      // Filter reviews for current user
+      const myReviews = reviews.filter(r => r.userId?._id === currentUserId || r.userId === currentUserId);
+      setUserReviews(myReviews);
+    } catch (err) {
+      console.error("Failed to fetch reviews:", err);
+    } finally {
+      setReviewsLoading(false);
+    }
+  }, [currentUserId]);
 
   /* ── Fetch orders ── */
   const fetchOrders = useCallback(async (page = 1) => {
@@ -379,15 +387,6 @@ const ReviewPage = () => {
       setOrders(data.orders || []);
       setTotalPages(data.totalPages || 1);
       setCurrentPage(page);
-
-      // Collect all unique variantIds from all items in all orders
-      const variantIds = [
-        ...new Set(
-          (data.orders || []).flatMap((o) => o.items.map((i) => i.variantId))
-        ),
-      ];
-      // Fetch reviews for each variant
-      variantIds.forEach((vid) => fetchReviewsForVariant(vid));
     } catch {
       showToast("Failed to load orders.", "error");
     } finally {
@@ -395,66 +394,57 @@ const ReviewPage = () => {
     }
   }, []);
 
-  /* ── Fetch reviews for one variant ──
-     API: GET /review?variantId=...
-     Response: { success, reviews: [...], stats: {...}, page, limit }
-     Each review: { _id, rating, title, comment, likes, ratingBreakdown, createdAt, user: { email, name } }
-  ── */
-  const fetchReviewsForVariant = useCallback(async (variantId) => {
-    if (!variantId) return;
-    try {
-      const res = await api.get(`/review?variantId=${variantId}`);
-      // Use res.data.reviews (actual API field)
-      const reviews = res.data?.reviews || [];
-      setReviewsByVariant((prev) => ({ ...prev, [variantId]: reviews }));
-    } catch {
-      setReviewsByVariant((prev) => ({ ...prev, [variantId]: [] }));
+  useEffect(() => {
+    fetchOrders(1);
+    fetchUserReviews();
+  }, [fetchOrders, fetchUserReviews]);
+
+  /* ── Build map of variantId -> user's review ── */
+  const reviewByVariantId = {};
+  userReviews.forEach((review) => {
+    const variantId = review.variantId?._id || review.variantId;
+    if (variantId) {
+      reviewByVariantId[variantId] = review;
     }
-  }, []);
+  });
 
-  useEffect(() => { fetchOrders(1); }, [fetchOrders]);
-
-  /* ── All order items enriched with their review ── */
+  /* ── All order items enriched with review status ── */
   const allItems = orders.flatMap((order) =>
     order.items.map((item) => {
-      const variantReviews = reviewsByVariant[item.variantId] || [];
-      // My review = a review from this variant whose user.email matches logged-in user
-      const myReview = variantReviews.find(
-        (r) => currentUserEmail && r.user?.email === currentUserEmail
-      );
-      return { item, order, myReview: myReview || null };
+      const myReview = reviewByVariantId[item.variantId] || null;
+      return { item, order, myReview };
     })
   );
 
-  const pendingItems  = allItems.filter((x) => !x.myReview);
+  const pendingItems = allItems.filter((x) => !x.myReview);
   const reviewedItems = allItems.filter((x) => x.myReview);
 
-  /* ── Like ── */
-  const handleLike = async (reviewId, action, variantId) => {
+  /* ── Like handler ── */
+  const handleLike = async (reviewId, action) => {
     try {
       await api.post(`/review/like/${reviewId}`, { action });
-      fetchReviewsForVariant(variantId);
+      await fetchUserReviews(); // Refresh reviews
     } catch {
       showToast("Failed to update like.", "error");
     }
   };
 
-  /* ── Delete ── */
-  const handleDelete = async (reviewId, variantId) => {
+  /* ── Delete handler ── */
+  const handleDelete = async (reviewId) => {
     try {
       await api.delete(`/review/delete/${reviewId}`);
       showToast("Review deleted.");
       setDeleteConfirm(null);
-      fetchReviewsForVariant(variantId);
+      await fetchUserReviews();
     } catch {
       showToast("Failed to delete.", "error");
     }
   };
 
   /* ── After submit/edit ── */
-  const handleReviewSuccess = (message, variantId) => {
+  const handleReviewSuccess = async (message) => {
     showToast(message);
-    fetchReviewsForVariant(variantId);
+    await fetchUserReviews();
   };
 
   return (
@@ -467,23 +457,16 @@ const ReviewPage = () => {
 
       <Toast toast={toast} />
 
-      {/* Delete confirm */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
             <h3 className="text-base font-bold text-gray-900 mb-2">Delete Review?</h3>
             <p className="text-sm text-gray-400 mb-5">This action cannot be undone.</p>
             <div className="flex gap-3">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50"
-              >
+              <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50">
                 Cancel
               </button>
-              <button
-                onClick={() => handleDelete(deleteConfirm.reviewId, deleteConfirm.variantId)}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold"
-              >
+              <button onClick={() => handleDelete(deleteConfirm)} className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold">
                 Delete
               </button>
             </div>
@@ -491,21 +474,19 @@ const ReviewPage = () => {
         </div>
       )}
 
-      {/* Review form modal */}
       {modal && (
         <ReviewModal
           item={modal.item}
           existingReview={modal.existingReview}
           onClose={() => setModal(null)}
           onSuccess={(msg) => {
-            handleReviewSuccess(msg, modal.item.variantId);
+            handleReviewSuccess(msg);
             setModal(null);
           }}
         />
       )}
 
       <div className="min-h-screen bg-gray-50">
-        {/* Header */}
         <div className="bg-white border-b border-gray-100 sticky top-0 z-30">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
             <button
@@ -515,10 +496,7 @@ const ReviewPage = () => {
               <FiChevronLeft size={18} />
             </button>
             <div>
-              <h1
-                className="text-xl font-bold text-gray-900"
-                style={{ fontFamily: "'Playfair Display', serif" }}
-              >
+              <h1 className="text-xl font-bold text-gray-900" style={{ fontFamily: "'Playfair Display', serif" }}>
                 My Reviews
               </h1>
               <p className="text-xs text-gray-400">
@@ -529,13 +507,12 @@ const ReviewPage = () => {
         </div>
 
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-5">
-
           {/* Summary cards */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: "Orders",   value: orders.length },
+              { label: "Orders", value: orders.length },
               { label: "Reviewed", value: reviewedItems.length, accent: true },
-              { label: "Pending",  value: pendingItems.length },
+              { label: "Pending", value: pendingItems.length },
             ].map(({ label, value, accent }) => (
               <div
                 key={label}
@@ -559,8 +536,8 @@ const ReviewPage = () => {
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
             <div className="flex border-b border-gray-100">
               {[
-                { id: "pending",  label: "Pending Reviews", count: pendingItems.length },
-                { id: "reviewed", label: "My Reviews",       count: reviewedItems.length },
+                { id: "pending", label: "Pending Reviews", count: pendingItems.length },
+                { id: "reviewed", label: "My Reviews", count: reviewedItems.length },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -569,10 +546,8 @@ const ReviewPage = () => {
                     ${activeTab === tab.id ? "tab-active" : "tab-inactive hover:text-gray-600"}`}
                 >
                   {tab.label}
-                  <span
-                    className={`text-xs px-1.5 py-0.5 rounded-full font-bold
-                      ${activeTab === tab.id ? "bg-[#927f68] text-white" : "bg-gray-100 text-gray-500"}`}
-                  >
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold
+                    ${activeTab === tab.id ? "bg-[#927f68] text-white" : "bg-gray-100 text-gray-500"}`}>
                     {tab.count}
                   </span>
                 </button>
@@ -580,13 +555,12 @@ const ReviewPage = () => {
             </div>
 
             <div className="p-4 sm:p-5">
-              {ordersLoading ? (
+              {ordersLoading || reviewsLoading ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-3">
                   <div className="w-8 h-8 border-2 border-[#927f68] border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm text-gray-400">Loading orders...</p>
+                  <p className="text-sm text-gray-400">Loading...</p>
                 </div>
               ) : activeTab === "pending" ? (
-                /* ── PENDING TAB ── */
                 pendingItems.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
                     <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center">
@@ -603,15 +577,12 @@ const ReviewPage = () => {
                         item={item}
                         order={order}
                         hasReview={false}
-                        onWriteReview={(i, o) =>
-                          setModal({ item: i, order: o, existingReview: null })
-                        }
+                        onWriteReview={(i, o) => setModal({ item: i, order: o, existingReview: null })}
                       />
                     ))}
                   </div>
                 )
               ) : (
-                /* ── REVIEWED TAB ── */
                 reviewedItems.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
                     <div className="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center">
@@ -630,7 +601,6 @@ const ReviewPage = () => {
                   <div className="space-y-4">
                     {reviewedItems.map(({ item, order, myReview }) => (
                       <div key={myReview._id} className="space-y-2">
-                        {/* Item label */}
                         <div className="flex items-center gap-2 text-xs text-gray-400 px-1">
                           <FiPackage size={11} />
                           <span className="font-medium text-gray-500 truncate">{item.productName}</span>
@@ -641,15 +611,9 @@ const ReviewPage = () => {
                         </div>
                         <ReviewCard
                           review={myReview}
-                          onEdit={(r) =>
-                            setModal({ item, order, existingReview: r })
-                          }
-                          onDelete={(id) =>
-                            setDeleteConfirm({ reviewId: id, variantId: item.variantId })
-                          }
-                          onLike={(id, action) =>
-                            handleLike(id, action, item.variantId)
-                          }
+                          onEdit={(r) => setModal({ item, order, existingReview: r })}
+                          onDelete={(id) => setDeleteConfirm(id)}
+                          onLike={handleLike}
                         />
                       </div>
                     ))}
@@ -681,7 +645,6 @@ const ReviewPage = () => {
               </button>
             </div>
           )}
-
         </div>
       </div>
     </>
