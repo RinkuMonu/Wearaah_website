@@ -11,6 +11,7 @@ import DesignerShirts from "../components/Home/Kurtasets";
 import CountdownBanner from "../components/Home/BlackFriday";
 import BrandsSection from "../components/Home/Brands";
 import Discount from "../components/Home/Discount";
+import Home_FAQ from "../components/FAQ/Home_FAQ";
 export default function Home() {
   return (
     <>
@@ -27,6 +28,7 @@ export default function Home() {
       <CasualTrousers />
       <Blazercoat />
       <DesignerShirts />
+      <Home_FAQ />
     </>
   )
 }
