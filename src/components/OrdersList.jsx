@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useMemo, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { CiDeliveryTruck } from 'react-icons/ci';
 import { FaRegStar, FaRegCopy, FaFileDownload, FaStar, FaCheck, FaChevronRight, FaChevronLeft } from 'react-icons/fa';
@@ -41,6 +41,7 @@ const transformOrderData = (apiOrder) => {
     price: apiOrder.finalAmoutAfterCoinDeliverycharges || apiOrder.totalAmount,
     items: apiOrder.items?.map(item => ({
       productId: item.productId,
+      variantId: item.variantId,
       name: item.productName,
       qty: item.quantity,
       price: item.sellingPrice,
@@ -268,29 +269,104 @@ const OrderDetailsPage = ({ order, onBack }) => {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
+  const [reviewTitle, setReviewTitle] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submittedReview, setSubmittedReview] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+  const [existingReview, setExistingReview] = useState(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  // const handleSubmitReview = async (e) => {
+  //   e.preventDefault();
+  //   if (rating === 0) return;
+    
+  //   setSubmitting(true);
+  //   await new Promise(resolve => setTimeout(resolve, 1500));
+    
+  //   const review = {
+  //     rating,
+  //     text: reviewText.trim() || '',
+  //     timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+  //   };
+    
+  //   setSubmittedReview(review);
+  //   setSubmitting(false);
+  //   setShowReviewForm(false);
+  //   setRating(0);
+  //   setReviewText('');
+  // };
 
   const handleSubmitReview = async (e) => {
     e.preventDefault();
     if (rating === 0) return;
-    
+
     setSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const review = {
-      rating,
-      text: reviewText.trim() || '',
-      timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-    };
-    
-    setSubmittedReview(review);
-    setSubmitting(false);
-    setShowReviewForm(false);
-    setRating(0);
-    setReviewText('');
+    setReviewError('');
+
+    try {
+      // Get variantId from the first item (adjust if you need per-item reviews)
+      const variantId = order.items[0]?.variantId;
+
+      const response = await api.post('/review', {
+        variantId,
+        rating,
+        title: reviewTitle.trim(),
+        comment: reviewText.trim(),
+      });
+
+      if (response.data?.success) {
+        const review = {
+          rating,
+          text: reviewText.trim(),
+          title: reviewTitle.trim(),
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+        setSubmittedReview(review);
+        setShowReviewForm(false);
+        setRating(0);
+        setReviewText('');
+        setReviewTitle('');
+      }
+    } catch (err) {
+      setReviewError(err?.response?.data?.message || 'Failed to submit review. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  useEffect(() => {
+    const fetchExistingReview = async () => {
+      if (order.status !== 'Delivered' || !order.rawData?._id) return;
+
+      setReviewLoading(true);
+      try {
+        const response = await api.get(`/review/byorderID?orderId=${order.rawData._id}`);
+        const data = response.data;
+        // ✅ Adjust field based on your actual API response shape
+        const review = data?.review || data?.data || null;
+        if (review) {
+          setExistingReview({
+            rating: review.rating,
+           text: review.comment,        
+            title: review.title,         
+            name: review.userId?.name, 
+            timestamp: review.createdAt
+              ? new Date(review.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              : '',
+          });
+        }
+      } catch (err) {
+        // No review found or error — silently ignore, user can still submit
+        console.error('Failed to fetch existing review:', err);
+      } finally {
+        setReviewLoading(false);
+      }
+    };
+
+    fetchExistingReview();
+  }, [order.rawData?._id, order.status]);
+
+  const displayReview = submittedReview || existingReview;
 
   const totalItems = useMemo(
     () => order.items.reduce((sum, item) => sum + item.qty, 0),
@@ -427,138 +503,178 @@ const OrderDetailsPage = ({ order, onBack }) => {
           </div>
 
           {/* Review Section */}
-          {order.status === 'Delivered' && (
-            <div className="border-t pt-6">
-              <div className="flex items-center gap-2 text-lg font-semibold text-gray-900 mb-6">
-                <FaRegStar className="text-yellow-500 text-xl" />
-                Your Review
-              </div>
+         {/* Review Section */}
+{order.status === 'Delivered' && (
+  <div className="border-t pt-6">
+    <div className="flex items-center gap-2 text-lg font-semibold text-gray-900 mb-6">
+      <FaRegStar className="text-yellow-500 text-xl" />
+      Your Review
+    </div>
 
-              {submittedReview && (
-                <div className="p-6 border border-gray-200 rounded-2xl mb-6">
-                  <div className="flex items-start gap-4 mb-2">
-                    <div className="w-12 h-12 border border-gray-200 rounded-2xl flex items-center justify-center shrink-0">
-                      <FaStar className="text-yellow-300 text-2xl" />
-                    </div>
-                    <div className="flex-1 min-w-0 relative">
-                      <div className="font-bold text-gray-900 text-lg mb-1">{order.rawData?.shippingAddress?.fullName || 'Customer'}</div>
-                      <div className="flex items-center gap-1 mb-2">
-                        {[...Array(5)].map((_, i) => (
-                          <FaStar
-                            key={i}
-                            className={`text-lg transition-all ${
-                              i < submittedReview.rating 
-                                ? 'text-yellow-400 fill-yellow-400' 
-                                : 'text-gray-300'
-                            }`}
-                          />
-                        ))}
-                        <span className="text-sm font-medium text-gray-600 ml-2">
-                          {submittedReview.rating} stars
-                        </span>
-                      </div>
-                      <div className="text-xs absolute right-0 top-0 text-gray-500 bg-white/50 px-3 py-1 rounded-full inline-block">
-                        Submitted {submittedReview.timestamp}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {submittedReview.text && (
-                    <p className="text-gray-700 leading-relaxed text-base pl-16">
-                      {submittedReview.text}
-                    </p>
-                  )}
-                </div>
-              )}
+    {/* ✅ Loading state */}
+    {reviewLoading ? (
+      <div className="flex items-center gap-2 text-gray-500 text-sm py-4">
+        <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+        Loading review...
+      </div>
 
-              {!submittedReview && !showReviewForm ? (
-                <button
-                  onClick={() => setShowReviewForm(true)}
-                  className="w-full text-yellow-500 py-3 px-8 rounded-xl bg-yellow-100 font-bold border border-yellow-200 flex items-center justify-center gap-3 text-base"
-                >
-                  <FaRegStar className="text-xl" />
-                  Write Your First Review
-                </button>
-              ) : (
-                !submittedReview && showReviewForm && (
-                  <form onSubmit={handleSubmitReview} className="space-y-6 p-1">
-                    <div>
-                      <label className="block text-lg font-semibold text-gray-900 mb-4">
-                        Rate this order
-                      </label>
-                      <div className="flex gap-1 justify-center">
-                        {[5, 4, 3, 2, 1].map((star) => (
-                          <FaStar
-                            key={star}
-                            className={`cursor-pointer transition-all text-3xl hover:scale-110 ${
-                              star <= rating
-                                ? 'text-yellow-400 fill-yellow-400 drop-shadow-lg'
-                                : 'text-gray-300 hover:text-yellow-400 hover:drop-shadow-lg'
-                            }`}
-                            onClick={() => setRating(star)}
-                          />
-                        ))}
-                      </div>
-                      {!rating && (
-                        <p className="text-center text-sm text-gray-500 mt-2">
-                          Click a star to rate
-                        </p>
-                      )}
-                    </div>
-                    
-                    <div className='mb-0'>
-                      <label className="block text-lg font-semibold text-gray-900 mb-3">
-                        Share your experience (Optional)
-                      </label>
-                      <textarea
-                        value={reviewText}
-                        onChange={(e) => setReviewText(e.target.value)}
-                        rows={4}
-                        placeholder="Tell us about your order experience..."
-                        className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-3 focus:ring-yellow-500 focus:border-yellow-500 resize-none text-base"
-                        maxLength={500}
-                      />
-                      <div className="text-right text-xs text-gray-500 mt-1">
-                        {reviewText.length}/500
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-4 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowReviewForm(false);
-                          setRating(0);
-                          setReviewText('');
-                        }}
-                        className="w-auto bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 px-6 rounded-xl font-semibold transition-all text-base border border-gray-200"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={submitting || rating === 0}
-                        className="text-blue-600 py-2 w-auto px-6 rounded-xl font-bold transition-all text-base border-gray-200 border bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 disabled:gap-0"
-                      >
-                        {submitting ? (
-                          <>
-                            <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                            Submitting...
-                          </>
-                        ) : (
-                          <>
-                            <FaStar className="text-lg" />
-                            Submit Review
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </form>
-                )
-              )}
+    ) : displayReview ? (
+      // ✅ Show existing (fetched) OR newly submitted review
+      <div className="p-6 border border-gray-200 rounded-2xl mb-6">
+        <div className="flex items-start gap-4 mb-2">
+          <div className="w-12 h-12 border border-gray-200 rounded-2xl flex items-center justify-center shrink-0">
+            <FaStar className="text-yellow-300 text-2xl" />
+          </div>
+          <div className="flex-1 min-w-0 relative">
+            {/* ✅ Uses name from API response */}
+            <div className="font-bold text-gray-900 text-lg mb-1">
+              {displayReview.name || order.rawData?.shippingAddress?.fullName || 'Customer'}
             </div>
-          )}
+            <div className="flex items-center gap-1 mb-2">
+              {[...Array(5)].map((_, i) => (
+                <FaStar
+                  key={i}
+                  className={`text-lg transition-all ${
+                    i < displayReview.rating
+                      ? 'text-yellow-400 fill-yellow-400'
+                      : 'text-gray-300'
+                  }`}
+                />
+              ))}
+              <span className="text-sm font-medium text-gray-600 ml-2">
+                {displayReview.rating} stars
+              </span>
+            </div>
+            <div className="text-xs absolute right-0 top-0 text-gray-500 bg-white/50 px-3 py-1 rounded-full inline-block">
+              Submitted {displayReview.timestamp}
+            </div>
+          </div>
+        </div>
 
+        {/* ✅ Title display */}
+        {displayReview.title && (
+          <p className="text-gray-800 font-semibold text-sm pl-16 mb-1">
+            {displayReview.title}
+          </p>
+        )}
+
+        {/* ✅ Comment display */}
+        {displayReview.text && (
+          <p className="text-gray-700 leading-relaxed text-base pl-16">
+            {displayReview.text}
+          </p>
+        )}
+      </div>
+
+    ) : !showReviewForm ? (
+      // ✅ No review yet — show Write Review button
+      <button
+        onClick={() => setShowReviewForm(true)}
+        className="w-full text-yellow-500 py-3 px-8 rounded-xl bg-yellow-100 font-bold border border-yellow-200 flex items-center justify-center gap-3 text-base"
+      >
+        <FaRegStar className="text-xl" />
+        Write Your First Review
+      </button>
+
+    ) : (
+      // ✅ Review form
+      <form onSubmit={handleSubmitReview} className="space-y-6 p-1">
+        <div>
+          <label className="block text-lg font-semibold text-gray-900 mb-4">
+            Rate this order
+          </label>
+          <div className="flex gap-1 justify-center">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <FaStar
+                key={star}
+                className={`cursor-pointer transition-all text-3xl hover:scale-110 ${
+                  star <= rating
+                    ? 'text-yellow-400 fill-yellow-400 drop-shadow-lg'
+                    : 'text-gray-300 hover:text-yellow-400 hover:drop-shadow-lg'
+                }`}
+                onClick={() => setRating(star)}
+              />
+            ))}
+          </div>
+          {!rating && (
+            <p className="text-center text-sm text-gray-500 mt-2">
+              Click a star to rate
+            </p>
+          )}
+        </div>
+
+        <div className="mb-0">
+          <label className="block text-lg font-semibold text-gray-900 mb-3">
+            Share your experience
+          </label>
+          <textarea
+            value={reviewText}
+            onChange={(e) => setReviewText(e.target.value)}
+            rows={4}
+            placeholder="Tell us about your order experience..."
+            className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-3 focus:ring-yellow-500 focus:border-yellow-500 resize-none text-base"
+            maxLength={500}
+          />
+          <div className="text-right text-xs text-gray-500 mt-1">
+            {reviewText.length}/500
+          </div>
+        </div>
+
+        <div className="mb-0">
+          <label className="block text-lg font-semibold text-gray-900 mb-3">
+            Title (Optional)
+          </label>
+          <input
+            value={reviewTitle}
+            onChange={(e) => setReviewTitle(e.target.value)}
+            placeholder="Give your review a title..."
+            className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-3 focus:ring-yellow-500 focus:border-yellow-500 text-base"
+            maxLength={100}
+          />
+          <div className="text-right text-xs text-gray-500 mt-1">
+            {reviewTitle.length}/100
+          </div>
+          {reviewError && (
+            <p className="text-sm text-red-500 text-center mt-1">{reviewError}</p>
+          )}
+        </div>
+
+        <div className="flex gap-4 pt-2">
+          <button
+            type="button"
+            onClick={() => {
+              setShowReviewForm(false);
+              setRating(0);
+              setReviewText('');
+              setReviewTitle('');
+              setReviewError('');
+            }}
+            className="w-auto bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 px-6 rounded-xl font-semibold transition-all text-base border border-gray-200"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={submitting || rating === 0}
+            className="text-blue-600 py-2 w-auto px-6 rounded-xl font-bold transition-all text-base border-gray-200 border bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {submitting ? (
+              <>
+                <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              <>
+                <FaStar className="text-lg" />
+                Submit Review
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+    )}
+  </div>
+)}
           {/* Action Buttons */}
           <div className="flex gap-3 pt-6 border-t">
             <button 
