@@ -3,6 +3,7 @@ import api from "./axios";
 import { useDispatch } from "react-redux";
 import { syncLocalCartToAPI } from "../../utils/cartSync";
 import { fetchCartItems } from "../../features/Cart/cartSlice";
+import { fetchWishlist } from "../../features/Wishlist/wishlistSlice";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -109,9 +110,13 @@ useEffect(() => {
     const fetchMe = async () => {
       try {
         const res = await api.get("/auth/me");
-        console.log("res form auth profile", res);
-
         setUser(res.data);
+        
+         if (res.data) {
+        dispatch(fetchWishlist());
+        dispatch(fetchCartItems());
+      }
+        
       } catch (err) {
         setUser(null);
       } finally {
