@@ -20,9 +20,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchCategories } from "../../features/Category/categorySlice";
 import { fatchSubCategory } from "../../features/subCategory/subCategorySlice";
 import { fatchBrands } from "../../features/Brands/brandSlice";
-import axios from "axios";
 import api from "../service/axios";
-import { fetchProducts } from "../../features/Productlist/ProductSlice";
 import { selectWishlistItems } from "../../features/Wishlist/wishlistSlice";
 
 const MENU_LINKS = [
@@ -67,9 +65,6 @@ const search = searchParams.get("search");
 const subCategoryId = searchParams.get("subCategoryId");
 const category = searchParams.get("ctd");
 const brand = searchParams.get("brandId");
-
-// then in your fetch/thunk call:
-dispatch(fetchProducts({ search, subCategoryId, category, brand }));
 
  const fetchSuggestions = useCallback(async (query) => {
   if (!query.trim() || query.length < 2) {
