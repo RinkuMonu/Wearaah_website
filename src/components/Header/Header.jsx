@@ -21,6 +21,7 @@ import { fetchCategories } from "../../features/Category/categorySlice";
 import { fatchSubCategory } from "../../features/subCategory/subCategorySlice";
 import { fatchBrands } from "../../features/Brands/brandSlice";
 import api from "../service/axios";
+import { selectWishlistItems } from "../../features/Wishlist/wishlistSlice";
 
 const MENU_LINKS = [
   { to: "/", label: "Home" },
@@ -36,7 +37,7 @@ export default function Header() {
   const { categories, loading, error } = useSelector((state) => state.category);
   const { subcategories } = useSelector((state) => state.subCategory);
   const { brands } = useSelector((state) => state.brands);
-
+   const wishlistItems = useSelector(selectWishlistItems);
   
 
   const { loginOpen, setLoginOpen, user } = useAuth();
@@ -559,18 +560,25 @@ useEffect(() => {
 </div>
 
               <div className="items-center gap-3 hidden lg:flex">
-                <Link
-                  to="/wishlist"
-                  className="flex flex-col items-center p-2 rounded-lg transition-all group"
-                >
-                  <FiHeart
-                    size={18}
-                    className="group-hover:scale-110 transition-transform"
-                  />
-                  <span className="hidden sm:block mt-1 text-xs font-medium">
-                    Wishlist
-                  </span>
-                </Link>
+               <Link
+  to="/wishlist"
+  className="flex flex-col items-center p-2 rounded-lg transition-all group relative"
+>
+  <div className="relative">
+    <FiHeart
+      size={18}
+      className="group-hover:scale-110 transition-transform"
+    />
+    {wishlistItems?.length > 0 && (
+      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center animate-pulse">
+        {wishlistItems.length > 99 ? '99+' : wishlistItems.length}
+      </span>
+    )}
+  </div>
+  <span className="hidden sm:block mt-1 text-xs font-medium">
+    Wishlist
+  </span>
+</Link>
 
                 <CartTrigger onOpen={() => setCartOpen(true)} />
 

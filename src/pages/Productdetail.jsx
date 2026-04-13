@@ -14,7 +14,7 @@ import { CART_UPDATED_EVENT, getCartItems, setCartItems } from "../utils/cartSto
 import { getWishlist, setWishlist } from "../utils/wishlistStorage";
 import api from "../components/service/axios";
 import { fetchCartItems } from "../features/Cart/cartSlice";
-import { addToWishlist, removeFromWishlist, selectIsInWishlist } from "../features/Wishlist/wishlistSlice";
+import { addToWishlist, fetchWishlist, removeFromWishlist, selectIsInWishlist } from "../features/Wishlist/wishlistSlice";
 import { useDispatch, useSelector } from "react-redux";
 
 const RECENTLY_VIEWED_KEY = "lionies_recently_viewed_v1";
@@ -124,7 +124,7 @@ const SizeChartModal = ({ onClose, activeSizes, sizeSystem }) => {
 
   const cols = isTopwear
     ? ["IN (Alpha)", "UK", "US", "Chest"]
-    : isBottomNum
+    : isBottomNum``
     ? ["IN (Waist)", "UK", "US", "Waist", "Hip"]
     : ["IN (Alpha)", "UK", "US", "Waist", "Hip"];
 
@@ -550,6 +550,7 @@ const handleReviewDislike = async (reviewId, currentAction) => {
         setLoadingVariants(true);
         const response = await api.get(`/variant/products/${id}/variants`);
         const variantsData = response.data?.variants || [];
+        console.log("Fetched variants:", variantsData);
         const finalVariantsData =
           Array.isArray(variantsData) && variantsData.length > 0
             ? variantsData
@@ -729,7 +730,7 @@ const handleReviewDislike = async (reviewId, currentAction) => {
         });
         if (response.data?.success) {
           setToast("Added to bag ✓");
-          await fetchCartItems();
+          dispatch(fetchCartItems());
           window.dispatchEvent(new CustomEvent(CART_UPDATED_EVENT));
         }
       } catch (error) {
@@ -865,10 +866,12 @@ useEffect(() => {
 }, [selectedVariant, variants]);
   // ─── Wishlist / share / delivery ─────────────────────────────────────────────
 const isInWishlist = useSelector(selectIsInWishlist(selectedVariant?._id));
-  const isWishlisted = useMemo(() => {
-    if (!selectedVariant) return false;
-    return selectedVariant.isWishlisted || false;
-  }, [selectedVariant]);
+
+const isWishlisted = useMemo(() => {
+  const variantToUse = selectedVariant || variants?.[0];
+  return variantToUse?.isWishlisted || false;
+}, [selectedVariant, variants]);
+
 // ─── Wishlist Toggle (Using same API for add/remove) ─────────────────────────────
 const toggleWishlist = async () => {
   if (!isLoggedIn) {
@@ -877,30 +880,26 @@ const toggleWishlist = async () => {
     return;
   }
 
-  if (!selectedVariant?._id) {
-    setToast("Please select a variant first");
-    return;
-  }
+  const variantToUse = selectedVariant || variants?.[0];
+
+  if (!variantToUse?._id) return;
 
   setUpdatingWishlist(true);
 
   try {
-    // Use the same POST API for both add and remove (backend toggles)
-    const response = await api.post("/wishlist", { variantId: selectedVariant._id });
+    const response = await api.post("/wishlist", { variantId: variantToUse._id });
     
     if (response.data.success) {
-      // Update the variant's isWishlisted status in the variants array
-      // Toggle the value based on current state
+     
       setVariants(prevVariants =>
         prevVariants.map(variant =>
-          variant._id === selectedVariant._id
+          variant._id === variantToUse._id
             ? { ...variant, isWishlisted: !variant.isWishlisted }
             : variant
         )
       );
-      
-      // Show appropriate toast message
-      const newStatus = !selectedVariant.isWishlisted;
+       dispatch(fetchWishlist());
+      const newStatus = !variantToUse.isWishlisted;
       setToast(newStatus ? "Added to wishlist ♥" : "Removed from wishlist");
     }
   } catch (error) {
@@ -1097,12 +1096,12 @@ const toggleWishlist = async () => {
                 <button 
             type="button" 
             onClick={toggleWishlist}
-            disabled={updatingWishlist || !selectedVariant}
+            disabled={updatingWishlist}
             className={`shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${
               isWishlisted
                 ? "border-red-500 bg-red-50 text-red-500"
                 : "border-gray-200 text-gray-400 hover:border-[#e4a156] hover:text-[#e4a156]"
-            } ${(updatingWishlist || !selectedVariant) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+            } ${(updatingWishlist) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
           >
             {updatingWishlist ? (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
