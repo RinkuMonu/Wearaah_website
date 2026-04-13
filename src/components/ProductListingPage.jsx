@@ -102,9 +102,9 @@ const ProductListingPage = () => {
     return "all";
   };
 
+
   const allProducts = useSelector((state) => state.products.products);
   const products = allProducts[getKey()] || [];
-  console.log(products);
 
   const hasGender = filters.gender?.length || searchParams.get("gender");
 
@@ -378,13 +378,17 @@ const ProductListingPage = () => {
   return (
     <section className="min-h-screen bg-white pb-8">
       <div className="">
-        <div className="w-full h-48 sm:h-64 lg:h-80 mb-6 overflow-hidden">
+        {/* <div className="w-full h-48 sm:h-64 lg:h-80 mb-6 overflow-hidden">
           <img
-            src="/images/all.webp"
+            src={
+              bannerImage?.startsWith("/uploads")
+                ? `${BASE_URL}${bannerImage}`
+                : bannerImage
+            }
             className="w-full h-full object-cover"
-            alt={`Banner`}
+            alt="Banner"
           />
-        </div>
+        </div> */}
         <div className="border-b border-gray-200 my-6 py-6 sm:px-6 lg:px-14">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-0 items-start lg:items-center">
             <nav className="text-sm text-gray-500 flex items-center gap-1 lg:gap-2 flex-wrap">
