@@ -221,7 +221,7 @@ export default function Header() {
               to="/"
               className="bg-[#d6b28a] text-white font-black text-xl sm:text-2xl px-4 py-2 rounded-md hover:scale-105 transition-all lowercase whitespace-nowrap"
             >
-              LIONIES
+              <img src="./logo/wearaahpnglogo.png" alt="logo" className=" w-36 object-contain" />
             </Link>
 
             <div className="hidden md:flex w-full items-center gap-2 text-sm font-medium ">
