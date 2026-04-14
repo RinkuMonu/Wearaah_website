@@ -387,7 +387,7 @@ const OrderSuccess = () => {
             {/* ── CTAs ── */}
             <div className="in-d7 flex flex-col gap-3">
               <button
-                onClick={() => navigate("/orders")}
+                onClick={() => navigate("/userprofile")}
                 className="w-full flex items-center justify-center gap-2 bg-[#927f68] hover:bg-[#7a6650] text-white text-sm font-semibold py-3.5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-[#927f68]/25 hover:-translate-y-0.5 active:translate-y-0"
               >
                 <FiList size={14} />

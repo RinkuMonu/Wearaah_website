@@ -15,9 +15,9 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat("en-IN", {
 const TopProducts = React.memo(function TopProducts() {
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const dispatch = useDispatch();
-  const products = useSelector(
-    (state) => state.products.products["isNewArrival"],
-  );
+  const key = JSON.stringify({ isNewArrival: true });
+
+  const products = useSelector((state) => state.products.products[key]);
 
   const banners = useSelector(
     (state) => state.banner.banners["summer-sale"] || [],

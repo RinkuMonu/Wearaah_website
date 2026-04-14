@@ -4,9 +4,9 @@ import { sub } from "framer-motion/client";
 
 export const fatchSubCategoryByCategoryId = createAsyncThunk(
   "subcategory/fetchSubCategoriesByCategoryId",
-  async (categoryId, { rejectWithValue }) => {
+  async ({categoryId, gender}, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/subcategory/by-category/${categoryId}`);
+      const response = await api.get(`/subcategory/by-category/${categoryId}?gender=${gender}`);
       return response.data.subcategories;
     } catch (error) {
       return rejectWithValue(error.message);

@@ -24,6 +24,7 @@ const slides = [
 ];
 
 export default function KidsBanner() {
+  
   return (
     <section className="relative w-full h-[80vh]">
       <Swiper

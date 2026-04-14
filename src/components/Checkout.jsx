@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Address from "../components/cart/Address.jsx";
 import Payment from "../components/cart/Payment.jsx";
-import Delivery from "../components/cart/Delivery.jsx"; 
+import Delivery from "../components/cart/Delivery.jsx";
 import { useDispatch, useSelector } from "react-redux";
 import { FiCheck } from "react-icons/fi";
 import { useAuth } from "./service/AuthContext.jsx";
@@ -33,6 +33,7 @@ const CheckoutPage = () => {
 
   // ─── Detect checkout mode ───────────────────────────────────────────────────
   const checkoutMode = location.state?.checkoutMode; // 'buynow' | undefined
+
   const isBuyNow = checkoutMode === "buynow";
 
   // ─── State ──────────────────────────────────────────────────────────────────
@@ -40,12 +41,16 @@ const CheckoutPage = () => {
   const [localCartItems, setLocalCartItems] = useState([]);
   const [addressData, setAddressData] = useState(null);
   const [useWallet, setUseWallet] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [useCoins, setUseCoins] = useState(false);
   const [coupon, setCoupon] = useState("");
   const [discount, setDiscount] = useState(0);
   const [couponApplied, setCouponApplied] = useState(false);
   const [showLottie, setShowLottie] = useState(false);
-  const [deliveryData, setDeliveryData] = useState({ method: "standard", price: 0 });
+  const [deliveryData, setDeliveryData] = useState({
+    method: "standard",
+    price: 0,
+  });
   const [paymentData, setPaymentData] = useState({ method: "card" });
   const lottieTimeoutRef = useRef(null);
 
@@ -89,7 +94,10 @@ const CheckoutPage = () => {
   const extractColorFromVariant = (variantName) => {
     if (!variantName) return "Black";
     const colors = ["Black", "Blue", "Red", "Green", "White", "Gray", "Brown"];
-    return colors.find((c) => variantName.toLowerCase().includes(c.toLowerCase())) || "Black";
+    return (
+      colors.find((c) => variantName.toLowerCase().includes(c.toLowerCase())) ||
+      "Black"
+    );
   };
 
   const transformReduxCartToDisplay = (reduxItems) => {
@@ -102,8 +110,12 @@ const CheckoutPage = () => {
         price: isLoggedInUser ? item.variant?.sellingPrice : item.price,
         qty: item.quantity || 1,
         image: isLoggedInUser ? item.variant?.variantImages?.[0] : item.image,
-        size: isLoggedInUser ? extractSizeFromVariant(item.variant?.name) : item.size,
-        color: isLoggedInUser ? extractColorFromVariant(item.variant?.name) : item.color,
+        size: isLoggedInUser
+          ? extractSizeFromVariant(item.variant?.name)
+          : item.size,
+        color: isLoggedInUser
+          ? extractColorFromVariant(item.variant?.name)
+          : item.color,
         variantId: isLoggedInUser ? item.variant?._id : item.variantId,
         productId: isLoggedInUser ? item.product?._id : item.productId,
       };
@@ -181,7 +193,7 @@ const CheckoutPage = () => {
           color: item.color,
           variantId: item.variantId,
           productId: item.productId,
-        }))
+        })),
       );
     }
   }, [user, isBuyNow]);
@@ -213,7 +225,7 @@ const CheckoutPage = () => {
             color: item.color,
             variantId: item.variantId,
             productId: item.productId,
-          }))
+          })),
         );
       }
     };
@@ -253,11 +265,16 @@ const CheckoutPage = () => {
           dispatch(fetchCartItems());
         })
         .catch((error) => {
-          setToast({ type: "error", message: error?.message || "Failed to remove item" });
+          setToast({
+            type: "error",
+            message: error?.message || "Failed to remove item",
+          });
           setTimeout(() => setToast(null), 3000);
         });
     } else {
-      const updatedItems = localCartItems.filter((item) => item.variantId !== variantId);
+      const updatedItems = localCartItems.filter(
+        (item) => item.variantId !== variantId,
+      );
       updateGuestCart(updatedItems);
       setToast({ type: "success", message: "Item removed from cart" });
       setTimeout(() => setToast(null), 3000);
@@ -268,19 +285,27 @@ const CheckoutPage = () => {
     if (isBuyNow) return;
     if (user) {
       const currentItem = reduxCartItems.find(
-        (item) => item.variant?._id === variantId || item.variantId === variantId
+        (item) =>
+          item.variant?._id === variantId || item.variantId === variantId,
       );
       const newQuantity = (currentItem?.quantity || 0) + 1;
-      dispatch(incrementDecrementItemQuantity({ variantId, quantity: newQuantity }))
+      dispatch(
+        incrementDecrementItemQuantity({ variantId, quantity: newQuantity }),
+      )
         .unwrap()
         .then(() => dispatch(fetchCartItems()))
         .catch((error) => {
-          setToast({ type: "error", message: error?.message || "Failed to update quantity" });
+          setToast({
+            type: "error",
+            message: error?.message || "Failed to update quantity",
+          });
           setTimeout(() => setToast(null), 3000);
         });
     } else {
       const updatedItems = localCartItems.map((item) =>
-        item.variantId === variantId ? { ...item, quantity: item.quantity + 1 } : item
+        item.variantId === variantId
+          ? { ...item, quantity: item.quantity + 1 }
+          : item,
       );
       updateGuestCart(updatedItems);
     }
@@ -290,21 +315,27 @@ const CheckoutPage = () => {
     if (isBuyNow) return;
     if (user) {
       const currentItem = reduxCartItems.find(
-        (item) => item.variant?._id === variantId || item.variantId === variantId
+        (item) =>
+          item.variant?._id === variantId || item.variantId === variantId,
       );
       const newQuantity = Math.max(1, (currentItem?.quantity || 0) - 1);
-      dispatch(incrementDecrementItemQuantity({ variantId, quantity: newQuantity }))
+      dispatch(
+        incrementDecrementItemQuantity({ variantId, quantity: newQuantity }),
+      )
         .unwrap()
         .then(() => dispatch(fetchCartItems()))
         .catch((error) => {
-          setToast({ type: "error", message: error?.message || "Failed to update quantity" });
+          setToast({
+            type: "error",
+            message: error?.message || "Failed to update quantity",
+          });
           setTimeout(() => setToast(null), 3000);
         });
     } else {
       const updatedItems = localCartItems.map((item) =>
         item.variantId === variantId && item.quantity > 1
           ? { ...item, quantity: item.quantity - 1 }
-          : item
+          : item,
       );
       updateGuestCart(updatedItems);
     }
@@ -318,12 +349,13 @@ const CheckoutPage = () => {
   // }, [cart, user, grandTotal, isBuyNow]);
 
   // Add delivery cost to pricing
-const subtotal = useMemo(() => {
-  const base = (!isBuyNow && user && grandTotal)
-    ? grandTotal
-    : cart.reduce((t, item) => t + item.price * item.qty, 0);
-  return base + (deliveryData?.price || 0);
-}, [cart, user, grandTotal, isBuyNow, deliveryData]);
+  const subtotal = useMemo(() => {
+    const base =
+      !isBuyNow && user && grandTotal
+        ? grandTotal
+        : cart.reduce((t, item) => t + item.price * item.qty, 0);
+    return base + (deliveryData?.price || 0);
+  }, [cart, user, grandTotal, isBuyNow, deliveryData]);
 
   const { finalTotal, usedWallet, usedCoins } = useMemo(() => {
     let baseTotal = subtotal - discount;
@@ -354,100 +386,120 @@ const subtotal = useMemo(() => {
 
   // ─── Place order ─────────────────────────────────────────────────────────────
 
+  const getLocation = () => {
+    return new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject);
+    });
+  };
+
   const handlePlaceOrder = async () => {
     try {
+      setLoading(true);
       if (!addressData) {
         setToast({ type: "error", message: "Please enter address" });
+        setTimeout(() => setToast(null), 3000);
         return;
       }
+      const position = await getLocation();
+      const { latitude, longitude } = position.coords;
 
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
+      const addressPayload = {
+        fullName: `${addressData?.firstName || ""} ${addressData?.lastName || ""}`,
+        mobile: addressData.phone,
+        altPhone: addressData.alternateMobile || "",
+        street: addressData.address,
+        landmark: addressData.landmark,
+        city: addressData.city,
+        state: addressData.state,
+        pincode: addressData.zip,
+        country: "India",
+        coordinates: [longitude, latitude],
+      };
 
-          const addressPayload = {
-            fullName: `${addressData?.firstName || ""} ${addressData?.lastName || ""}`,
-            mobile: addressData.phone,
-            altPhone: addressData.alternateMobile || "",
-            street: addressData.address,
-            landmark: addressData.landmark,
-            city: addressData.city,
-            state: addressData.state,
-            pincode: addressData.zip,
-            country: "India",
-            coordinates: [longitude, latitude],
-          };
+      if (addressData?.saveAddress) {
+        try {
+          await api.post("/address", addressPayload);
+        } catch (err) {
+          console.error("Address save error:", err);
+        }
+      }
 
-          if (addressData?.saveAddress) {
-            try {
-              await api.post("/address", addressPayload);
-            } catch (err) {
-              console.error("Address save error:", err);
-            }
+      // Build items — for buy now use the single item; for cart use all items
+      const items = cart.map((item) => ({
+        variant: item.variantId,
+        quantity: item.qty,
+      }));
+
+      const methodMap = {
+        card: "CARD",
+        upi: "UPI",
+        netbanking: "NETBANKING",
+        wallet: "WALLET",
+      };
+      const payload = {
+        items,
+        shippingAddress: {
+          fullName: addressPayload.fullName,
+          mobile: addressPayload.mobile,
+          altPhone: addressPayload.altPhone,
+          street: addressPayload.street,
+          landmark: addressPayload.landmark,
+          city: addressPayload.city,
+          state: addressPayload.state,
+          pincode: addressPayload.pincode,
+          coordinates: [longitude, latitude],
+        },
+        paymentMethod: methodMap[paymentData?.method] || "UPI",
+        deliveryMethod: deliveryData?.method || "standard",
+        coinUsed: usedCoins,
+        walletUsed: usedWallet,
+      };
+
+      try {
+        const response = await api.post("/order", payload);
+
+        if (
+          response.status === 201 &&
+          response.data?.order &&
+          response?.data?.paymentRequired
+        ) {
+          window.location.href =
+            response?.data?.paymentOptions?.data?.redirectEx;
+        }
+
+        if (
+          response.status === 201 &&
+          response.data?.order &&
+          !response?.data?.paymentRequired
+        ) {
+          // Clean up buy now item after successful order
+          if (isBuyNow) {
+            sessionStorage.removeItem("buyNowItem");
           }
-
-          // Build items — for buy now use the single item; for cart use all items
-          const items = cart.map((item) => ({
-            variant: item.variantId,
-            quantity: item.qty,
-          }));
-
-          const methodMap = {
-           card: "CARD",
-           upi: "UPI",
-           netbanking: "NETBANKING",
-           wallet: "WALLET",
-          };
-          const payload = {
-            items,
-            shippingAddress: {
-              fullName: addressPayload.fullName,
-              mobile: addressPayload.mobile,
-              altPhone: addressPayload.altPhone,
-              street: addressPayload.street,
-              landmark: addressPayload.landmark,
-              city: addressPayload.city,
-              state: addressPayload.state,
-              pincode: addressPayload.pincode,
-              coordinates: [longitude, latitude],
-            },
-            paymentMethod:methodMap[paymentData?.method] || "UPI",
-            deliveryMethod: deliveryData?.method || "standard",
-            coinUsed: usedCoins,
-            walletUsed: usedWallet,
-          };
-
-          const response = await api.post("/order", payload);
-
-          if (response.status === 201 || response.data?.order) {
-            // Clean up buy now item after successful order
-            if (isBuyNow) {
-              sessionStorage.removeItem("buyNowItem");
-            }
-            navigate("/order-success", {
-               state: { 
+          navigate("/order-success", {
+            state: {
               orderId: response.data?.order?._id,
-              orderData: response.data?.order 
-            }
-            });
-          }
-
+              orderData: response.data?.order,
+            },
+          });
           setToast({
             type: "success",
             message: response.data?.message || "Order placed successfully",
           });
-        },
-        (error) => {
-          console.error("Location error:", error);
-          setToast({ type: "error", message: "Please allow location access" });
         }
-      );
+      } catch (error) {
+        console.error("Order error:", error);
+      }
     } catch (error) {
       console.error("Order error:", error);
       setToast({
         type: "error",
         message: error?.response?.data?.message || "Something went wrong",
       });
+    } finally {
+      console.log("dfghjkl");
+
+      setLoading(false);
     }
   };
 
@@ -501,7 +553,6 @@ const subtotal = useMemo(() => {
 
       <div className="min-h-screen bg-gray-50 py-12">
         <div className="mx-auto px-4 sm:px-6 lg:px-20">
-
           {/* Progress steps */}
           <div className="flex items-center justify-center gap-8 mb-12 text-sm font-medium">
             <span className="text-gray-400">
@@ -516,32 +567,31 @@ const subtotal = useMemo(() => {
           {/* Buy Now banner */}
           {isBuyNow && (
             <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800 flex items-center gap-2">
-              <span className="font-semibold">Buy Now</span> — you're checking out with a single item directly.
+              <span className="font-semibold">Buy Now</span> — you're checking
+              out with a single item directly.
             </div>
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
             {/* Main — Address */}
             <div className="lg:col-span-2 space-y-6">
               <div className="bg-white p-6 lg:p-8 border border-gray-200">
                 <Address onAddressChange={setAddressData} />
               </div>
-               {/* Delivery Card */}
+              {/* Delivery Card */}
               <div className="bg-white p-6 lg:p-8 border border-gray-200">
-                <Delivery onDeliveryChange={setDeliveryData}/>
+                <Delivery onDeliveryChange={setDeliveryData} />
               </div>
 
               {/* Payment Card */}
               <div className="bg-white p-6 lg:p-8 border border-gray-200">
-                <Payment onPaymentChange={setPaymentData}/>
+                <Payment onPaymentChange={setPaymentData} />
               </div>
             </div>
 
             {/* Sidebar — Cart summary */}
             <div className="lg:col-span-1 lg:sticky lg:top-24">
               <div className="bg-white border border-gray-200 p-6 lg:p-8">
-
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
                   <h3 className="text-lg font-semibold text-gray-900">
@@ -582,11 +632,15 @@ const subtotal = useMemo(() => {
                           <div className="flex items-center justify-between">
                             {/* Quantity controls — hidden for buy now */}
                             {isBuyNow ? (
-                              <span className="text-xs text-gray-500">Qty: {item.qty}</span>
+                              <span className="text-xs text-gray-500">
+                                Qty: {item.qty}
+                              </span>
                             ) : (
                               <div className="flex items-center gap-2 p-1.5 border border-gray-200 rounded-sm">
                                 <button
-                                  onClick={() => decreaseQty(item.productId, item.variantId)}
+                                  onClick={() =>
+                                    decreaseQty(item.productId, item.variantId)
+                                  }
                                   disabled={isLoading}
                                   className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 transition-colors text-gray-600 disabled:opacity-50"
                                 >
@@ -596,7 +650,9 @@ const subtotal = useMemo(() => {
                                   {item.qty}
                                 </span>
                                 <button
-                                  onClick={() => increaseQty(item.productId, item.variantId)}
+                                  onClick={() =>
+                                    increaseQty(item.productId, item.variantId)
+                                  }
                                   disabled={isLoading}
                                   className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 transition-colors text-gray-600 disabled:opacity-50"
                                 >
@@ -608,7 +664,9 @@ const subtotal = useMemo(() => {
                             {/* Remove — hidden for buy now */}
                             {!isBuyNow && (
                               <button
-                                onClick={() => removeItem(item.productId, item.variantId)}
+                                onClick={() =>
+                                  removeItem(item.productId, item.variantId)
+                                }
                                 disabled={isLoading}
                                 className="text-xs text-red-500 hover:text-red-600 font-medium ml-2 disabled:opacity-50"
                               >
@@ -645,7 +703,9 @@ const subtotal = useMemo(() => {
                     </button>
                   </div>
                   {couponApplied && (
-                    <p className="text-xs text-green-600 mt-2">Coupon applied successfully</p>
+                    <p className="text-xs text-green-600 mt-2">
+                      Coupon applied successfully
+                    </p>
                   )}
                 </div>
 
@@ -656,11 +716,19 @@ const subtotal = useMemo(() => {
                     <span>₹{subtotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-gray-100">
-  <span>Delivery</span>
-  <span className={deliveryData.price === 0 ? "text-green-600 font-medium" : ""}>
-    {deliveryData.price === 0 ? "FREE" : `₹${deliveryData.price}`}
-  </span>
-</div>
+                    <span>Delivery</span>
+                    <span
+                      className={
+                        deliveryData.price === 0
+                          ? "text-green-600 font-medium"
+                          : ""
+                      }
+                    >
+                      {deliveryData.price === 0
+                        ? "FREE"
+                        : `₹${deliveryData.price}`}
+                    </span>
+                  </div>
                   {wallet1?.availableBalance > 0 && (
                     <div className="flex justify-between items-center py-2 border-b">
                       <div className="flex items-center gap-2">
@@ -724,7 +792,9 @@ const subtotal = useMemo(() => {
                 {/* Total */}
                 <div className="border-t border-gray-100 pt-4 mb-6">
                   <div className="flex justify-between items-baseline">
-                    <span className="text-lg font-semibold text-gray-900">Total</span>
+                    <span className="text-lg font-semibold text-gray-900">
+                      Total
+                    </span>
                     <span className="text-2xl font-semibold text-[#927f68]">
                       ₹{finalTotal.toLocaleString()}
                     </span>
@@ -735,14 +805,13 @@ const subtotal = useMemo(() => {
                 {/* CTA */}
                 <button
                   onClick={handlePlaceOrder}
-                  disabled={isLoading}
+                  disabled={loading}
                   className="w-full bg-[#927f68] text-white py-3 px-4 text-sm font-semibold hover:bg-[#7a6650] transition-colors border border-[#927f68] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? "Loading..." : isBuyNow ? "Place Order" : "Place Order"}
+                  {loading ? "Loading..." : "Place Order"}
                 </button>
               </div>
             </div>
-
           </div>
         </div>
       </div>

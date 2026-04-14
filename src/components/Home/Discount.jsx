@@ -7,9 +7,11 @@ import { fetchProducts } from "../../features/Productlist/ProductSlice";
 const Discount = () => {
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const dispatch = useDispatch();
-  const products = useSelector(
-    (state) => state.products.products["isTrending"],
-  );
+ const key = JSON.stringify({ isTrending: true });
+
+const products = useSelector(
+  (state) => state.products.products[key]
+);
 
   const [selectedColors, setSelectedColors] = useState({
     1: "#000000",

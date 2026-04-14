@@ -8,12 +8,7 @@ export const fetchProducts = createAsyncThunk(
     try {
       const response = await api.get("/product/web", { params });
       console.log(params, "products from redux toolkit");
-      let key = "all";
-
-      if (params.isNewArrival) key = "isNewArrival";
-      else if (params.isTrending) key = "isTrending";
-      else if (params.category) key = `category-${params.category}`;
-      else if (params.subCategory) key = `subCategory-${params.subCategory}`;
+      const key = JSON.stringify(params);
       return {
         key,
         data: response.data.products,

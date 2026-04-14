@@ -8,9 +8,11 @@ export default function JoggersSection() {
   const subCategoryId = "69c23c0df1295fef10514873";
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const dispatch = useDispatch();
-  const products = useSelector(
-    (state) => state.products.products[`subCategory-${subCategoryId}`],
-  );
+ const key = JSON.stringify({ subCategory: subCategoryId });
+
+const products = useSelector(
+  (state) => state.products.products[key]
+);
 
   useEffect(() => {
     dispatch(
