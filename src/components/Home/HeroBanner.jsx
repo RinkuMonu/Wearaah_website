@@ -83,14 +83,6 @@ const HeroBanner = React.memo(function HeroBanner() {
     }
   };
 
-  if (status === "loading") {
-    return (
-      <div className="h-[80vh] flex items-center justify-center">
-        Loading...
-      </div>
-    );
-  }
-
   if (!banners.length) return null;
   return (
     <section className="z-10 overflow-hidden w-full">

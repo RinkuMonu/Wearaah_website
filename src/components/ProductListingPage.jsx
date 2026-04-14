@@ -42,13 +42,11 @@ const ProductListingPage = () => {
   const { status } = useSelector((state) => state.products);
 
   const { brands } = useSelector((state) => state.brands);
-  const { subcategoriesById, dynamicFilters } = useSelector(
+  const { subcategoriesById, dynamicFilters, subcategories } = useSelector(
     (state) => state.subCategory,
   );
-  const { subcategories } = useSelector((state) => state.subCategory);
 
-  const SubCategory =
-    subcategoriesById.length > 0 ? subcategoriesById : subcategories;
+  console.log(subcategoriesById, dynamicFilters, subcategories);
 
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -60,7 +58,6 @@ const ProductListingPage = () => {
   const hasBrand = !!brandId;
   const hasCategory = !!searchParams.get("ctd");
   const hasSubCategory = !!searchParams.get("subCategoryId");
-  const showSubCategoryFilter = true;
   const isSubCategoryOnlyPage = !hasCategory && hasSubCategory;
 
   const [sortBy, setSortBy] = useState(searchParams.get("sort"));
@@ -79,6 +76,8 @@ const ProductListingPage = () => {
   const loadState = status;
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const SubCategory = categoryId ? subcategoriesById : subcategories;
+  const showSubCategoryFilter = SubCategory?.length > 0 ? true : false;
 
   const [filters, setFilters] = useState(() => ({
     ...emptyFilters(),
@@ -95,16 +94,8 @@ const ProductListingPage = () => {
     minRating: searchParams.get("rating") || "",
   }));
 
-  const getKey = () => {
-    if (filters.isNewArrival) return "isNewArrival";
-    if (categoryId) return `category-${categoryId}`;
-    if (subCategoryId) return `subCategory-${subCategoryId}`;
-    return "all";
-  };
-
-
   const allProducts = useSelector((state) => state.products.products);
-  const products = allProducts[getKey()] || [];
+  console.log(allProducts);
 
   const hasGender = filters.gender?.length || searchParams.get("gender");
 
@@ -136,9 +127,18 @@ const ProductListingPage = () => {
     return params;
   };
 
+  const key = JSON.stringify(buildParams());
+  const products = allProducts[key] || [];
+  const isLoading = status[key] === "loading";
+
+  const params = useMemo(
+    () => buildParams(),
+    [filters, sortBy, categoryId, subCategoryId],
+  );
+
   useEffect(() => {
-    dispatch(fetchProducts(buildParams()));
-  }, [filters, category, categoryId, sortBy, subCategoryId, brandId]);
+    dispatch(fetchProducts(params));
+  }, [params]);
 
   useEffect(() => {
     dispatch(fatchBrands());
@@ -146,9 +146,11 @@ const ProductListingPage = () => {
 
   useEffect(() => {
     if (categoryId) {
-      dispatch(fatchSubCategoryByCategoryId(categoryId));
+      dispatch(
+        fatchSubCategoryByCategoryId({ categoryId, gender: filters.gender }),
+      );
     }
-  }, [filters, category, categoryId, sortBy]);
+  }, [categoryId, filters]);
   useEffect(() => {
     if (!categoryId) {
       dispatch(fatchSubCategory());
@@ -168,8 +170,8 @@ const ProductListingPage = () => {
 
       brand: brandIdFromURL ? brandIdFromURL.split(",") : [],
       gender: genderFromURL ? genderFromURL.split(",") : [],
-      size: [],
-      color: [],
+      size: parseArray(searchParams.get("size")),
+      color: parseArray(searchParams.get("color")),
       price: "",
       minDiscount: "",
       minRating: "",
@@ -271,6 +273,7 @@ const ProductListingPage = () => {
         ...prev,
         subCategoryId: "",
         subCategory: "",
+        size: [],
       }));
 
       setSearchParams((prev) => {
@@ -284,6 +287,7 @@ const ProductListingPage = () => {
         ...prev,
         subCategoryId: item._id,
         subCategory: item.slug,
+        size: [],
       }));
 
       setSearchParams((prev) => {
@@ -330,8 +334,12 @@ const ProductListingPage = () => {
       .join(" ");
   };
 
+  const selectedSubCategory = SubCategory?.find(
+    (item) => item._id === filters.subCategoryId,
+  );
+
   const dynamicSizes = useMemo(() => {
-    const sizeType = SubCategory?.[0]?.sizeType;
+    const sizeType = selectedSubCategory?.sizeType;
 
     if (sizeType === "alpha") {
       return ["XS", "S", "M", "L", "XL", "XXL"];
@@ -342,7 +350,7 @@ const ProductListingPage = () => {
     }
 
     return [];
-  }, [SubCategory]);
+  }, [selectedSubCategory]);
 
   if ((loadState === "error" || loadState === "offline") && !products.length) {
     return (
@@ -361,15 +369,17 @@ const ProductListingPage = () => {
           Retry
         </button>
         <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4">
-          {products.slice(0, 4).map((p) => (
-            <div key={p.id} className="border rounded-xl p-3">
-              <img
-                src={`${BASE_URL}${p.productImage}`}
-                className="h-32 w-full rounded object-cover"
-              />
-              <p className="text-sm mt-2">{p.name}</p>
-            </div>
-          ))}
+          {isLoading
+            ? "Loading..."
+            : products.slice(0, 4).map((p) => (
+                <div key={p.id} className="border rounded-xl p-3">
+                  <img
+                    src={`${BASE_URL}${p.productImage}`}
+                    className="h-32 w-full rounded object-cover"
+                  />
+                  <p className="text-sm mt-2">{p.name}</p>
+                </div>
+              ))}
         </div>
       </section>
     );
@@ -511,7 +521,7 @@ const ProductListingPage = () => {
                     )
                   : []),
 
-                ...(SubCategory?.length > 0 ? [["size", dynamicSizes]] : []),
+                ...(filters.subCategoryId ? [["size", dynamicSizes]] : []),
 
                 [
                   "color",
@@ -612,92 +622,94 @@ const ProductListingPage = () => {
               <div
                 className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1 divide-y"}`}
               >
-                {products?.slice(0, visibleCount).map((p, idx) => (
-                  <div key={idx} className="group">
-                    <Link
-                      to={`/product/${p._id}`}
-                      state={{
-                        returnTo: `${location.pathname}${location.search}`,
-                      }}
-                      className="block"
-                      onClick={() =>
-                        track("product_click", {
-                          productId: p._id,
-                          index: idx + 1,
-                        })
-                      }
-                    >
-                      <div className="relative h-72 overflow-hidden">
-                        <div className="absolute top-2 left-2 z-20 flex flex-col gap-1">
-                          {p.mrp > p.startingPrice && (
-                            <span className="px-2 py-1 text-xs text-white bg-green-600 rounded">
-                              -
-                              {Math.round(
-                                ((p.mrp - p.startingPrice) / p.mrp) * 100,
-                              ) || 0}
-                              % OFF
-                            </span>
-                          )}
-                          {p.trending && (
-                            <span className="px-2 py-1 text-xs text-white bg-black/80 rounded">
-                              Trending
-                            </span>
-                          )}
-                          {p.isNew && (
-                            <span className="px-2 py-1 text-xs text-white bg-blue-600 rounded">
-                              New
-                            </span>
-                          )}
-                          {p.sponsored && (
-                            <span className="px-2 py-1 text-xs bg-white rounded">
-                              Sponsored
-                            </span>
-                          )}
-                        </div>
+                {isLoading
+                  ? "Loading..."
+                  : products?.slice(0, visibleCount).map((p, idx) => (
+                      <div key={idx} className="group">
+                        <Link
+                          to={`/product/${p._id}`}
+                          state={{
+                            returnTo: `${location.pathname}${location.search}`,
+                          }}
+                          className="block"
+                          onClick={() =>
+                            track("product_click", {
+                              productId: p._id,
+                              index: idx + 1,
+                            })
+                          }
+                        >
+                          <div className="relative h-72 overflow-hidden">
+                            <div className="absolute top-2 left-2 z-20 flex flex-col gap-1">
+                              {p.mrp > p.startingPrice && (
+                                <span className="px-2 py-1 text-xs text-white bg-green-600 rounded">
+                                  -
+                                  {Math.round(
+                                    ((p.mrp - p.startingPrice) / p.mrp) * 100,
+                                  ) || 0}
+                                  % OFF
+                                </span>
+                              )}
+                              {p.trending && (
+                                <span className="px-2 py-1 text-xs text-white bg-black/80 rounded">
+                                  Trending
+                                </span>
+                              )}
+                              {p.isNew && (
+                                <span className="px-2 py-1 text-xs text-white bg-blue-600 rounded">
+                                  New
+                                </span>
+                              )}
+                              {p.sponsored && (
+                                <span className="px-2 py-1 text-xs bg-white rounded">
+                                  Sponsored
+                                </span>
+                              )}
+                            </div>
 
-                        <img
-                          src={`${BASE_URL}${p.productImage[0]}`}
-                          alt={p.name}
-                          loading="lazy"
-                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <img
-                          src={`${BASE_URL}${p.productImage[1]}`}
-                          alt={`${p.name} hover`}
-                          loading="lazy"
-                          className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-all duration-500"
-                        />
+                            <img
+                              src={`${BASE_URL}${p.productImage[0]}`}
+                              alt={p.name}
+                              loading="lazy"
+                              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                            <img
+                              src={`${BASE_URL}${p.productImage[1]}`}
+                              alt={`${p.name} hover`}
+                              loading="lazy"
+                              className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-all duration-500"
+                            />
+                          </div>
+                          <div className="pt-3">
+                            <p className="text-xs uppercase text-gray-500 font-semibold">
+                              {p.brand}
+                            </p>
+                            <h3 className="font-semibold text-sm mt-1 truncate">
+                              {p.name}
+                            </h3>
+                            <div className="mt-2 flex items-center gap-2">
+                              <span className="font-bold text-[#633426]">
+                                INR {p.startingPrice}
+                              </span>
+                              <span className="text-xs text-gray-400 line-through">
+                                INR {p.mrp}
+                              </span>
+                            </div>
+                            <div className="mt-2 flex items-center justify-between text-xs">
+                              <span className="flex items-center gap-1 text-gray-600">
+                                <FiStar className="text-yellow-500" />
+                                {p.rating} ({p.reviews})
+                              </span>
+                              {p.inStock && p.sizesAvailable.length === 1 && (
+                                <span className="text-orange-600 font-semibold">
+                                  Only 1 size left
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </Link>
                       </div>
-                      <div className="pt-3">
-                        <p className="text-xs uppercase text-gray-500 font-semibold">
-                          {p.brand}
-                        </p>
-                        <h3 className="font-semibold text-sm mt-1 truncate">
-                          {p.name}
-                        </h3>
-                        <div className="mt-2 flex items-center gap-2">
-                          <span className="font-bold text-[#633426]">
-                            INR {p.startingPrice}
-                          </span>
-                          <span className="text-xs text-gray-400 line-through">
-                            INR {p.mrp}
-                          </span>
-                        </div>
-                        <div className="mt-2 flex items-center justify-between text-xs">
-                          <span className="flex items-center gap-1 text-gray-600">
-                            <FiStar className="text-yellow-500" />
-                            {p.rating} ({p.reviews})
-                          </span>
-                          {p.inStock && p.sizesAvailable.length === 1 && (
-                            <span className="text-orange-600 font-semibold">
-                              Only 1 size left
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
-                  </div>
-                ))}
+                    ))}
               </div>
             )}
             <div ref={sentinelRef} className="h-6" />

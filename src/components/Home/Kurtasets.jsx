@@ -9,7 +9,11 @@ export default function DesignerShirts() {
   const categoryId = "69c50b8293df3e7bd375833a";
   const BASE_URL = import.meta.env.VITE_BASE_URL;
   const dispatch = useDispatch();
-  const products = useSelector((state) => state.products.products[`category-${categoryId}`]);
+const key = JSON.stringify({ category: categoryId });
+
+const products = useSelector(
+  (state) => state.products.products[key]
+);
 
   useEffect(() => {
     dispatch(

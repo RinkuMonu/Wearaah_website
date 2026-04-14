@@ -27,6 +27,7 @@ const MENU_LINKS = [
   { to: "/", label: "Home" },
   { to: "/kids", label: "Kids" },
   { to: "/productlist", label: "Mens" },
+  { to: "/productlist", label: "Womens" },
   // { to: "/new-arrivals", label: "New Arrivals" },
   { to: "/brands", label: "Brands" },
 ];
@@ -37,8 +38,7 @@ export default function Header() {
   const { categories, loading, error } = useSelector((state) => state.category);
   const { subcategories } = useSelector((state) => state.subCategory);
   const { brands } = useSelector((state) => state.brands);
-   const wishlistItems = useSelector(selectWishlistItems);
-  
+  const wishlistItems = useSelector(selectWishlistItems);
 
   const { loginOpen, setLoginOpen, user } = useAuth();
   const [cartOpen, setCartOpen] = useState(false);
@@ -47,6 +47,7 @@ export default function Header() {
   const [openAccordion, setOpenAccordion] = useState(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [allCategory, setAllCategory] = useState();
+  console.log(allCategory);
 
   const lastScrollYRef = useRef(0);
   const [isVisible, setIsVisible] = useState(true);
@@ -59,62 +60,61 @@ export default function Header() {
   const searchRef = useRef(null);
   const debounceRef = useRef(null);
 
-const [searchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
-const search = searchParams.get("search");
-const subCategoryId = searchParams.get("subCategoryId");
-const category = searchParams.get("ctd");
-const brand = searchParams.get("brandId");
+  const search = searchParams.get("search");
+  const subCategoryId = searchParams.get("subCategoryId");
+  const category = searchParams.get("ctd");
+  const brand = searchParams.get("brandId");
 
- const fetchSuggestions = useCallback(async (query) => {
-  if (!query.trim() || query.length < 2) {
-    setSuggestions([]);
-    setShowSuggestions(false);
-    return;
-  }
-
-  setSearchLoading(true);
-  try {
-    const res = await api.get(
-      `/variant/autosuggest?q=${encodeURIComponent(query)}`
-    );
-   setSuggestions(res.data?.data || []);
-    setShowSuggestions(true);
-  } catch (err) {
-    console.error("Search error:", err);
-    setSuggestions([]);
-  } finally {
-    setSearchLoading(false);
-  }
-}, []);
-
-// Debounced input handler
-const handleSearchChange = (e) => {
-  const value = e.target.value;
-  setSearchQuery(value);
-
-  clearTimeout(debounceRef.current);
-  debounceRef.current = setTimeout(() => {
-    fetchSuggestions(value);
-  }, 300); // 300ms debounce
-};
-
-// Close suggestions on outside click
-useEffect(() => {
-  const handleClickOutside = (e) => {
-    if (searchRef.current && !searchRef.current.contains(e.target)) {
+  const fetchSuggestions = useCallback(async (query) => {
+    if (!query.trim() || query.length < 2) {
+      setSuggestions([]);
       setShowSuggestions(false);
+      return;
     }
+
+    setSearchLoading(true);
+    try {
+      const res = await api.get(
+        `/variant/autosuggest?q=${encodeURIComponent(query)}`,
+      );
+      setSuggestions(res.data?.data || []);
+      setShowSuggestions(true);
+    } catch (err) {
+      console.error("Search error:", err);
+      setSuggestions([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, []);
+
+  // Debounced input handler
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      fetchSuggestions(value);
+    }, 300); // 300ms debounce
   };
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => document.removeEventListener("mousedown", handleClickOutside);
-}, []);
 
-// Cleanup debounce on unmount
-useEffect(() => {
-  return () => clearTimeout(debounceRef.current);
-}, []);
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => clearTimeout(debounceRef.current);
+  }, []);
 
   useEffect(() => {
     let ticking = false;
@@ -281,7 +281,7 @@ useEffect(() => {
                     </div>
                   )} */}
 
-                  {to === "/productlist" && (
+                  {label === "Mens" && (
                     <div className="absolute top-full left-1/2 -translate-x-1/2 w-screen max-w-7xl bg-white shadow-2xl border border-[#cccc] p-8 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-999 mt-2">
                       <div className="flex items-center justify-between gap-4 mb-8 max-w-7xl mx-auto">
                         <h3 className="font-bold text-xl text-gray-900">
@@ -439,13 +439,171 @@ useEffect(() => {
                       </div>
                     </div>
                   )}
+                  {label === "Womens" && (
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-screen max-w-7xl bg-white shadow-2xl border border-[#cccc] p-8 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-999 mt-2">
+                      <div className="flex items-center justify-between gap-4 mb-8 max-w-7xl mx-auto">
+                        <h3 className="font-bold text-xl text-gray-900">
+                          Shop Women Collection
+                        </h3>
+                        <Link
+                          to="/productlist"
+                          className="text-sm text-[#d6b28a] hover:underline font-medium"
+                        >
+                          View all →
+                        </Link>
+                      </div>
+
+                      <div className="relative flex justify-between items-start max-w-7xl mx-auto">
+                        <div className="w-[60%]  border-t border-gray-200 py-10 h-[-webkit-fill-available]">
+                          <div className="grid grid-cols-5 divide-x divide-gray-300 h-[inherit]">
+                            <div className="space-y-4 px-6">
+                              {allCategory
+                                ?.filter((item) => item?.isActive)
+                                ?.sort(
+                                  (a, b) => a.displayOrder - b.displayOrder,
+                                ) // sort by displayOrder
+                                ?.map((data, index) => {
+                                  return (
+                                    <Link
+                                      key={data?._id}
+                                      to={{
+                                        pathname: "/productlist",
+                                        search: `?gender=Women&category=${data.slug}&ctd=${data._id}`,
+                                      }}
+                                      className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded"
+                                    >
+                                      <img
+                                        src={`${BASE_URL}${data?.smallimage}`}
+                                        alt={data?.name}
+                                        className="w-10 h-10 object-cover rounded"
+                                      />
+
+                                      <span className="font-medium">
+                                        {data?.name}
+                                      </span>
+                                    </Link>
+                                  );
+                                })}
+                              {/* <Link
+                                to="/blouses"
+                                className="block hover:underline font-medium"
+                              >
+                                Blouses
+                              </Link>
+                              <Link
+                                to="/tops"
+                                className="block hover:underline font-medium"
+                              >
+                                Tops
+                              </Link> */}
+                            </div>
+                            {/* <div className="space-y-4 px-6">
+                              <Link
+                                to="/jackets"
+                                className="block hover:underline font-medium"
+                              >
+                                Jackets
+                              </Link>
+                              <Link
+                                to="/sweaters"
+                                className="block hover:underline font-medium"
+                              >
+                                Sweaters
+                              </Link>
+                              <Link
+                                to="/cardigans"
+                                className="block hover:underline font-medium"
+                              >
+                                Cardigans
+                              </Link>
+                            </div>
+                            <div className="space-y-4 px-6">
+                              <Link
+                                to="/jeans"
+                                className="block hover:underline font-medium"
+                              >
+                                Jeans and trousers
+                              </Link>
+                              <Link
+                                to="/skirts"
+                                className="block hover:underline font-medium"
+                              >
+                                Skirts
+                              </Link>
+                              <Link
+                                to="/shorts"
+                                className="block hover:underline font-medium"
+                              >
+                                Shorts
+                              </Link>
+                            </div>
+                            <div className="space-y-4 px-6">
+                              <Link
+                                to="/lingerie"
+                                className="block hover:underline font-medium"
+                              >
+                                Lingerie
+                              </Link>
+                              <Link
+                                to="/bras"
+                                className="block hover:underline font-medium"
+                              >
+                                Bras
+                              </Link>
+                              <Link
+                                to="/bottoms"
+                                className="block hover:underline font-medium"
+                              >
+                                Bottoms
+                              </Link>
+                            </div>
+                            <div className="space-y-4 px-6">
+                              <Link
+                                to="/accessories"
+                                className="block hover:underline font-medium"
+                              >
+                                Accessories
+                              </Link>
+                              <Link
+                                to="/shop-all"
+                                className="block hover:underline font-medium"
+                              >
+                                Shop all
+                              </Link>
+                            </div> */}
+                          </div>
+                        </div>
+                        <div className="w-[40%] h-[420px] overflow-hidden shadow-2xl">
+                          <div className="relative h-full">
+                            <img
+                              src="/images/26.jpg"
+                              alt="Shop Now"
+                              className="absolute inset-0 w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
+                            <div className="absolute bottom-6 left-6 right-6 text-white">
+                              <h4 className="font-bold text-xl mb-4 leading-tight">
+                                A color of New structures
+                              </h4>
+                              <Link
+                                to="/mens/shop-all"
+                                className="bg-white text-[#d6b28a] px-8 py-3 rounded-lg font-bold text-sm hover:scale-105 transition-all inline-block shadow-lg"
+                              >
+                                Shop now →
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {to === "/brands" && (
                     <div className="absolute top-full left-1/2 -translate-x-1/2 w-screen max-w-6xl bg-white shadow-2xl border border-gray-200 p-8 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-999 mt-2">
                       <div className="flex items-start justify-between gap-8 mb-8">
                         <div>
                           <h3 className="font-bold text-2xl text-gray-900 mb-2">
-                            Top  Brands
+                            Top Brands
                           </h3>
                         </div>
                       </div>
@@ -455,7 +613,7 @@ useEffect(() => {
                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                             {brands?.slice(0, 10)?.map((brand) => (
                               <Link
-                              key={brand?._id}
+                                key={brand?._id}
                                 to={`/productlist?brand=${brand.slug}&brandId=${brand._id}`}
                                 className="group/item  bg-gray-100"
                               >
@@ -502,83 +660,104 @@ useEffect(() => {
 
             <div className="flex items-center gap-4 ml-auto w-[-webkit-fill-available]">
               {/* ✅ DESKTOP SEARCH — replace the existing input div */}
-<div className="flex-1 w-100 hidden lg:block relative" ref={searchRef}>
-  <input
-    type="text"
-    value={searchQuery}
-    onChange={handleSearchChange}
-    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-     onKeyDown={(e) => {
-    if (e.key === "Enter" && searchQuery.trim()) {
-      navigate(`/productlist?search=${encodeURIComponent(searchQuery)}`);
-      setShowSuggestions(false);
-    }
-  }}
-    placeholder="What are you looking for?"
-    className="w-full bg-gray-50/50 px-4 py-2.5 text-sm outline-none border border-gray-200 focus:border-[#d6b28a] focus:ring-2 focus:ring-[#d6b28a]/20 transition-all"
-  />
+              <div
+                className="flex-1 w-100 hidden lg:block relative"
+                ref={searchRef}
+              >
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onFocus={() =>
+                    suggestions.length > 0 && setShowSuggestions(true)
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && searchQuery.trim()) {
+                      navigate(
+                        `/productSearch?search=${encodeURIComponent(searchQuery)}`,
+                      );
+                      setShowSuggestions(false);
+                    }
+                  }}
+                  placeholder="What are you looking for?"
+                  className="w-full bg-gray-50/50 px-4 py-2.5 text-sm outline-none border border-gray-200 focus:border-[#d6b28a] focus:ring-2 focus:ring-[#d6b28a]/20 transition-all"
+                />
 
-  {/* Suggestions Dropdown */}
-  {showSuggestions && (
-    <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 shadow-xl z-[999] max-h-80 overflow-y-auto mt-1 rounded-b-lg">
-      {searchLoading ? (
-        <div className="px-4 py-3 text-sm text-gray-400 flex items-center gap-2">
-          <div className="w-4 h-4 border-2 border-[#d6b28a] border-t-transparent rounded-full animate-spin" />
-          Searching...
-        </div>
-      ) : suggestions.length > 0 ? (
-        suggestions.map((item, index) => (
-          <Link
-            key={item._id || index}
-            to={`/productlist?search=${encodeURIComponent(item)}`} 
-              onClick={() => {
-                setSearchQuery(item);   // fill input with selected suggestion
-                setShowSuggestions(false);
-              }}
-            className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-all border-b border-gray-100 last:border-0"
-          >
-              {/* Search icon prefix */}
-              <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-              </svg>
-              {/* Highlight matched query inside suggestion */}
-              <span dangerouslySetInnerHTML={{
-                __html: item.replace(
-                  new RegExp(`(${searchQuery})`, "gi"),
-                  '<strong class="text-[#d6b28a]">$1</strong>'
-                )
-              }} />
-          </Link>
-        ))
-      ) : (
-        <div className="px-4 py-3 text-sm text-gray-400">
-          No results found for "{searchQuery}"
-        </div>
-      )}
-    </div>
-  )}
-</div>
+                {/* Suggestions Dropdown */}
+                {showSuggestions && (
+                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 shadow-xl z-[999] max-h-80 overflow-y-auto mt-1 rounded-b-lg">
+                    {searchLoading ? (
+                      <div className="px-4 py-3 text-sm text-gray-400 flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-[#d6b28a] border-t-transparent rounded-full animate-spin" />
+                        Searching...
+                      </div>
+                    ) : suggestions.length > 0 ? (
+                      suggestions.map((item, index) => (
+                        <Link
+                          key={item._id || index}
+                          to={`/productlist?search=${encodeURIComponent(item)}`}
+                          onClick={() => {
+                            setSearchQuery(item); // fill input with selected suggestion
+                            setShowSuggestions(false);
+                          }}
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-all border-b border-gray-100 last:border-0"
+                        >
+                          {/* Search icon prefix */}
+                          <svg
+                            className="w-4 h-4 text-gray-400 shrink-0"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
+                            />
+                          </svg>
+                          {/* Highlight matched query inside suggestion */}
+                          <span
+                            dangerouslySetInnerHTML={{
+                              __html: item.replace(
+                                new RegExp(`(${searchQuery})`, "gi"),
+                                '<strong class="text-[#d6b28a]">$1</strong>',
+                              ),
+                            }}
+                          />
+                        </Link>
+                      ))
+                    ) : (
+                      <div className="px-4 py-3 text-sm text-gray-400">
+                        No results found for "{searchQuery}"
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               <div className="items-center gap-3 hidden lg:flex">
-               <Link
-  to="/wishlist"
-  className="flex flex-col items-center p-2 rounded-lg transition-all group relative"
->
-  <div className="relative">
-    <FiHeart
-      size={18}
-      className="group-hover:scale-110 transition-transform"
-    />
-    {wishlistItems?.length > 0 && (
-      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center animate-pulse">
-        {wishlistItems.length > 99 ? '99+' : wishlistItems.length}
-      </span>
-    )}
-  </div>
-  <span className="hidden sm:block mt-1 text-xs font-medium">
-    Wishlist
-  </span>
-</Link>
+                <Link
+                  to="/wishlist"
+                  className="flex flex-col items-center p-2 rounded-lg transition-all group relative"
+                >
+                  <div className="relative">
+                    <FiHeart
+                      size={18}
+                      className="group-hover:scale-110 transition-transform"
+                    />
+                    {wishlistItems?.length > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center animate-pulse">
+                        {wishlistItems.length > 99
+                          ? "99+"
+                          : wishlistItems.length}
+                      </span>
+                    )}
+                  </div>
+                  <span className="hidden sm:block mt-1 text-xs font-medium">
+                    Wishlist
+                  </span>
+                </Link>
 
                 <CartTrigger onOpen={() => setCartOpen(true)} />
 
