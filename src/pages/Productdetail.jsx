@@ -1,24 +1,48 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
-  FiCheck, FiChevronDown, FiCopy, FiHeart, FiInfo,
-  FiShoppingCart, FiStar, FiThumbsDown, FiThumbsUp, FiTruck, FiZoomIn,
+  FiCheck,
+  FiChevronDown,
+  FiCopy,
+  FiHeart,
+  FiInfo,
+  FiShoppingCart,
+  FiStar,
+  FiThumbsDown,
+  FiThumbsUp,
+  FiTruck,
+  FiZoomIn,
 } from "react-icons/fi";
 import {
-  PRODUCTS, SIZE_SYSTEMS,
-  getSizeConversion, getSizeChartRows, toDisplaySize,
+  PRODUCTS,
+  SIZE_SYSTEMS,
+  getSizeConversion,
+  getSizeChartRows,
+  toDisplaySize,
   getProductById,
 } from "../data/products";
 import { useAuth } from "../components/service/AuthContext";
-import { CART_UPDATED_EVENT, getCartItems, setCartItems } from "../utils/cartStorage";
+import {
+  CART_UPDATED_EVENT,
+  getCartItems,
+  setCartItems,
+} from "../utils/cartStorage";
 import { getWishlist, setWishlist } from "../utils/wishlistStorage";
 import api from "../components/service/axios";
 import { fetchCartItems } from "../features/Cart/cartSlice";
-import { addToWishlist, fetchWishlist, removeFromWishlist, selectIsInWishlist } from "../features/Wishlist/wishlistSlice";
+import {
+  addToWishlist,
+  fetchWishlist,
+  removeFromWishlist,
+  selectIsInWishlist,
+} from "../features/Wishlist/wishlistSlice";
 import { useDispatch, useSelector } from "react-redux";
 
 const RECENTLY_VIEWED_KEY = "lionies_recently_viewed_v1";
-const CURRENCY_FORMATTER = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+const CURRENCY_FORMATTER = new Intl.NumberFormat("en-IN", {
+  maximumFractionDigits: 2,
+  minimumFractionDigits: 2,
+});
 
 const OFFER_LIST = [
   "10% instant discount on HDFC cards above Rs. 1,999",
@@ -27,28 +51,59 @@ const OFFER_LIST = [
   "Get extra 5% off on prepaid orders",
 ];
 
-const DETAIL_SECTIONS = [
-  { key: "details",      title: "Product Details",           render: (p) => p.description },
-  { key: "care",         title: "Fabric & Care",             render: (p) => `${p.material}. ${p.care}` },
-  { key: "fit",          title: "Size & Fit",                render: (p) => p.fit },
-  { key: "material",     title: "Material & Transparency",   render: (p) => `${p.material}; Opaque fabric.` },
-  { key: "pattern",      title: "Pattern / Occasion",        render: (p) => `${p.pattern}; Suitable for ${p.occasion}.` },
-  { key: "origin",       title: "Country of Origin",         render: (p) => p.countryOfOrigin },
-  { key: "manufacturer", title: "Manufacturer Details",      render: (p) => p.manufacturer },
-];
+// const DETAIL_SECTIONS = [
+//   { key: "details",      title: "Product Details",           render: (p) => p.description },
+//   { key: "care",         title: "Fabric & Care",             render: (p) => `${p.material}. ${p.care}` },
+//   { key: "fit",          title: "Size & Fit",                render: (p) => p.fit },
+//   { key: "material",     title: "Material & Transparency",   render: (p) => `${p.material}; Opaque fabric.` },
+//   { key: "pattern",      title: "Pattern / Occasion",        render: (p) => `${p.pattern}; Suitable for ${p.occasion}.` },
+//   { key: "origin",       title: "Country of Origin",         render: (p) => p.countryOfOrigin },
+//   { key: "manufacturer", title: "Manufacturer Details",      render: (p) => p.manufacturer },
+// ];
 
 const REVIEW_DATA = [
-  { id: 1, author: "Arjun S.", rating: 5, helpful: 32, date: "2026-02-12", comment: "Fit is perfect and quality is great for the price.", images: [] },
-  { id: 2, author: "Kiran M.", rating: 4, helpful: 11, date: "2026-01-25", comment: "Color and print look exactly like photos.", images: [] },
-  { id: 3, author: "Dev P.",   rating: 5, helpful: 19, date: "2026-02-19", comment: "Soft fabric and good oversized look.", images: [] },
+  {
+    id: 1,
+    author: "Arjun S.",
+    rating: 5,
+    helpful: 32,
+    date: "2026-02-12",
+    comment: "Fit is perfect and quality is great for the price.",
+    images: [],
+  },
+  {
+    id: 2,
+    author: "Kiran M.",
+    rating: 4,
+    helpful: 11,
+    date: "2026-01-25",
+    comment: "Color and print look exactly like photos.",
+    images: [],
+  },
+  {
+    id: 3,
+    author: "Dev P.",
+    rating: 5,
+    helpful: 19,
+    date: "2026-02-19",
+    comment: "Soft fabric and good oversized look.",
+    images: [],
+  },
 ];
 
 /* ─── Stars ──────────────────────────────────────────────── */
 const Stars = ({ rating, size = 13 }) => (
   <span className="flex items-center gap-0.5">
-    {[1,2,3,4,5].map((s) => (
-      <FiStar key={s} size={size}
-        className={s <= Math.round(rating) ? "text-amber-400 fill-amber-400" : "text-gray-200 fill-gray-200"} />
+    {[1, 2, 3, 4, 5].map((s) => (
+      <FiStar
+        key={s}
+        size={size}
+        className={
+          s <= Math.round(rating)
+            ? "text-amber-400 fill-amber-400"
+            : "text-gray-200 fill-gray-200"
+        }
+      />
     ))}
   </span>
 );
@@ -58,96 +113,203 @@ const RatingBar = ({ label, pct }) => (
   <div className="flex items-center gap-3 text-xs text-gray-500">
     <span className="w-8 shrink-0 font-medium">{label}</span>
     <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-      <div className="h-full bg-gradient-to-r from-amber-400 to-orange-400 rounded-full" style={{ width: `${pct}%` }} />
+      <div
+        className="h-full bg-gradient-to-r from-amber-400 to-orange-400 rounded-full"
+        style={{ width: `${pct}%` }}
+      />
     </div>
     <span className="w-6 text-right text-gray-400">{pct}%</span>
   </div>
 );
 
+// const ProductCard = ({ item, location }) => {
+//   console.log("Rendering ProductCard for", item);
+//   const discount = Math.round(
+//     ((item.originalPrice - item.price) / item.originalPrice) * 100,
+//   );
+//   return (
+//     <Link
+//       to={`/product/${item.id}`}
+//       state={{ returnTo: location.pathname + location.search }}
+//       className="group block min-w-[180px] snap-start shrink-0"
+//     >
+//       <div className="bg-white overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-[#e4a156]/30">
+//         <div className="relative overflow-hidden h-[220px]">
+//           <img
+//             src={item.front}
+//             alt={item.name}
+//             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+//             loading="lazy"
+//           />
+//           {discount > 0 && (
+//             <div className="absolute top-2 left-2 bg-[#e4a156] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+//               -{discount}%
+//             </div>
+//           )}
+//           <button
+//             type="button"
+//             className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-[#fff0f4] shadow-sm"
+//           >
+//             <FiHeart size={13} className="text-[#e4a156]" />
+//           </button>
+//         </div>
+//         <div className="p-3">
+//           <p className="text-[10px] text-[#e4a156] font-bold uppercase tracking-wider">
+//             {item.brand}
+//           </p>
+//           <p className="text-sm font-medium text-gray-800 line-clamp-1 mt-0.5">
+//             {item.name}
+//           </p>
+//           <div className="flex items-center gap-2 mt-1.5">
+//             <p className="text-sm text-gray-900 font-bold">
+//               Rs. {CURRENCY_FORMATTER.format(item.price)}
+//             </p>
+//             {item.originalPrice > item.price && (
+//               <p className="text-xs text-gray-400 line-through">
+//                 Rs. {CURRENCY_FORMATTER.format(item.originalPrice)}
+//               </p>
+//             )}
+//           </div>
+//           {item?.rating && (
+//             <div className="flex items-center gap-1 mt-1.5">
+//               <Stars rating={item?.rating} size={10} />
+//               <span className="text-[10px] text-gray-400">
+//                 ({item?.totalRatings})
+//               </span>
+//             </div>
+//           )}
+//         </div>
+//       </div>
+//     </Link>
+//   );
+// };
+
 /* ─── Product card ───────────────────────────────────────── */
 const ProductCard = ({ item, location }) => {
-  const discount = Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100);
+  const discount =
+    item?.originalPrice && item?.price
+      ? Math.round(
+          ((item.originalPrice - item.price) / item.originalPrice) * 100
+        )
+      : 0;
+
   return (
-    <Link to={`/product/${item.id}`} state={{ returnTo: location.pathname + location.search }}
-      className="group block min-w-[180px] snap-start shrink-0">
+    <Link
+      to={`/product/${item.id}`}
+      state={{ returnTo: location?.pathname + location?.search }}
+      className="group block min-w-[180px] snap-start shrink-0"
+    >
       <div className="bg-white overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-[#e4a156]/30">
         <div className="relative overflow-hidden h-[220px]">
-          <img src={item.front} alt={item.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+          <img
+            src={item.front || "/placeholder.png"}
+            alt={item.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+          />
+
           {discount > 0 && (
             <div className="absolute top-2 left-2 bg-[#e4a156] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
               -{discount}%
             </div>
           )}
-          <button type="button"
-            className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-[#fff0f4] shadow-sm">
-            <FiHeart size={13} className="text-[#e4a156]" />
-          </button>
-        </div>
-        <div className="p-3">
-          <p className="text-[10px] text-[#e4a156] font-bold uppercase tracking-wider">{item.brand}</p>
-          <p className="text-sm font-medium text-gray-800 line-clamp-1 mt-0.5">{item.name}</p>
-          <div className="flex items-center gap-2 mt-1.5">
-            <p className="text-sm text-gray-900 font-bold">Rs. {CURRENCY_FORMATTER.format(item.price)}</p>
-            {item.originalPrice > item.price && (
-              <p className="text-xs text-gray-400 line-through">Rs. {CURRENCY_FORMATTER.format(item.originalPrice)}</p>
-            )}
-          </div>
-          {item.rating && (
-            <div className="flex items-center gap-1 mt-1.5">
-              <Stars rating={item.rating} size={10} />
-              <span className="text-[10px] text-gray-400">({item.reviews})</span>
+
+          {item.stock === 0 && (
+            <div className="absolute bottom-2 left-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded">
+              Out of Stock
             </div>
           )}
+
+          {/* <button
+            type="button"
+            className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-[#fff0f4] shadow-sm"
+          >
+            <FiHeart
+              size={13}
+              className={`${
+                item.isWishlisted
+                  ? "text-red-500 fill-red-500"
+                  : "text-[#e4a156]"
+              }`}
+            />
+          </button> */}
+        </div>
+
+        <div className="p-3">
+          <p className="text-[10px] text-[#e4a156] font-bold uppercase tracking-wider">
+            {item.brand || "Fashion"}
+          </p>
+
+          <p className="text-sm font-medium text-gray-800 line-clamp-1 mt-0.5">
+            {item.name}
+          </p>
+
+          <div className="flex items-center gap-2 mt-1.5">
+            <p className="text-sm text-gray-900 font-bold">
+              Rs. {CURRENCY_FORMATTER.format(item.price)}
+            </p>
+
+            {item.originalPrice > item.price && (
+              <p className="text-xs text-gray-400 line-through">
+                Rs. {CURRENCY_FORMATTER.format(item.originalPrice)}
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </Link>
   );
 };
-
 /* ═══════════════════════════════════════════════════════════
    SIZE CHART MODAL
 ═══════════════════════════════════════════════════════════ */
 const SizeChartModal = ({ onClose, activeSizes, sizeSystem }) => {
-  const rows    = getSizeChartRows(sizeSystem);
+  const rows = getSizeChartRows(sizeSystem);
   const convMap = getSizeConversion(sizeSystem);
 
-  const isTopwear     = sizeSystem === "TOPWEAR_ALPHA";
-  const isBottomNum   = sizeSystem === "BOTTOMWEAR_NUM";
+  const isTopwear = sizeSystem === "TOPWEAR_ALPHA";
+  const isBottomNum = sizeSystem === "BOTTOMWEAR_NUM";
   const isBottomAlpha = sizeSystem === "BOTTOMWEAR_ALPHA";
 
   const categoryLabel = isTopwear
     ? "Topwear  (T-shirts, Shirts, Hoodies, Jackets)"
     : isBottomNum
-    ? "Bottomwear — Jeans & Trousers (Waist size)"
-    : "Bottomwear — Leggings & Track Pants";
+      ? "Bottomwear — Jeans & Trousers (Waist size)"
+      : "Bottomwear — Leggings & Track Pants";
 
   const cols = isTopwear
     ? ["IN (Alpha)", "UK", "US", "Chest"]
     : isBottomNum``
-    ? ["IN (Waist)", "UK", "US", "Waist", "Hip"]
-    : ["IN (Alpha)", "UK", "US", "Waist", "Hip"];
+      ? ["IN (Waist)", "UK", "US", "Waist", "Hip"]
+      : ["IN (Alpha)", "UK", "US", "Waist", "Hip"];
 
   const getCells = (key) => {
     const r = convMap[key];
     if (!r) return [];
-    if (isTopwear)   return [r.IN, r.UK, r.US, r.chest];
+    if (isTopwear) return [r.IN, r.UK, r.US, r.chest];
     if (isBottomNum) return [r.IN, r.UK, r.US, r.waist, r.hip];
-    return                  [r.IN, r.UK, r.US, r.waist, r.hip];
+    return [r.IN, r.UK, r.US, r.waist, r.hip];
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4"
-      onClick={onClose}>
-      <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-amber-50">
           <div>
             <h3 className="font-bold text-gray-900 text-base">Size Guide</h3>
             <p className="text-xs text-amber-700 mt-0.5">{categoryLabel}</p>
           </div>
-          <button type="button" onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 text-sm shadow-sm">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 text-sm shadow-sm"
+          >
             ✕
           </button>
         </div>
@@ -156,8 +318,10 @@ const SizeChartModal = ({ onClose, activeSizes, sizeSystem }) => {
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 {cols.map((h, i) => (
-                  <th key={h}
-                    className={`px-3 py-3 font-bold text-gray-600 text-xs uppercase tracking-wide ${i === 0 ? "text-left" : "text-center"}`}>
+                  <th
+                    key={h}
+                    className={`px-3 py-3 font-bold text-gray-600 text-xs uppercase tracking-wide ${i === 0 ? "text-left" : "text-center"}`}
+                  >
                     {h}
                   </th>
                 ))}
@@ -166,22 +330,34 @@ const SizeChartModal = ({ onClose, activeSizes, sizeSystem }) => {
             <tbody>
               {rows.map((key, i) => {
                 const isAvail = activeSizes.includes(key);
-                const cells   = getCells(key);
+                const cells = getCells(key);
                 return (
-                  <tr key={key}
-                    className={`${i % 2 === 0 ? "bg-white" : "bg-gray-50/50"} border-b border-gray-50 last:border-0 ${!isAvail ? "opacity-35" : ""}`}>
+                  <tr
+                    key={key}
+                    className={`${i % 2 === 0 ? "bg-white" : "bg-gray-50/50"} border-b border-gray-50 last:border-0 ${!isAvail ? "opacity-35" : ""}`}
+                  >
                     {cells.map((val, ci) => (
-                      <td key={ci}
-                        className={`px-3 py-3 ${ci === 0 ? "font-bold text-gray-800" : "text-center text-gray-600"}`}>
+                      <td
+                        key={ci}
+                        className={`px-3 py-3 ${ci === 0 ? "font-bold text-gray-800" : "text-center text-gray-600"}`}
+                      >
                         {ci === 0 ? (
                           <span className="flex items-center gap-2">
                             {val}
-                            {isAvail
-                              ? <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" title="Available" />
-                              : <span className="text-[10px] text-gray-400 font-normal">N/A</span>
-                            }
+                            {isAvail ? (
+                              <span
+                                className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"
+                                title="Available"
+                              />
+                            ) : (
+                              <span className="text-[10px] text-gray-400 font-normal">
+                                N/A
+                              </span>
+                            )}
                           </span>
-                        ) : val}
+                        ) : (
+                          val
+                        )}
                       </td>
                     ))}
                   </tr>
@@ -192,22 +368,26 @@ const SizeChartModal = ({ onClose, activeSizes, sizeSystem }) => {
           <div className="mt-4 flex flex-col gap-2">
             <div className="flex items-center gap-4 text-xs text-gray-500">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> Available
+                <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />{" "}
+                Available
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-gray-300 inline-block" /> Not in stock
+                <span className="w-2 h-2 rounded-full bg-gray-300 inline-block" />{" "}
+                Not in stock
               </span>
             </div>
             {isBottomNum && (
               <p className="text-xs text-gray-400 leading-relaxed flex items-start gap-1.5">
                 <FiInfo size={11} className="shrink-0 mt-0.5 text-[#e4a156]" />
-                Sizes are Indian waist measurements in inches. For best fit, measure your natural waist and round up if between sizes.
+                Sizes are Indian waist measurements in inches. For best fit,
+                measure your natural waist and round up if between sizes.
               </p>
             )}
             {(isTopwear || isBottomAlpha) && (
               <p className="text-xs text-gray-400 leading-relaxed flex items-start gap-1.5">
                 <FiInfo size={11} className="shrink-0 mt-0.5 text-[#e4a156]" />
-                Measurements are in inches. If between sizes, we recommend sizing up for a comfortable fit.
+                Measurements are in inches. If between sizes, we recommend
+                sizing up for a comfortable fit.
               </p>
             )}
           </div>
@@ -242,7 +422,7 @@ const ProductDetailPage = () => {
   const [openSection, setOpenSection] = useState("details");
   const [reviewSort, setReviewSort] = useState("helpful");
   const [shareCopied, setShareCopied] = useState(false);
-    const [updatingWishlist, setUpdatingWishlist] = useState(false);
+  const [updatingWishlist, setUpdatingWishlist] = useState(false);
   const [wishlist, setWishlistState] = useState(() => {
     const saved = localStorage.getItem("wishlist");
     return saved ? JSON.parse(saved) : [];
@@ -251,21 +431,34 @@ const ProductDetailPage = () => {
   const [loadingVariants, setLoadingVariants] = useState(false);
 
   const [reviews, setReviews] = useState([]);
-const [reviewStats, setReviewStats] = useState(null);
-const [loadingReviews, setLoadingReviews] = useState(false);
-const [reviewPage, setReviewPage] = useState(1);
-const [hasMoreReviews, setHasMoreReviews] = useState(true);
+  const [reviewStats, setReviewStats] = useState(null);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [reviewPage, setReviewPage] = useState(1);
+  const [hasMoreReviews, setHasMoreReviews] = useState(true);
   const isLoggedIn = Boolean(user?.user || user);
-const dispatch = useDispatch();
+  const dispatch = useDispatch();
+
+const wishlistItems = useSelector(
+  (state) => state.wishlist.items
+);
+
+useEffect(() => {
+  dispatch(fetchWishlist());
+}, [dispatch]);
+  const specifications = useMemo(() => {
+    if (!variants.length) return {};
+    return variants[0]?.productId?.specifications || {};
+  }, [variants]);
+
   const formatColor = useMemo(
     () => (color) => {
       if (!color) return "";
       return color.charAt(0).toUpperCase() + color.slice(1).toLowerCase();
     },
-    []
+    [],
   );
 
-    const BASE_URL = import.meta.env.VITE_BASE_URL;
+  const BASE_URL = import.meta.env.VITE_BASE_URL;
 
   const getImageUrl = (path) => {
     if (!path) return "";
@@ -302,7 +495,10 @@ const dispatch = useDispatch();
     }
     const normalizedSelectedColor = formatColor(selectedColor);
     return variants
-      .filter((v) => formatColor(v.color) === normalizedSelectedColor && v.stock === 0)
+      .filter(
+        (v) =>
+          formatColor(v.color) === normalizedSelectedColor && v.stock === 0,
+      )
       .map((v) => v.size);
   }, [variants, selectedColor, product, formatColor]);
 
@@ -310,12 +506,15 @@ const dispatch = useDispatch();
     if (!variants.length || !selectedColor || !selectedSize) return null;
     const normalizedSelectedColor = formatColor(selectedColor);
     return variants.find(
-      (v) => formatColor(v.color) === normalizedSelectedColor && v.size === selectedSize
+      (v) =>
+        formatColor(v.color) === normalizedSelectedColor &&
+        v.size === selectedSize,
     );
   }, [variants, selectedColor, selectedSize, formatColor]);
 
   const displayPrice = useMemo(() => {
-    if (selectedVariant?.pricing?.sellingPrice) return selectedVariant.pricing.sellingPrice;
+    if (selectedVariant?.pricing?.sellingPrice)
+      return selectedVariant.pricing.sellingPrice;
     return product?.price || 0;
   }, [selectedVariant, product]);
 
@@ -325,7 +524,8 @@ const dispatch = useDispatch();
   }, [selectedVariant, product]);
 
   const discountPercent = useMemo(() => {
-    if (!originalPrice || !displayPrice || originalPrice === displayPrice) return 0;
+    if (!originalPrice || !displayPrice || originalPrice === displayPrice)
+      return 0;
     return Math.round(((originalPrice - displayPrice) / originalPrice) * 100);
   }, [originalPrice, displayPrice]);
 
@@ -338,156 +538,173 @@ const dispatch = useDispatch();
     if (!product) return [];
     return PRODUCTS.filter((item) => item.id !== product.id).slice(0, 10);
   }, [product]);
+ console.log("Related products:", relatedProducts);
+  //   const recentlyViewed = useMemo(() => {
+  //     const ids = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || "[]");
+  //     return ids
+  //       .filter((itemId) => itemId !== product?.id)
+  //       .map((itemId) => getProductById(itemId))
+  //       .filter(Boolean)
+  //       .slice(0, 8);
+  //   }, [product?.id]);
+  // console.log("Recently viewed products:", recentlyViewed);
 
   const recentlyViewed = useMemo(() => {
-    const ids = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || "[]");
-    return ids
-      .filter((itemId) => itemId !== product?.id)
-      .map((itemId) => getProductById(itemId))
-      .filter(Boolean)
+    const items = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || "[]");
+    return items
+      .filter(
+        (item) => item && typeof item === "object" && item.id && item.id !== id,
+      )
       .slice(0, 8);
-  }, [product?.id]);
+  }, [id, product]);
 
- const sortedReviews = useMemo(() => {
-  if (!reviews.length) return [];
-  
-  let sorted = [...reviews];
-  
-  if (reviewSort === "latest") {
-    return sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  }
-  
-  // Default: sort by helpful (likes)
-  return sorted.sort((a, b) => (b.likes || 0) - (a.likes || 0));
-}, [reviews, reviewSort]);
+  const sortedReviews = useMemo(() => {
+    if (!reviews.length) return [];
 
+    let sorted = [...reviews];
 
-const handleReviewLike = async (reviewId, currentAction) => {
-  if (!isLoggedIn) {
-    setLoginOpen(true);
-    setToast("Please login to like reviews");
-    return;
-  }
-
-  try {
-    // Determine new action
-    let newAction = 'like';
-    if (currentAction === 'liked') {
-      newAction = 'unlike';
-    } else if (currentAction === 'disliked') {
-      newAction = 'like'; // Remove dislike and add like
-    }
-
-    const response = await api.post(`/review/like/${reviewId}`, {
-      action: newAction
-    });
-
-    if (response.data.success) {
-      // Update the review in state
-      setReviews(prevReviews => 
-        prevReviews.map(review => {
-          if (review._id === reviewId) {
-            let updatedLikes = review.likes || 0;
-            let updatedDislikes = review.dislikes || 0;
-            let userAction = newAction === 'unlike' ? null : newAction;
-            
-            if (currentAction === 'liked' && newAction === 'unlike') {
-              updatedLikes = Math.max(0, updatedLikes - 1);
-              userAction = null;
-            } else if (currentAction === 'disliked' && newAction === 'like') {
-              updatedDislikes = Math.max(0, updatedDislikes - 1);
-              updatedLikes = (review.likes || 0) + 1;
-              userAction = 'liked';
-            } else if (newAction === 'like') {
-              updatedLikes = (review.likes || 0) + 1;
-              userAction = 'liked';
-            }
-            
-            return {
-              ...review,
-              likes: updatedLikes,
-              dislikes: updatedDislikes,
-              userAction: userAction
-            };
-          }
-          return review;
-        })
+    if (reviewSort === "latest") {
+      return sorted.sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
       );
-      
-      setToast(newAction === 'like' ? "Liked review ✓" : "Removed like");
-    }
-  } catch (error) {
-    console.error("Error liking review:", error);
-    setToast(error?.response?.data?.message || "Failed to like review");
-  }
-};
-
-const handleReviewDislike = async (reviewId, currentAction) => {
-  if (!isLoggedIn) {
-    setLoginOpen(true);
-    setToast("Please login to dislike reviews");
-    return;
-  }
-
-  try {
-    // Determine new action
-    let newAction = 'dislike';
-    if (currentAction === 'disliked') {
-      newAction = 'undislike';
-    } else if (currentAction === 'liked') {
-      newAction = 'dislike'; // Remove like and add dislike
     }
 
-    const response = await api.post(`/review/like/${reviewId}`, {
-      action: newAction
-    });
+    // Default: sort by helpful (likes)
+    return sorted.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+  }, [reviews, reviewSort]);
 
-    if (response.data.success) {
-      // Update the review in state
-      setReviews(prevReviews => 
-        prevReviews.map(review => {
-          if (review._id === reviewId) {
-            let updatedLikes = review.likes || 0;
-            let updatedDislikes = review.dislikes || 0;
-            let userAction = newAction === 'undislike' ? null : newAction;
-            
-            if (currentAction === 'disliked' && newAction === 'undislike') {
-              updatedDislikes = Math.max(0, updatedDislikes - 1);
-              userAction = null;
-            } else if (currentAction === 'liked' && newAction === 'dislike') {
-              updatedLikes = Math.max(0, updatedLikes - 1);
-              updatedDislikes = (review.dislikes || 0) + 1;
-              userAction = 'disliked';
-            } else if (newAction === 'dislike') {
-              updatedDislikes = (review.dislikes || 0) + 1;
-              userAction = 'disliked';
+  const handleReviewLike = async (reviewId, currentAction) => {
+    if (!isLoggedIn) {
+      setLoginOpen(true);
+      setToast("Please login to like reviews");
+      return;
+    }
+
+    try {
+      // Determine new action
+      let newAction = "like";
+      if (currentAction === "liked") {
+        newAction = "unlike";
+      } else if (currentAction === "disliked") {
+        newAction = "like"; // Remove dislike and add like
+      }
+
+      const response = await api.post(`/review/like/${reviewId}`, {
+        action: newAction,
+      });
+
+      if (response.data.success) {
+        // Update the review in state
+        setReviews((prevReviews) =>
+          prevReviews.map((review) => {
+            if (review._id === reviewId) {
+              let updatedLikes = review.likes || 0;
+              let updatedDislikes = review.dislikes || 0;
+              let userAction = newAction === "unlike" ? null : newAction;
+
+              if (currentAction === "liked" && newAction === "unlike") {
+                updatedLikes = Math.max(0, updatedLikes - 1);
+                userAction = null;
+              } else if (currentAction === "disliked" && newAction === "like") {
+                updatedDislikes = Math.max(0, updatedDislikes - 1);
+                updatedLikes = (review.likes || 0) + 1;
+                userAction = "liked";
+              } else if (newAction === "like") {
+                updatedLikes = (review.likes || 0) + 1;
+                userAction = "liked";
+              }
+
+              return {
+                ...review,
+                likes: updatedLikes,
+                dislikes: updatedDislikes,
+                userAction: userAction,
+              };
             }
-            
-            return {
-              ...review,
-              likes: updatedLikes,
-              dislikes: updatedDislikes,
-              userAction: userAction
-            };
-          }
-          return review;
-        })
-      );
-      
-      setToast(newAction === 'dislike' ? "Disliked review" : "Removed dislike");
+            return review;
+          }),
+        );
+
+        setToast(newAction === "like" ? "Liked review ✓" : "Removed like");
+      }
+    } catch (error) {
+      console.error("Error liking review:", error);
+      setToast(error?.response?.data?.message || "Failed to like review");
     }
-  } catch (error) {
-    console.error("Error disliking review:", error);
-    setToast(error?.response?.data?.message || "Failed to dislike review");
-  }
-};
+  };
+
+  const handleReviewDislike = async (reviewId, currentAction) => {
+    if (!isLoggedIn) {
+      setLoginOpen(true);
+      setToast("Please login to dislike reviews");
+      return;
+    }
+
+    try {
+      // Determine new action
+      let newAction = "dislike";
+      if (currentAction === "disliked") {
+        newAction = "undislike";
+      } else if (currentAction === "liked") {
+        newAction = "dislike"; // Remove like and add dislike
+      }
+
+      const response = await api.post(`/review/like/${reviewId}`, {
+        action: newAction,
+      });
+
+      if (response.data.success) {
+        // Update the review in state
+        setReviews((prevReviews) =>
+          prevReviews.map((review) => {
+            if (review._id === reviewId) {
+              let updatedLikes = review.likes || 0;
+              let updatedDislikes = review.dislikes || 0;
+              let userAction = newAction === "undislike" ? null : newAction;
+
+              if (currentAction === "disliked" && newAction === "undislike") {
+                updatedDislikes = Math.max(0, updatedDislikes - 1);
+                userAction = null;
+              } else if (currentAction === "liked" && newAction === "dislike") {
+                updatedLikes = Math.max(0, updatedLikes - 1);
+                updatedDislikes = (review.dislikes || 0) + 1;
+                userAction = "disliked";
+              } else if (newAction === "dislike") {
+                updatedDislikes = (review.dislikes || 0) + 1;
+                userAction = "disliked";
+              }
+
+              return {
+                ...review,
+                likes: updatedLikes,
+                dislikes: updatedDislikes,
+                userAction: userAction,
+              };
+            }
+            return review;
+          }),
+        );
+
+        setToast(
+          newAction === "dislike" ? "Disliked review" : "Removed dislike",
+        );
+      }
+    } catch (error) {
+      console.error("Error disliking review:", error);
+      setToast(error?.response?.data?.message || "Failed to dislike review");
+    }
+  };
 
   const gridImages = useMemo(() => {
     if (selectedVariant?.variantImages?.length) {
-      return selectedVariant.variantImages.map((img) => getImageUrl(img)).slice(0, 4);
+      return selectedVariant.variantImages
+        .map((img) => getImageUrl(img))
+        .slice(0, 4);
     }
     if (variants.length > 0 && variants[0].variantImages?.length) {
-      return variants[0].variantImages.map((img) => getImageUrl(img)).slice(0, 4);
+      return variants[0].variantImages
+        .map((img) => getImageUrl(img))
+        .slice(0, 4);
     }
     if (product?.gallery?.length) {
       return product.gallery.map((img) => getImageUrl(img)).slice(0, 4);
@@ -498,33 +715,41 @@ const handleReviewDislike = async (reviewId, currentAction) => {
   const productSizeSystem = product?.sizeSystem || "BOTTOMWEAR_NUM";
   const isNumericSizes = productSizeSystem === "BOTTOMWEAR_NUM";
 
-  const convMap = useMemo(() => getSizeConversion(productSizeSystem), [productSizeSystem]);
+  const convMap = useMemo(
+    () => getSizeConversion(productSizeSystem),
+    [productSizeSystem],
+  );
   const getBtnLabel = useMemo(
     () => (inKey) => toDisplaySize(inKey, sizeSystem, productSizeSystem),
-    [sizeSystem, productSizeSystem]
+    [sizeSystem, productSizeSystem],
   );
   const getTooltip = useMemo(
     () => (inKey) => {
       const r = convMap[inKey];
       if (!r) return null;
-      if (isNumericSizes) return `IN ${r.IN}" · UK ${r.UK} · US ${r.US} · Waist ${r.waist}`;
+      if (isNumericSizes)
+        return `IN ${r.IN}" · UK ${r.UK} · US ${r.US} · Waist ${r.waist}`;
       return `IN ${r.IN} · UK ${r.UK} · US ${r.US}`;
     },
-    [convMap, isNumericSizes]
+    [convMap, isNumericSizes],
   );
 
   const selectedDisplaySize = selectedSize ? getBtnLabel(selectedSize) : "";
   const categoryBadge = isNumericSizes
     ? "Waist size (inches)"
     : productSizeSystem === "BOTTOMWEAR_ALPHA"
-    ? "Bottomwear Alpha size"
-    : "Topwear Alpha size";
+      ? "Bottomwear Alpha size"
+      : "Topwear Alpha size";
 
   const isColorOutOfStock = (color) => {
     if (!variants.length) return false;
     const normalizedColor = formatColor(color);
-    const colorVariants = variants.filter((v) => formatColor(v.color) === normalizedColor);
-    return colorVariants.length === 0 || colorVariants.every((v) => v.stock === 0);
+    const colorVariants = variants.filter(
+      (v) => formatColor(v.color) === normalizedColor,
+    );
+    return (
+      colorVariants.length === 0 || colorVariants.every((v) => v.stock === 0)
+    );
   };
 
   const isSizeOutOfStock = (size) => unavailableSizes.includes(size);
@@ -533,8 +758,11 @@ const handleReviewDislike = async (reviewId, currentAction) => {
   const getColorImage = (color) => {
     if (variants.length) {
       const normalizedColor = formatColor(color);
-      const variant = variants.find((v) => formatColor(v.color) === normalizedColor);
-      if (variant?.variantImages?.length) return getImageUrl(variant.variantImages[0]);
+      const variant = variants.find(
+        (v) => formatColor(v.color) === normalizedColor,
+      );
+      if (variant?.variantImages?.length)
+        return getImageUrl(variant.variantImages[0]);
     }
     if (product?.gallery?.length) return getImageUrl(product.gallery[0]);
     return "";
@@ -555,8 +783,8 @@ const handleReviewDislike = async (reviewId, currentAction) => {
           Array.isArray(variantsData) && variantsData.length > 0
             ? variantsData
             : Array.isArray(response.data)
-            ? response.data
-            : [];
+              ? response.data
+              : [];
 
         if (finalVariantsData.length > 0) {
           setVariants(finalVariantsData);
@@ -565,25 +793,45 @@ const handleReviewDislike = async (reviewId, currentAction) => {
           const uniqueColors = [
             ...new Set(
               finalVariantsData
-                .map((v) => (v.color ? v.color.charAt(0).toUpperCase() + v.color.slice(1).toLowerCase() : ""))
-                .filter(Boolean)
+                .map((v) =>
+                  v.color
+                    ? v.color.charAt(0).toUpperCase() +
+                      v.color.slice(1).toLowerCase()
+                    : "",
+                )
+                .filter(Boolean),
             ),
           ];
-          const uniqueSizes = [...new Set(finalVariantsData.map((v) => v.size).filter(Boolean))];
-          const totalStock = finalVariantsData.reduce((sum, v) => sum + (v.stock || 0), 0);
-          const unavailableSizesList = finalVariantsData.filter((v) => v.stock === 0).map((v) => v.size);
+          const uniqueSizes = [
+            ...new Set(finalVariantsData.map((v) => v.size).filter(Boolean)),
+          ];
+          const totalStock = finalVariantsData.reduce(
+            (sum, v) => sum + (v.stock || 0),
+            0,
+          );
+          const unavailableSizesList = finalVariantsData
+            .filter((v) => v.stock === 0)
+            .map((v) => v.size);
 
           let detectedSizeSystem = "BOTTOMWEAR_NUM";
-          const hasNumericSizes = uniqueSizes.some((size) => /^\d+$/.test(size));
+          const hasNumericSizes = uniqueSizes.some((size) =>
+            /^\d+$/.test(size),
+          );
           if (hasNumericSizes) {
             detectedSizeSystem = "BOTTOMWEAR_NUM";
-          } else if (uniqueSizes.some((size) => ["XS", "S", "M", "L", "XL"].includes(size))) {
+          } else if (
+            uniqueSizes.some((size) =>
+              ["XS", "S", "M", "L", "XL"].includes(size),
+            )
+          ) {
             detectedSizeSystem = "TOPWEAR_ALPHA";
           }
 
           const productData = {
-            id: firstVariant.productId || id,
-            _id: firstVariant.productId || id,
+            // id: firstVariant.productId || id,
+            // _id: firstVariant.productId || id,
+            id: firstVariant.productId?._id || id,
+            _id: firstVariant.productId?._id || id,
             name: firstVariant.variantTitle || "Product",
             description: firstVariant.variantDiscription || "",
             brand: "Snitch",
@@ -613,13 +861,19 @@ const handleReviewDislike = async (reviewId, currentAction) => {
           }
 
           if (uniqueColors.length > 0) {
-            const defaultColor = uniqueColors.includes("Black") ? "Black" : uniqueColors[0];
+            const defaultColor = uniqueColors.includes("Black")
+              ? "Black"
+              : uniqueColors[0];
             setSelectedColor(defaultColor);
           }
 
-          const availableSizes = uniqueSizes.filter((size) => !unavailableSizesList.includes(size));
+          const availableSizes = uniqueSizes.filter(
+            (size) => !unavailableSizesList.includes(size),
+          );
           if (availableSizes.length > 0) {
-            const defaultSize = availableSizes.includes("32") ? "32" : availableSizes[0];
+            const defaultSize = availableSizes.includes("32")
+              ? "32"
+              : availableSizes[0];
             setSelectedSize(defaultSize);
           } else if (uniqueSizes.length > 0) {
             setSelectedSize(uniqueSizes[0]);
@@ -649,7 +903,8 @@ const handleReviewDislike = async (reviewId, currentAction) => {
   useEffect(() => {
     if (!product) return;
     if (colors.length > 0 && !selectedColor) setSelectedColor(colors[0]);
-    if (product.gallery?.length && !selectedImage) setSelectedImage(product.gallery[0]);
+    if (product.gallery?.length && !selectedImage)
+      setSelectedImage(product.gallery[0]);
   }, [product, colors, selectedColor, selectedImage]);
 
   useEffect(() => {
@@ -671,12 +926,33 @@ const handleReviewDislike = async (reviewId, currentAction) => {
     }
   }, [selectedColor, unavailableSizes, sizes, selectedSize]);
 
+  // useEffect(() => {
+  //   if (!product) return;
+  //   const prev = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || "[]");
+  //   const next = [product.id, ...prev.filter((i) => i !== product.id)].slice(
+  //     0,
+  //     20,
+  //   );
+  //   localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(next));
+  // }, [product]);
+
   useEffect(() => {
-    if (!product) return;
+    if (!product || !id || !gridImages.length) return;
+
+    const snapshot = {
+      id: id, // URL param — always a clean string
+      name: product.name,
+      price: displayPrice,
+      front: gridImages[0] || "",
+    };
+
     const prev = JSON.parse(localStorage.getItem(RECENTLY_VIEWED_KEY) || "[]");
-    const next = [product.id, ...prev.filter((i) => i !== product.id)].slice(0, 20);
+    const filtered = prev.filter(
+      (item) => typeof item === "object" && item?.id !== id,
+    );
+    const next = [snapshot, ...filtered].slice(0, 20);
     localStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(next));
-  }, [product]);
+  }, [product, id, displayPrice, gridImages]);
 
   useEffect(() => {
     if (!toast) return;
@@ -808,108 +1084,112 @@ const handleReviewDislike = async (reviewId, currentAction) => {
     });
   };
 
-const fetchReviews = async (page = 1, reset = true) => {
-  if (!product?._id && !id) return;
-  
-  try {
-    setLoadingReviews(true);
-    const variantId = selectedVariant?._id || variants[0]?._id;
-    
-    if (!variantId) {
-      console.warn("No variant ID available for fetching reviews");
+  const fetchReviews = async (page = 1, reset = true) => {
+    if (!product?._id && !id) return;
+
+    try {
+      setLoadingReviews(true);
+      const variantId = selectedVariant?._id || variants[0]?._id;
+
+      if (!variantId) {
+        console.warn("No variant ID available for fetching reviews");
+        return;
+      }
+
+      const response = await api.get(`/review`, {
+        params: {
+          variantId: variantId,
+          page: page,
+          limit: 10,
+        },
+      });
+
+      if (response.data.success) {
+        // Add userAction field to each review (if your API returns user's interaction)
+        const reviewsWithUserAction = (response.data.reviews || []).map(
+          (review) => ({
+            ...review,
+            userAction: review.userAction || null, // 'liked', 'disliked', or null
+          }),
+        );
+
+        if (reset) {
+          setReviews(reviewsWithUserAction);
+        } else {
+          setReviews((prev) => [...prev, ...reviewsWithUserAction]);
+        }
+
+        setReviewStats(response.data.stats);
+        setHasMoreReviews(
+          response.data.reviews?.length === response.data.limit,
+        );
+        setReviewPage(response.data.page);
+      }
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      setToast("Failed to load reviews");
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
+  const loadMoreReviews = () => {
+    if (!loadingReviews && hasMoreReviews) {
+      fetchReviews(reviewPage + 1, false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedVariant?._id || variants[0]?._id) {
+      fetchReviews(1, true);
+    }
+  }, [selectedVariant, variants]);
+  // ─── Wishlist / share / delivery ─────────────────────────────────────────────
+  const isInWishlist = useSelector(selectIsInWishlist(selectedVariant?._id));
+
+  const isWishlisted = useMemo(() => {
+    const variantToUse = selectedVariant || variants?.[0];
+    return variantToUse?.isWishlisted || false;
+  }, [selectedVariant, variants]);
+
+  // ─── Wishlist Toggle (Using same API for add/remove) ─────────────────────────────
+  const toggleWishlist = async () => {
+    if (!isLoggedIn) {
+      setLoginOpen(true);
+      setToast("Please login to add items to wishlist");
       return;
     }
-    
-    const response = await api.get(`/review`, {
-      params: {
-        variantId: variantId,
-        page: page,
-        limit: 10
+
+    const variantToUse = selectedVariant || variants?.[0];
+
+    if (!variantToUse?._id) return;
+
+    setUpdatingWishlist(true);
+
+    try {
+      const response = await api.post("/wishlist", {
+        variantId: variantToUse._id,
+      });
+
+      if (response.data.success) {
+        setVariants((prevVariants) =>
+          prevVariants.map((variant) =>
+            variant._id === variantToUse._id
+              ? { ...variant, isWishlisted: !variant.isWishlisted }
+              : variant,
+          ),
+        );
+        dispatch(fetchWishlist());
+        const newStatus = !variantToUse.isWishlisted;
+        setToast(newStatus ? "Added to wishlist ♥" : "Removed from wishlist");
       }
-    });
-    
-    if (response.data.success) {
-      // Add userAction field to each review (if your API returns user's interaction)
-      const reviewsWithUserAction = (response.data.reviews || []).map(review => ({
-        ...review,
-        userAction: review.userAction || null // 'liked', 'disliked', or null
-      }));
-      
-      if (reset) {
-        setReviews(reviewsWithUserAction);
-      } else {
-        setReviews(prev => [...prev, ...reviewsWithUserAction]);
-      }
-      
-      setReviewStats(response.data.stats);
-      setHasMoreReviews(response.data.reviews?.length === response.data.limit);
-      setReviewPage(response.data.page);
+    } catch (error) {
+      console.error("Wishlist error:", error);
+      setToast(error?.response?.data?.message || "Failed to update wishlist");
+    } finally {
+      setUpdatingWishlist(false);
     }
-  } catch (error) {
-    console.error("Error fetching reviews:", error);
-    setToast("Failed to load reviews");
-  } finally {
-    setLoadingReviews(false);
-  }
-};
-
-const loadMoreReviews = () => {
-  if (!loadingReviews && hasMoreReviews) {
-    fetchReviews(reviewPage + 1, false);
-  }
-};
-
-useEffect(() => {
-  if (selectedVariant?._id || variants[0]?._id) {
-    fetchReviews(1, true);
-  }
-}, [selectedVariant, variants]);
-  // ─── Wishlist / share / delivery ─────────────────────────────────────────────
-const isInWishlist = useSelector(selectIsInWishlist(selectedVariant?._id));
-
-const isWishlisted = useMemo(() => {
-  const variantToUse = selectedVariant || variants?.[0];
-  return variantToUse?.isWishlisted || false;
-}, [selectedVariant, variants]);
-
-// ─── Wishlist Toggle (Using same API for add/remove) ─────────────────────────────
-const toggleWishlist = async () => {
-  if (!isLoggedIn) {
-    setLoginOpen(true);
-    setToast("Please login to add items to wishlist");
-    return;
-  }
-
-  const variantToUse = selectedVariant || variants?.[0];
-
-  if (!variantToUse?._id) return;
-
-  setUpdatingWishlist(true);
-
-  try {
-    const response = await api.post("/wishlist", { variantId: variantToUse._id });
-    
-    if (response.data.success) {
-     
-      setVariants(prevVariants =>
-        prevVariants.map(variant =>
-          variant._id === variantToUse._id
-            ? { ...variant, isWishlisted: !variant.isWishlisted }
-            : variant
-        )
-      );
-       dispatch(fetchWishlist());
-      const newStatus = !variantToUse.isWishlisted;
-      setToast(newStatus ? "Added to wishlist ♥" : "Removed from wishlist");
-    }
-  } catch (error) {
-    console.error("Wishlist error:", error);
-    setToast(error?.response?.data?.message || "Failed to update wishlist");
-  } finally {
-    setUpdatingWishlist(false);
-  }
-};
-
+  };
 
   const checkDelivery = () => {
     if (!navigator.onLine) {
@@ -917,17 +1197,25 @@ const toggleWishlist = async () => {
       return;
     }
     if (!/^\d{6}$/.test(pincode)) {
-      setDeliveryState({ type: "error", message: "Please enter a valid 6-digit pincode." });
+      setDeliveryState({
+        type: "error",
+        message: "Please enter a valid 6-digit pincode.",
+      });
       return;
     }
     setDeliveryState({
       type: "success",
-      message: `Delivery by ${new Date(Date.now() + 3 * 24 * 3600 * 1000).toLocaleDateString("en-IN", {
+      message: `Delivery by ${new Date(
+        Date.now() + 3 * 24 * 3600 * 1000,
+      ).toLocaleDateString("en-IN", {
         day: "2-digit",
         month: "short",
       })}`,
       cod: product?.codAvailable ? "Available" : "Not Available",
-      shipping: product?.shippingCharge === 0 ? "Free" : `Rs. ${product?.shippingCharge}`,
+      shipping:
+        product?.shippingCharge === 0
+          ? "Free"
+          : `Rs. ${product?.shippingCharge}`,
       returns: "7-day easy return available",
     });
   };
@@ -943,10 +1231,20 @@ const toggleWishlist = async () => {
   };
 
   const COLOR_MAP = {
-    Black: "#1a1a1a", White: "#f5f5f5", Red: "#e53935", Blue: "#1e88e5",
-    Green: "#43a047", Yellow: "#fdd835", Pink: "#e91e8c", Grey: "#9e9e9e",
-    Navy: "#1a237e", Maroon: "#880e4f", Beige: "#d7ccc8", Orange: "#fb8c00",
-    Brown: "#795548", Olive: "#827717",
+    Black: "#1a1a1a",
+    White: "#f5f5f5",
+    Red: "#e53935",
+    Blue: "#1e88e5",
+    Green: "#43a047",
+    Yellow: "#fdd835",
+    Pink: "#e91e8c",
+    Grey: "#9e9e9e",
+    Navy: "#1a237e",
+    Maroon: "#880e4f",
+    Beige: "#d7ccc8",
+    Orange: "#fb8c00",
+    Brown: "#795548",
+    Olive: "#827717",
   };
 
   // ─── Loading / not found ──────────────────────────────────────────────────────
@@ -966,10 +1264,16 @@ const toggleWishlist = async () => {
     return (
       <section className="min-h-[70vh] flex items-center justify-center px-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Product not found</h1>
-          <p className="text-gray-500 mt-2">The product you are looking for does not exist.</p>
-          <Link to="/productlist"
-            className="inline-block mt-6 px-5 py-2.5 rounded-full bg-[#e4a156] text-white font-semibold">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Product not found
+          </h1>
+          <p className="text-gray-500 mt-2">
+            The product you are looking for does not exist.
+          </p>
+          <Link
+            to="/productlist"
+            className="inline-block mt-6 px-5 py-2.5 rounded-full bg-[#e4a156] text-white font-semibold"
+          >
             Browse Products
           </Link>
         </div>
@@ -990,11 +1294,22 @@ const toggleWishlist = async () => {
 
       {/* Lightbox */}
       {lightboxOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={() => setLightboxOpen(false)}>
-          <img src={selectedImage} alt="" className="h-[90vh] max-w-[90vw] object-contain shadow-2xl" />
-          <button type="button" className="absolute top-4 right-4 text-white text-2xl"
-            onClick={() => setLightboxOpen(false)}>✕</button>
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <img
+            src={selectedImage}
+            alt=""
+            className="h-[90vh] max-w-[90vw] object-contain shadow-2xl"
+          />
+          <button
+            type="button"
+            className="absolute top-4 right-4 text-white text-2xl"
+            onClick={() => setLightboxOpen(false)}
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -1011,18 +1326,29 @@ const toggleWishlist = async () => {
         {/* Breadcrumb */}
         <div className="bg-white border-b border-gray-100 py-3 flex items-center justify-between text-xs text-gray-400 sticky top-0 z-30">
           <div className="flex items-center gap-2">
-            <button type="button"
-              onClick={() => { location.state?.returnTo ? navigate(location.state.returnTo) : navigate(-1); }}
-              className="hover:text-[#e4a156] transition-colors">
+            <button
+              type="button"
+              onClick={() => {
+                location.state?.returnTo
+                  ? navigate(location.state.returnTo)
+                  : navigate(-1);
+              }}
+              className="hover:text-[#e4a156] transition-colors"
+            >
               ← Back
             </button>
             <span className="text-gray-200">/</span>
             <span>{product.brand}</span>
             <span className="text-gray-200">/</span>
-            <span className="text-gray-700 font-medium line-clamp-1 max-w-[200px]">{product.name}</span>
+            <span className="text-gray-700 font-medium line-clamp-1 max-w-[200px]">
+              {product.name}
+            </span>
           </div>
-          <button type="button" onClick={copyShareLink}
-            className="flex items-center gap-1.5 hover:text-[#e4a156] transition-colors">
+          <button
+            type="button"
+            onClick={copyShareLink}
+            className="flex items-center gap-1.5 hover:text-[#e4a156] transition-colors"
+          >
             {shareCopied ? <FiCheck size={13} /> : <FiCopy size={13} />}
             {shareCopied ? "Copied!" : "Share"}
           </button>
@@ -1032,34 +1358,44 @@ const toggleWishlist = async () => {
           {/* LEFT — desktop image grid */}
           <div className="hidden lg:block sticky top-[60px] self-start w-[520px] shrink-0">
             <div className="grid grid-cols-2 gap-2">
-              {gridImages.map((img, idx) =>
-                img && (
-                  <button key={idx} type="button"
-                    onClick={() => { setSelectedImage(img); setLightboxOpen(true); }}
-                    className="relative group overflow-hidden bg-gray-50"
-                    style={{ aspectRatio: "1 / 1.1" }}>
-                    <img src={img} alt={`View ${idx + 1}`}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      loading={idx === 0 ? "eager" : "lazy"} />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/8 transition-colors flex items-center justify-center">
-                      <div className="opacity-0 group-hover:opacity-100 bg-white/80 backdrop-blur-sm rounded-full p-2 transition-opacity">
-                        <FiZoomIn size={16} className="text-gray-700" />
+              {gridImages.map(
+                (img, idx) =>
+                  img && (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setSelectedImage(img);
+                        setLightboxOpen(true);
+                      }}
+                      className="relative group overflow-hidden bg-gray-50"
+                      style={{ aspectRatio: "1 / 1.1" }}
+                    >
+                      <img
+                        src={img}
+                        alt={`View ${idx + 1}`}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading={idx === 0 ? "eager" : "lazy"}
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/8 transition-colors flex items-center justify-center">
+                        <div className="opacity-0 group-hover:opacity-100 bg-white/80 backdrop-blur-sm rounded-full p-2 transition-opacity">
+                          <FiZoomIn size={16} className="text-gray-700" />
+                        </div>
                       </div>
-                    </div>
-                    {idx === 0 && discountPercent > 0 && (
-                      <div className="absolute top-3 left-3 bg-[#e4a156] text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-md">
-                        {discountPercent}% OFF
-                      </div>
-                    )}
-                    {idx === 0 && isOutOfStock && (
-                      <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
-                        <span className="text-red-500 font-bold text-sm border-2 border-red-400 px-4 py-1 rounded-full bg-white">
-                          OUT OF STOCK
-                        </span>
-                      </div>
-                    )}
-                  </button>
-                )
+                      {idx === 0 && discountPercent > 0 && (
+                        <div className="absolute top-3 left-3 bg-[#e4a156] text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-md">
+                          {discountPercent}% OFF
+                        </div>
+                      )}
+                      {idx === 0 && isOutOfStock && (
+                        <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+                          <span className="text-red-500 font-bold text-sm border-2 border-red-400 px-4 py-1 rounded-full bg-white">
+                            OUT OF STOCK
+                          </span>
+                        </div>
+                      )}
+                    </button>
+                  ),
               )}
             </div>
           </div>
@@ -1067,18 +1403,27 @@ const toggleWishlist = async () => {
           {/* Mobile image */}
           <div className="lg:hidden w-full">
             <div className="grid grid-cols-2 gap-1.5">
-              {gridImages.map((img, idx) =>
-                img && (
-                  <div key={idx} className="relative overflow-hidden bg-gray-50" style={{ aspectRatio: "1 / 1.1" }}>
-                    <img src={img} alt={`View ${idx + 1}`}
-                      className="w-full h-full object-cover" loading={idx === 0 ? "eager" : "lazy"} />
-                    {idx === 0 && discountPercent > 0 && (
-                      <div className="absolute top-2 left-2 bg-[#e4a156] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        {discountPercent}% OFF
-                      </div>
-                    )}
-                  </div>
-                )
+              {gridImages.map(
+                (img, idx) =>
+                  img && (
+                    <div
+                      key={idx}
+                      className="relative overflow-hidden bg-gray-50"
+                      style={{ aspectRatio: "1 / 1.1" }}
+                    >
+                      <img
+                        src={img}
+                        alt={`View ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                        loading={idx === 0 ? "eager" : "lazy"}
+                      />
+                      {idx === 0 && discountPercent > 0 && (
+                        <div className="absolute top-2 left-2 bg-[#e4a156] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          {discountPercent}% OFF
+                        </div>
+                      )}
+                    </div>
+                  ),
               )}
             </div>
           </div>
@@ -1089,33 +1434,44 @@ const toggleWishlist = async () => {
             <div className="bg-white shadow-sm p-6">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-bold text-[#e4a156] uppercase tracking-widest mb-1">{product.brand}</p>
-                  <h1 className="text-xl font-bold text-gray-900 leading-snug">{product.name}</h1>
-                  <p className="text-sm text-gray-500 mt-2 leading-relaxed">{product.description}</p>
+                  <p className="text-xs font-bold text-[#e4a156] uppercase tracking-widest mb-1">
+                    {product.brand}
+                  </p>
+                  <h1 className="text-xl font-bold text-gray-900 leading-snug">
+                    {product.name}
+                  </h1>
+                  <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+                    {product.description}
+                  </p>
                 </div>
-                <button 
-            type="button" 
-            onClick={toggleWishlist}
-            disabled={updatingWishlist}
-            className={`shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${
-              isWishlisted
-                ? "border-red-500 bg-red-50 text-red-500"
-                : "border-gray-200 text-gray-400 hover:border-[#e4a156] hover:text-[#e4a156]"
-            } ${(updatingWishlist) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-          >
-            {updatingWishlist ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
-            ) : (
-              <FiHeart size={17} className={isWishlisted ? "fill-red-500" : ""} />
-            )}
-          </button>
+                <button
+                  type="button"
+                  onClick={toggleWishlist}
+                  disabled={updatingWishlist}
+                  className={`shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${
+                    isWishlisted
+                      ? "border-red-500 bg-red-50 text-red-500"
+                      : "border-gray-200 text-gray-400 hover:border-[#e4a156] hover:text-[#e4a156]"
+                  } ${updatingWishlist ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                >
+                  {updatingWishlist ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                  ) : (
+                    <FiHeart
+                      size={17}
+                      className={isWishlisted ? "fill-red-500" : ""}
+                    />
+                  )}
+                </button>
               </div>
               <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-50">
                 <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
                   {product.rating} <FiStar size={11} className="fill-white" />
                 </span>
                 <Stars rating={product.rating} />
-                <span className="text-sm text-gray-400">{product.reviews} reviews</span>
+                <span className="text-sm text-gray-400">
+                  {product.reviews} reviews
+                </span>
               </div>
               <div className="flex items-baseline gap-3 mt-4 pt-4 border-t border-dashed border-gray-100">
                 <span className="text-2xl font-extrabold text-gray-900">
@@ -1132,7 +1488,9 @@ const toggleWishlist = async () => {
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-gray-400 mt-1">inclusive of all taxes</p>
+              <p className="text-[11px] text-gray-400 mt-1">
+                inclusive of all taxes
+              </p>
             </div>
 
             {/* Color / Size / Quantity */}
@@ -1141,7 +1499,10 @@ const toggleWishlist = async () => {
               {colors.length > 0 && (
                 <div>
                   <p className="text-sm font-semibold text-gray-700 mb-3">
-                    Color: <span className="font-normal text-gray-500">{selectedColor}</span>
+                    Color:{" "}
+                    <span className="font-normal text-gray-500">
+                      {selectedColor}
+                    </span>
                   </p>
                   <div className="flex gap-2.5 flex-wrap">
                     {colors.map((color) => {
@@ -1149,7 +1510,10 @@ const toggleWishlist = async () => {
                       const isSel = selectedColor === color;
                       const oos = isColorOutOfStock(color);
                       return (
-                        <button key={color} type="button" disabled={oos}
+                        <button
+                          key={color}
+                          type="button"
+                          disabled={oos}
                           onClick={() => {
                             setSelectedColor(color);
                             setSelectedImage(getColorImage(color));
@@ -1157,10 +1521,21 @@ const toggleWishlist = async () => {
                           }}
                           title={color}
                           className={`relative w-9 h-9 rounded-full transition-all duration-200 ${
-                            isSel ? "ring-2 ring-[#e4a156] ring-offset-2 scale-110 shadow-lg" : "hover:scale-105"
+                            isSel
+                              ? "ring-2 ring-[#e4a156] ring-offset-2 scale-110 shadow-lg"
+                              : "hover:scale-105"
                           } ${oos ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}`}
-                          style={{ backgroundColor: bg, border: `2px solid ${isSel ? "#e4a156" : "#e5e7eb"}` }}>
-                          {isSel && <FiCheck size={14} className="absolute inset-0 m-auto text-white drop-shadow" />}
+                          style={{
+                            backgroundColor: bg,
+                            border: `2px solid ${isSel ? "#e4a156" : "#e5e7eb"}`,
+                          }}
+                        >
+                          {isSel && (
+                            <FiCheck
+                              size={14}
+                              className="absolute inset-0 m-auto text-white drop-shadow"
+                            />
+                          )}
                           {oos && (
                             <span className="absolute inset-0 flex items-center justify-center">
                               <span className="block w-full h-px bg-red-400 rotate-45" />
@@ -1177,7 +1552,9 @@ const toggleWishlist = async () => {
               <div>
                 <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-sm font-semibold text-gray-700">Select Size</p>
+                    <p className="text-sm font-semibold text-gray-700">
+                      Select Size
+                    </p>
                     <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full uppercase tracking-wide">
                       {categoryBadge}
                     </span>
@@ -1187,8 +1564,11 @@ const toggleWishlist = async () => {
                       </span>
                     )}
                   </div>
-                  <button type="button" onClick={() => setShowSizeChart(true)}
-                    className="text-xs text-[#e4a156] font-semibold hover:underline flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowSizeChart(true)}
+                    className="text-xs text-[#e4a156] font-semibold hover:underline flex items-center gap-1 shrink-0"
+                  >
                     <FiInfo size={11} /> Size Chart
                   </button>
                 </div>
@@ -1196,13 +1576,21 @@ const toggleWishlist = async () => {
                 {/* Size system switcher */}
                 <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 w-fit mb-4">
                   {SIZE_SYSTEMS.map((sys) => (
-                    <button key={sys} type="button" onClick={() => setSizeSystem(sys)}
+                    <button
+                      key={sys}
+                      type="button"
+                      onClick={() => setSizeSystem(sys)}
                       className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 min-w-[46px] ${
-                        sizeSystem === sys ? "bg-white text-[#e4a156] shadow-sm" : "text-gray-500 hover:text-gray-700"
-                      }`}>
+                        sizeSystem === sys
+                          ? "bg-white text-[#e4a156] shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
                       {sys}
                       {sys === "IN" && isNumericSizes && (
-                        <span className="block text-[8px] font-normal text-gray-400 leading-none -mt-0.5">inch</span>
+                        <span className="block text-[8px] font-normal text-gray-400 leading-none -mt-0.5">
+                          inch
+                        </span>
                       )}
                     </button>
                   ))}
@@ -1217,21 +1605,29 @@ const toggleWishlist = async () => {
                     const tip = getTooltip(inKey);
                     return (
                       <div key={inKey} className="relative group/sz">
-                        <button type="button" disabled={oos}
-                          onClick={() => { setSelectedSize(inKey); setSizeError(""); }}
+                        <button
+                          type="button"
+                          disabled={oos}
+                          onClick={() => {
+                            setSelectedSize(inKey);
+                            setSizeError("");
+                          }}
                           className={`relative min-w-[52px] h-11 px-3 rounded-xl border-2 text-sm font-semibold transition-all duration-200 ${
                             sel
                               ? "bg-[#e4a156] text-white border-[#e4a156] shadow-md scale-105"
                               : oos
-                              ? "border-gray-100 text-gray-300 cursor-not-allowed bg-gray-50"
-                              : "border-gray-200 text-gray-700 hover:border-[#e4a156] hover:text-[#e4a156] hover:bg-amber-50"
-                          }`}>
+                                ? "border-gray-100 text-gray-300 cursor-not-allowed bg-gray-50"
+                                : "border-gray-200 text-gray-700 hover:border-[#e4a156] hover:text-[#e4a156] hover:bg-amber-50"
+                          }`}
+                        >
                           {oos && (
                             <span className="absolute inset-0 overflow-hidden rounded-xl flex items-center justify-center pointer-events-none">
                               <span className="block w-[80%] h-px bg-gray-300 rotate-45" />
                             </span>
                           )}
-                          <span className={oos ? "opacity-40" : ""}>{btnLabel}</span>
+                          <span className={oos ? "opacity-40" : ""}>
+                            {btnLabel}
+                          </span>
                         </button>
                         {!oos && !sel && tip && (
                           <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-3 py-1.5 rounded-lg opacity-0 group-hover/sz:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none shadow-xl">
@@ -1252,21 +1648,35 @@ const toggleWishlist = async () => {
                 </p>
 
                 {sizeError && (
-                  <p className="text-xs text-red-500 mt-2 flex items-center gap-1.5">⚠ {sizeError}</p>
+                  <p className="text-xs text-red-500 mt-2 flex items-center gap-1.5">
+                    ⚠ {sizeError}
+                  </p>
                 )}
               </div>
 
               {/* Quantity */}
               <div>
-                <p className="text-sm font-semibold text-gray-700 mb-2.5">Quantity</p>
+                <p className="text-sm font-semibold text-gray-700 mb-2.5">
+                  Quantity
+                </p>
                 <div className="inline-flex items-center border-2 border-gray-200 rounded-xl overflow-hidden">
-                  <button type="button" onClick={() => setQuantity((p) => Math.max(1, p - 1))}
-                    className="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-xl font-light">−</button>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((p) => Math.max(1, p - 1))}
+                    className="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-xl font-light"
+                  >
+                    −
+                  </button>
                   <span className="w-12 h-10 flex items-center justify-center font-bold text-gray-900 border-x-2 border-gray-200 text-sm">
                     {quantity}
                   </span>
-                  <button type="button" onClick={() => setQuantity((p) => p + 1)}
-                    className="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-xl font-light">+</button>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((p) => p + 1)}
+                    className="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-xl font-light"
+                  >
+                    +
+                  </button>
                 </div>
               </div>
             </div>
@@ -1274,14 +1684,20 @@ const toggleWishlist = async () => {
             {/* CTA */}
             <div className="bg-white shadow-sm p-4">
               <div className="flex gap-3">
-                <button type="button" onClick={addToCart}
+                <button
+                  type="button"
+                  onClick={addToCart}
                   disabled={!selectedSize || isOutOfStock}
-                  className="flex-1 h-12 rounded-xl border-2 border-[#e4a156] text-[#e4a156] font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                  className="flex-1 h-12 rounded-xl border-2 border-[#e4a156] text-[#e4a156] font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
                   <FiShoppingCart size={16} /> ADD TO BAG
                 </button>
-                <button type="button" onClick={handleBuyNow}
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
                   disabled={!selectedSize || isOutOfStock}
-                  className="flex-1 h-12 rounded-xl bg-gradient-to-r from-[#e4a156] to-[#d4854a] text-white font-bold text-sm flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-amber-200 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md">
+                  className="flex-1 h-12 rounded-xl bg-gradient-to-r from-[#e4a156] to-[#d4854a] text-white font-bold text-sm flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-amber-200 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md"
+                >
                   BUY NOW
                 </button>
               </div>
@@ -1301,26 +1717,43 @@ const toggleWishlist = async () => {
                 Delivery Options
               </p>
               <div className="flex gap-2">
-                <input value={pincode}
-                  onChange={(e) => setPincode(e.target.value.replace(/[^0-9]/g, ""))}
-                  maxLength={6} placeholder="Enter 6-digit Pincode"
-                  className="flex-1 h-11 rounded-xl border-2 border-gray-200 px-4 text-sm focus:outline-none focus:border-[#e4a156] transition-colors" />
-                <button type="button" onClick={checkDelivery}
-                  className="px-5 h-11 rounded-xl bg-amber-50 border-2 border-[#e4a156] text-[#e4a156] text-sm font-bold hover:bg-amber-100 transition-colors">
+                <input
+                  value={pincode}
+                  onChange={(e) =>
+                    setPincode(e.target.value.replace(/[^0-9]/g, ""))
+                  }
+                  maxLength={6}
+                  placeholder="Enter 6-digit Pincode"
+                  className="flex-1 h-11 rounded-xl border-2 border-gray-200 px-4 text-sm focus:outline-none focus:border-[#e4a156] transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={checkDelivery}
+                  className="px-5 h-11 rounded-xl bg-amber-50 border-2 border-[#e4a156] text-[#e4a156] text-sm font-bold hover:bg-amber-100 transition-colors"
+                >
                   Check
                 </button>
               </div>
               {deliveryState && (
-                <div className={`mt-3 rounded-xl p-3 text-sm ${
-                  deliveryState.type === "error"
-                    ? "bg-red-50 text-red-500 border border-red-100"
-                    : "bg-emerald-50 border border-emerald-100"
-                }`}>
+                <div
+                  className={`mt-3 rounded-xl p-3 text-sm ${
+                    deliveryState.type === "error"
+                      ? "bg-red-50 text-red-500 border border-red-100"
+                      : "bg-emerald-50 border border-emerald-100"
+                  }`}
+                >
                   {deliveryState.type === "success" ? (
                     <div className="space-y-1">
-                      <p className="text-emerald-700 font-bold">✓ {deliveryState.message}</p>
-                      <p className="text-xs text-gray-500">COD: {deliveryState.cod} · Shipping: {deliveryState.shipping}</p>
-                      <p className="text-xs text-gray-500">{deliveryState.returns}</p>
+                      <p className="text-emerald-700 font-bold">
+                        ✓ {deliveryState.message}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        COD: {deliveryState.cod} · Shipping:{" "}
+                        {deliveryState.shipping}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {deliveryState.returns}
+                      </p>
                     </div>
                   ) : (
                     <p>{deliveryState.message}</p>
@@ -1332,210 +1765,283 @@ const toggleWishlist = async () => {
             {/* Offers */}
             <div className="bg-white shadow-sm p-5">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-gray-800">🎁 Available Offers</h3>
-                <button type="button" onClick={() => setShowAllOffers((p) => !p)}
-                  className="text-xs text-[#e4a156] font-semibold hover:underline">
+                <h3 className="text-sm font-bold text-gray-800">
+                  🎁 Available Offers
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowAllOffers((p) => !p)}
+                  className="text-xs text-[#e4a156] font-semibold hover:underline"
+                >
                   {showAllOffers ? "Show Less" : "View All"}
                 </button>
               </div>
               <ul className="space-y-2">
-                {(showAllOffers ? OFFER_LIST : OFFER_LIST.slice(0, 2)).map((offer) => (
-                  <li key={offer}
-                    className="flex items-start gap-2.5 text-xs text-gray-600 bg-amber-50/50 rounded-lg px-3 py-2.5">
-                    <span className="text-emerald-500 shrink-0 mt-0.5">✦</span>
-                    <span>{offer}</span>
-                  </li>
-                ))}
+                {(showAllOffers ? OFFER_LIST : OFFER_LIST.slice(0, 2)).map(
+                  (offer) => (
+                    <li
+                      key={offer}
+                      className="flex items-start gap-2.5 text-xs text-gray-600 bg-amber-50/50 rounded-lg px-3 py-2.5"
+                    >
+                      <span className="text-emerald-500 shrink-0 mt-0.5">
+                        ✦
+                      </span>
+                      <span>{offer}</span>
+                    </li>
+                  ),
+                )}
               </ul>
             </div>
 
             {/* Accordion */}
-            <div className="bg-white shadow-sm overflow-hidden">
-              {DETAIL_SECTIONS.map((section, i) => (
-                <div key={section.key} className={i > 0 ? "border-t border-gray-50" : ""}>
-                  <button type="button"
-                    className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50/80 transition-colors"
-                    onClick={() => setOpenSection((prev) => (prev === section.key ? "" : section.key))}>
-                    <span className="text-sm font-semibold text-gray-800">{section.title}</span>
-                    <FiChevronDown size={16}
-                      className={`text-gray-400 transition-transform duration-300 ${openSection === section.key ? "rotate-180 text-[#e4a156]" : ""}`} />
-                  </button>
-                  {openSection === section.key && (
-                    <div className="px-5 pb-4 text-sm text-gray-600 leading-relaxed bg-gray-50/50 border-t border-gray-50">
-                      <p className="pt-3">
-                        {section.key === "details" && (
-                          <>
-                            <strong>Material:</strong> {product.material || "Premium quality fabric"}<br />
-                            <strong>Fit:</strong> {product.fit || "Regular fit"}<br />
-                            <strong>Care Instructions:</strong> {product.careInstructions || "Machine wash cold"}
-                          </>
-                        )}
-                        {section.key === "specifications" && (
-                          <>
-                            <strong>Category:</strong> {product.category || "Apparel"}<br />
-                            <strong>Style:</strong> Casual Wear<br />
-                            <strong>Occasion:</strong> Daily Wear
-                          </>
-                        )}
-                        {section.key === "delivery" && (
-                          <>
-                            <strong>Estimated Delivery:</strong> 3-5 business days<br />
-                            <strong>Return Policy:</strong> 7-day easy returns<br />
-                            <strong>Cash on Delivery:</strong> {product.codAvailable ? "Available" : "Not Available"}
-                          </>
-                        )}
+            {/* Accordion */}
+            {/* <div className="bg-white shadow-sm overflow-hidden">
+  {Object.entries(specifications).map(([key, value], i) => (
+    <div key={key} className={i > 0 ? "border-t border-gray-50" : ""}>
+      <button
+        type="button"
+        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50/80 transition-colors"
+        onClick={() => setOpenSection((prev) => (prev === key ? "" : key))}
+      >
+        <span className="text-sm font-semibold text-gray-800">
+          { key.charAt(0).toUpperCase() + key.slice(1)}
+        </span>
+        <FiChevronDown
+          size={16}
+          className={`text-gray-400 transition-transform duration-300 ${
+            openSection === key ? "rotate-180 text-[#e4a156]" : ""
+          }`}
+        />
+      </button>
+      {openSection === key && (
+        <div className="px-5 pb-4 text-sm text-gray-600 leading-relaxed bg-gray-50/50 border-t border-gray-50">
+          <p className="pt-3 capitalize">{String(value).replace(/-/g, " ")}</p>
+        </div>
+      )}
+    </div>
+  ))}
+
+  
+  {Object.keys(specifications).length === 0 && (
+    <p className="px-5 py-4 text-sm text-gray-400">No specifications available.</p>
+  )}
+</div> */}
+            {/* Specifications */}
+            {/* Specifications */}
+            {Object.keys(specifications).length > 0 && (
+              <div className="bg-white shadow-sm p-5">
+                <h3 className="text-sm font-bold text-gray-800 mb-4">
+                  Product Specifications
+                </h3>
+                <div className="grid grid-cols-2 gap-x-6">
+                  {Object.entries(specifications).map(([key, value]) => (
+                    <div
+                      key={key}
+                      className="flex items-center justify-between py-2.5 border-b border-gray-50"
+                    >
+                      <span className="text-sm text-gray-500">
+                        {key.charAt(0).toUpperCase() + key.slice(1)}
+                      </span>
+                      <span className="text-sm font-medium text-gray-800 capitalize">
+                        {String(value).replace(/-/g, " ")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Reviews */}
+            {/* Reviews - Updated Section */}
+            <div className="bg-white shadow-sm p-6">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-base font-bold text-gray-900">
+                  Ratings & Reviews
+                </h2>
+                <select
+                  value={reviewSort}
+                  onChange={(e) => setReviewSort(e.target.value)}
+                  className="h-9 border-2 border-gray-200 rounded-xl px-3 text-xs focus:outline-none focus:border-[#e4a156] text-gray-600"
+                >
+                  <option value="helpful">Most Helpful</option>
+                  <option value="latest">Latest First</option>
+                </select>
+              </div>
+
+              {reviewStats && (
+                <div className="flex gap-8 mb-6 bg-gray-50 p-4">
+                  <div className="text-center shrink-0">
+                    <p className="text-5xl font-black text-gray-900 leading-none">
+                      {reviewStats.avgRating?.toFixed(1) || "0.0"}
+                    </p>
+                    <Stars rating={reviewStats.avgRating || 0} size={15} />
+                    <p className="text-xs text-gray-400 mt-1">
+                      {reviewStats.totalReviews || 0} reviews
+                    </p>
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    {/* Optional: Add detailed rating breakdown if available */}
+                    {reviewStats.avgQuality && (
+                      <div className="text-xs text-gray-600">
+                        <div>
+                          Quality: {reviewStats.avgQuality?.toFixed(1)} ★
+                        </div>
+                        <div>Fit: {reviewStats.avgFit?.toFixed(1)} ★</div>
+                        <div>Value: {reviewStats.avgValue?.toFixed(1)} ★</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {loadingReviews && reviews.length === 0 ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e4a156]" />
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  {sortedReviews.map((review) => (
+                    <article
+                      key={review._id}
+                      className="border-t border-gray-50 pt-5"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-200 to-orange-300 flex items-center justify-center text-xs font-bold text-white">
+                            {review.user?.name?.[0] ||
+                              review.user?.email?.[0] ||
+                              "U"}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800 leading-none">
+                              {review.user?.name ||
+                                review.user?.email?.split("@")[0] ||
+                                "Anonymous"}
+                            </p>
+                            <span className="inline-flex items-center gap-1 bg-emerald-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded mt-0.5">
+                              {review.rating}{" "}
+                              <FiStar size={9} className="fill-white" />
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-xs text-gray-400">
+                          {new Date(review.createdAt).toLocaleDateString(
+                            "en-IN",
+                            {
+                              day: "2-digit",
+                              month: "short",
+                              year: "2-digit",
+                            },
+                          )}
+                        </span>
+                      </div>
+
+                      {review.title && (
+                        <p className="text-sm font-semibold text-gray-700 mt-1">
+                          {review.title}
+                        </p>
+                      )}
+
+                      <p className="text-sm text-gray-600 leading-relaxed mt-1">
+                        {review.comment}
+                      </p>
+
+                      {review.ratingBreakdown && (
+                        <div className="flex gap-3 mt-2 text-xs text-gray-500">
+                          {review.ratingBreakdown.quality && (
+                            <span>
+                              Quality: {review.ratingBreakdown.quality}★
+                            </span>
+                          )}
+                          {review.ratingBreakdown.fit && (
+                            <span>Fit: {review.ratingBreakdown.fit}★</span>
+                          )}
+                          {review.ratingBreakdown.valueForMoney && (
+                            <span>
+                              Value: {review.ratingBreakdown.valueForMoney}★
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-4 mt-3">
+                        <button
+                          onClick={() =>
+                            handleReviewLike(review._id, review.userAction)
+                          }
+                          className={`text-xs flex items-center gap-1.5 transition-colors ${
+                            review.userAction === "liked"
+                              ? "text-[#e4a156] font-semibold"
+                              : "text-gray-400 hover:text-[#e4a156]"
+                          }`}
+                        >
+                          <FiThumbsUp
+                            size={14}
+                            className={
+                              review.userAction === "liked"
+                                ? "fill-[#e4a156]"
+                                : ""
+                            }
+                          />
+                          <span>Helpful</span>
+                          {review.likes > 0 && (
+                            <span className="text-xs font-medium">
+                              ({review.likes})
+                            </span>
+                          )}
+                        </button>
+
+                        <button
+                          onClick={() =>
+                            handleReviewDislike(review._id, review.userAction)
+                          }
+                          className={`text-xs flex items-center gap-1.5 transition-colors ${
+                            review.userAction === "disliked"
+                              ? "text-red-500 font-semibold"
+                              : "text-gray-400 hover:text-red-500"
+                          }`}
+                        >
+                          <FiThumbsDown
+                            size={14}
+                            className={
+                              review.userAction === "disliked"
+                                ? "fill-red-500"
+                                : ""
+                            }
+                          />
+                          <span>Not helpful</span>
+                          {review.dislikes > 0 && (
+                            <span className="text-xs font-medium">
+                              ({review.dislikes})
+                            </span>
+                          )}
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+
+                  {hasMoreReviews && reviews.length > 0 && (
+                    <div className="text-center pt-4">
+                      <button
+                        onClick={loadMoreReviews}
+                        disabled={loadingReviews}
+                        className="px-6 py-2 rounded-xl border-2 border-[#e4a156] text-[#e4a156] text-sm font-semibold hover:bg-amber-50 disabled:opacity-50"
+                      >
+                        {loadingReviews ? "Loading..." : "Load More Reviews"}
+                      </button>
+                    </div>
+                  )}
+
+                  {!loadingReviews && reviews.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>
+                        No reviews yet. Be the first to review this product!
                       </p>
                     </div>
                   )}
                 </div>
-              ))}
-            </div>
-
-            {/* Reviews */}
-            {/* Reviews - Updated Section */}
-<div className="bg-white shadow-sm p-6">
-  <div className="flex items-center justify-between mb-5">
-    <h2 className="text-base font-bold text-gray-900">Ratings & Reviews</h2>
-    <select value={reviewSort} onChange={(e) => setReviewSort(e.target.value)}
-      className="h-9 border-2 border-gray-200 rounded-xl px-3 text-xs focus:outline-none focus:border-[#e4a156] text-gray-600">
-      <option value="helpful">Most Helpful</option>
-      <option value="latest">Latest First</option>
-    </select>
-  </div>
-  
-  {reviewStats && (
-    <div className="flex gap-8 mb-6 bg-gray-50 p-4">
-      <div className="text-center shrink-0">
-        <p className="text-5xl font-black text-gray-900 leading-none">
-          {reviewStats.avgRating?.toFixed(1) || "0.0"}
-        </p>
-        <Stars rating={reviewStats.avgRating || 0} size={15} />
-        <p className="text-xs text-gray-400 mt-1">{reviewStats.totalReviews || 0} reviews</p>
-      </div>
-      <div className="flex-1 space-y-2">
-        {/* Optional: Add detailed rating breakdown if available */}
-        {reviewStats.avgQuality && (
-          <div className="text-xs text-gray-600">
-            <div>Quality: {reviewStats.avgQuality?.toFixed(1)} ★</div>
-            <div>Fit: {reviewStats.avgFit?.toFixed(1)} ★</div>
-            <div>Value: {reviewStats.avgValue?.toFixed(1)} ★</div>
-          </div>
-        )}
-      </div>
-    </div>
-  )}
-  
-  {loadingReviews && reviews.length === 0 ? (
-    <div className="flex justify-center py-8">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e4a156]" />
-    </div>
-  ) : (
-    <div className="space-y-5">
-      {sortedReviews.map((review) => (
-        <article key={review._id} className="border-t border-gray-50 pt-5">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-200 to-orange-300 flex items-center justify-center text-xs font-bold text-white">
-                {review.user?.name?.[0] || review.user?.email?.[0] || "U"}
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-800 leading-none">
-                  {review.user?.name || review.user?.email?.split('@')[0] || "Anonymous"}
-                </p>
-                <span className="inline-flex items-center gap-1 bg-emerald-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded mt-0.5">
-                  {review.rating} <FiStar size={9} className="fill-white" />
-                </span>
-              </div>
-            </div>
-            <span className="text-xs text-gray-400">
-              {new Date(review.createdAt).toLocaleDateString("en-IN", { 
-                day: "2-digit", 
-                month: "short", 
-                year: "2-digit" 
-              })}
-            </span>
-          </div>
-          
-          {review.title && (
-            <p className="text-sm font-semibold text-gray-700 mt-1">{review.title}</p>
-          )}
-          
-          <p className="text-sm text-gray-600 leading-relaxed mt-1">{review.comment}</p>
-          
-          {review.ratingBreakdown && (
-            <div className="flex gap-3 mt-2 text-xs text-gray-500">
-              {review.ratingBreakdown.quality && (
-                <span>Quality: {review.ratingBreakdown.quality}★</span>
-              )}
-              {review.ratingBreakdown.fit && (
-                <span>Fit: {review.ratingBreakdown.fit}★</span>
-              )}
-              {review.ratingBreakdown.valueForMoney && (
-                <span>Value: {review.ratingBreakdown.valueForMoney}★</span>
               )}
             </div>
-          )}
-          
-         <div className="flex items-center gap-4 mt-3">
-  <button 
-    onClick={() => handleReviewLike(review._id, review.userAction)}
-    className={`text-xs flex items-center gap-1.5 transition-colors ${
-      review.userAction === 'liked' 
-        ? 'text-[#e4a156] font-semibold' 
-        : 'text-gray-400 hover:text-[#e4a156]'
-    }`}
-  >
-    <FiThumbsUp 
-      size={14} 
-      className={review.userAction === 'liked' ? 'fill-[#e4a156]' : ''} 
-    />
-    <span>Helpful</span>
-    {review.likes > 0 && (
-      <span className="text-xs font-medium">({review.likes})</span>
-    )}
-  </button>
-  
-  <button 
-    onClick={() => handleReviewDislike(review._id, review.userAction)}
-    className={`text-xs flex items-center gap-1.5 transition-colors ${
-      review.userAction === 'disliked' 
-        ? 'text-red-500 font-semibold' 
-        : 'text-gray-400 hover:text-red-500'
-    }`}
-  >
-    <FiThumbsDown 
-      size={14} 
-      className={review.userAction === 'disliked' ? 'fill-red-500' : ''} 
-    />
-    <span>Not helpful</span>
-    {review.dislikes > 0 && (
-      <span className="text-xs font-medium">({review.dislikes})</span>
-    )}
-  </button>
-</div>
-        </article>
-      ))}
-      
-      {hasMoreReviews && reviews.length > 0 && (
-        <div className="text-center pt-4">
-          <button 
-            onClick={loadMoreReviews}
-            disabled={loadingReviews}
-            className="px-6 py-2 rounded-xl border-2 border-[#e4a156] text-[#e4a156] text-sm font-semibold hover:bg-amber-50 disabled:opacity-50"
-          >
-            {loadingReviews ? "Loading..." : "Load More Reviews"}
-          </button>
-        </div>
-      )}
-      
-      {!loadingReviews && reviews.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          <p>No reviews yet. Be the first to review this product!</p>
-        </div>
-      )}
-    </div>
-  )}
-</div>
           </div>
         </div>
 
@@ -1543,18 +2049,50 @@ const toggleWishlist = async () => {
         <div className="mt-14">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-xl font-bold text-gray-900 tracking-tight">You May Also Like</h2>
+              <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+                You May Also Like
+              </h2>
               <div className="h-1 w-12 bg-gradient-to-r from-[#e4a156] to-amber-300 rounded-full mt-1.5" />
             </div>
-            <Link to="/productlist"
-              className="text-sm text-[#e4a156] font-semibold hover:underline flex items-center gap-1">
+            <Link
+              to="/productlist"
+              className="text-sm text-[#e4a156] font-semibold hover:underline flex items-center gap-1"
+            >
               View All →
             </Link>
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-4 snap-x" style={{ scrollbarWidth: "none" }}>
-            {relatedProducts.map((item) => (
-              <ProductCard key={item.id} item={item} location={location} />
-            ))}
+          <div
+            className="flex gap-4 overflow-x-auto pb-4 snap-x"
+            style={{ scrollbarWidth: "none" }}
+          >
+            <div
+  className="flex gap-4 overflow-x-auto pb-4 snap-x"
+  style={{ scrollbarWidth: "none" }}
+>
+  {wishlistItems?.length > 0 ? (
+    wishlistItems.map((w) => {
+      const item = {
+        id: w.product._id,
+        name: w.product.name,
+        front: w.variant.image || w.product.image,
+        price: w.variant.price,
+        originalPrice: w.variant.mrp,
+        brand: "Brand", // optional (API me nahi hai)
+        stock: w.variant.stock,
+      };
+
+      return (
+        <ProductCard
+          key={w._id}
+          item={item}
+          location={location}
+        />
+      );
+    })
+  ) : (
+    <p className="text-gray-500 text-sm">No items in wishlist</p>
+  )}
+</div>
           </div>
         </div>
 
@@ -1562,21 +2100,35 @@ const toggleWishlist = async () => {
         {recentlyViewed.length > 0 && (
           <div className="mt-12">
             <div className="mb-6">
-              <h2 className="text-xl font-bold text-gray-900 tracking-tight">Recently Viewed</h2>
+              <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+                Recently Viewed
+              </h2>
               <div className="h-1 w-12 bg-gradient-to-r from-gray-400 to-gray-200 rounded-full mt-1.5" />
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
               {recentlyViewed.map((item) => (
-                <Link to={`/product/${item.id}`} key={item.id} className="group block">
+                <Link
+                  to={`/product/${item.id}`}
+                  key={item.id}
+                  className="group block"
+                >
                   <div className="bg-white overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100">
                     <div className="relative overflow-hidden aspect-square">
-                      <img src={item.front} alt={item.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                      <img
+                        src={item.front}
+                        alt={item.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                      />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                     <div className="p-2.5">
-                      <p className="text-xs font-medium text-gray-700 line-clamp-2 leading-snug">{item.name}</p>
-                      <p className="text-xs font-bold text-[#e4a156] mt-1">Rs. {CURRENCY_FORMATTER.format(item.price)}</p>
+                      <p className="text-xs font-medium text-gray-700 line-clamp-2 leading-snug">
+                        {item.name}
+                      </p>
+                      <p className="text-xs font-bold text-[#e4a156] mt-1">
+                        Rs. {CURRENCY_FORMATTER.format(item.price)}
+                      </p>
                     </div>
                   </div>
                 </Link>
@@ -1590,19 +2142,27 @@ const toggleWishlist = async () => {
       <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 px-4 py-3 md:hidden z-40 shadow-2xl">
         <div className="flex items-center gap-2">
           <div className="flex-1">
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider">Price</p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider">
+              Price
+            </p>
             <p className="font-extrabold text-gray-900 text-base leading-tight">
               Rs. {CURRENCY_FORMATTER.format(displayPrice)}
             </p>
           </div>
-          <button type="button" onClick={addToCart}
+          <button
+            type="button"
+            onClick={addToCart}
             disabled={!selectedSize || isOutOfStock}
-            className="h-11 px-4 rounded-xl border-2 border-[#e4a156] text-[#e4a156] text-sm font-bold disabled:opacity-40 hover:bg-amber-50">
+            className="h-11 px-4 rounded-xl border-2 border-[#e4a156] text-[#e4a156] text-sm font-bold disabled:opacity-40 hover:bg-amber-50"
+          >
             ADD TO BAG
           </button>
-          <button type="button" onClick={handleBuyNow}
+          <button
+            type="button"
+            onClick={handleBuyNow}
             disabled={!selectedSize || isOutOfStock}
-            className="h-11 px-5 rounded-xl bg-gradient-to-r from-[#e4a156] to-[#d4854a] text-white text-sm font-bold disabled:opacity-40 shadow-lg">
+            className="h-11 px-5 rounded-xl bg-gradient-to-r from-[#e4a156] to-[#d4854a] text-white text-sm font-bold disabled:opacity-40 shadow-lg"
+          >
             BUY NOW
           </button>
         </div>
@@ -1611,4 +2171,4 @@ const toggleWishlist = async () => {
   );
 };
 
-export default ProductDetailPage; 
+export default ProductDetailPage;

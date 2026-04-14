@@ -111,7 +111,7 @@ useEffect(() => {
       try {
         const res = await api.get("/auth/me");
         setUser(res.data);
-        
+
          if (res.data) {
         dispatch(fetchWishlist());
         dispatch(fetchCartItems());
@@ -127,7 +127,7 @@ useEffect(() => {
     fetchMe();
   }, [token]);
   useEffect(() => {
-    const parentCate = async () => {
+    const parentCate = async () => {  
       try {
         const ress = await api.get("/category");
         if (ress.data.success) {

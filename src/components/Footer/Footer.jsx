@@ -111,7 +111,7 @@ export default function Footer() {
           <div className="absolute inset-0 rounded-lg bg-black/70"></div>
           <div className="absolute top-70 left-10 md:block hidden">
             <img
-              src="/image/Mens-logo.PNG"
+              src="./logo/wearaahpnglogo.png"
               alt="Model"
               className="w-50 object-cover "
             />
