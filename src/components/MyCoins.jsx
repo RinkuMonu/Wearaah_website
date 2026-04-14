@@ -134,7 +134,7 @@ const MyCoins = () => {
                 <div className="flex items-center gap-2">
                     <CiWallet className="text-3xl" />
                     <div className="mb-1 text-3xl font-bold text-gray-900">
-                        {wallet1.availableBalance} MYWALLET
+                        {wallet1.availableBalance} MY WALLET
                     </div>
                 </div>
 
