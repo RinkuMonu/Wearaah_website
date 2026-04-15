@@ -1,21 +1,19 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
 import "swiper/css";
 import { Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { fatchBrands } from "../../features/Brands/brandSlice";
 
-const brandLogos = [
-    "/images/Brands/allen-solly.webp",
-    "/images/Brands/levis.webp",
-    "/images/Brands/nautinati.webp",
-    "/images/Brands/uspa.webp",
-    "/images/Brands/miniklub.webp",
-    "/images/Brands/peppermint.webp",
-    "/images/Brands/ginijony.webp",
-    "/images/Brands/yk.webp"
-];
 
 export default function BrandsSection() {
+      const BASE_URL = import.meta.env.VITE_BASE_URL;
+  const dispatch = useDispatch();
+  const { brands } = useSelector((state) => state.brands);
+  useEffect(() => {
+    dispatch(fatchBrands());
+  }, [dispatch]);
     return (
         <section className="w-full py-20 bg-white">
             <div className="px-4 sm:px-6 lg:px-8">
@@ -24,7 +22,7 @@ export default function BrandsSection() {
                         <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Top Kids Brands</h2>
                         <span className="text-sm text-gray-500">Most Favourite Brands</span>
                     </div>
-                    <Link to="/kids-productlist" className="text-[#633426] font-semibold text-sm hover:text-orange-600 transition">
+                    <Link to="/productlist?gender=Kids" className="text-[#633426] font-semibold text-sm hover:text-orange-600 transition">
                         View All
                     </Link>
                 </div>
@@ -43,15 +41,17 @@ export default function BrandsSection() {
                     }}
                     className=""
                 >
-                    {brandLogos.map((logo, index) => (
+                    {brands?.map((logo, index) => (
                         <SwiperSlide key={index} className=" flex! justify-center">
                             <div className="overflow-hiddenflex items-center justify-center p-2 sm:p-3 hover:scale-110 transition-all duration-300 cursor-pointer mx-auto">
+                              <Link to={`/productlist?brand=${logo.slug}&brandId=${logo._id}`}>
                                 <img
-                                    src={logo}
+                                   src={`${BASE_URL}${logo?.banner}`}
                                     alt="Brand"
-                                    className="w-full h-full object-contain rounded-full"
+                                    className="w-50 h-50 object-contain rounded-full"
                                     loading="lazy"
                                 />
+                                </Link>
                             </div>
                         </SwiperSlide>
                     ))}

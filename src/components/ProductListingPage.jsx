@@ -514,7 +514,7 @@ const ProductListingPage = () => {
                   ? [["subCategory", SubCategory]]
                   : []),
                 ["brand", brands],
-                ["gender", ["Men", "Women", "Boys", "Girls", "Unisex"]],
+                ["gender", ["Men", "Women", "Boys", "Girls", "Kids", "Unisex"]],
                 ...(filters.subCategoryId
                   ? Object.entries(dynamicFilters).filter(
                       ([key]) => !["size", "color"].includes(key),

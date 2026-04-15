@@ -1,30 +1,34 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectFade } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/effect-fade";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchBanner } from "../../features/Banner/bannerSlice";
 
-const slides = [
-  {
-    id: 1,
-    image: "/images/Herobanner/Kids/B3.png",
-    link: "/kids"
-  },
-  {
-    id: 2,
-    image: "/images/Herobanner/Kids/B2.jpg",
-    link: "/kids-summer"
-  },
-  {
-    id: 3,
-    image: "/images/Herobanner/Kids/bannermost.PNG",
-    link: "/kids-playwear"
-  }
-];
 
 export default function KidsBanner() {
-  
+    const BASE_URL = import.meta.env.VITE_BASE_URL;
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const EMPTY_ARRAY = [];
+
+  const banners = useSelector(
+    (state) => state.banner.banners["homepage-top"] || EMPTY_ARRAY,
+  );
+ 
+  useEffect(() => {
+    dispatch(
+      fetchBanner({
+        position: "homepage-top",
+        deviceType: "desktop",
+        targetGender:"kids"
+      }),
+    );
+  }, [dispatch]);
+
+  if (!banners.length) return null;
   return (
     <section className="relative w-full h-[80vh]">
       <Swiper
@@ -35,13 +39,13 @@ export default function KidsBanner() {
         autoplay={{ delay: 4000, disableOnInteraction: false }}
         className="w-full h-full"
       >
-        {slides.map((slide) => (
-          <SwiperSlide key={slide.id}>
+        {banners?.map((slide) => (
+          <SwiperSlide key={slide._id}>
             <div className="relative w-full h-screen">
               {/* Background image */}
               <img
-                src={slide.image}
-                alt={slide.title}
+                src={`${BASE_URL}${slide?.images}`}
+                alt={slide.bannerName}
                 className="w-full h-full object-cover"
                 loading="lazy"
                 decoding="async"

@@ -38,8 +38,6 @@ const TopProducts = React.memo(function TopProducts() {
     );
   }, [dispatch]);
 
-  console.log(products, "products from top product component state");
-
   const handleAddToCart = React.useCallback((product) => {
     const existing = getCartItems();
     const selectedSize = product.sizes?.[0] || "M";
