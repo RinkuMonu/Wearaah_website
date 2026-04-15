@@ -26,8 +26,8 @@ import { selectWishlistItems } from "../../features/Wishlist/wishlistSlice";
 const MENU_LINKS = [
   { to: "/", label: "Home" },
   { to: "/kids", label: "Kids" },
-  { to: "/productlist", label: "Mens" },
-  { to: "/productlist", label: "Womens" },
+  { to: "/productlist?gender=Men", label: "Mens" },
+  { to: "/productlist?gender=Women", label: "Womens" },
   // { to: "/new-arrivals", label: "New Arrivals" },
   { to: "/brands", label: "Brands" },
 ];
@@ -219,7 +219,7 @@ export default function Header() {
           <div className="flex items-center justify-start gap-10">
             <Link
               to="/"
-              className="bg-[#d6b28a] text-white font-black text-xl sm:text-2xl px-4 py-2 rounded-md hover:scale-105 transition-all lowercase whitespace-nowrap"
+              className="text-white font-black text-xl sm:text-2xl px-4 py-2 rounded-md hover:scale-105 transition-all lowercase whitespace-nowrap"
             >
               <img src="./logo/wearaahpnglogo.png" alt="logo" className=" w-36 object-contain" />
             </Link>

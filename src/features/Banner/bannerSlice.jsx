@@ -3,10 +3,10 @@ import api from "../../components/service/axios";
 
 export const fetchBanner = createAsyncThunk(
   "banner/fetchBanner",
-  async ({ position, deviceType }, { rejectWithValue }) => {
+  async ({ position, deviceType,targetGender }, { rejectWithValue }) => {
     try {
       const response = await api.get("/banner", {
-        params: { position, deviceType },
+        params: { position, deviceType, targetGender },
       });
       return { position, data: response.data.banners };
     } catch (error) {

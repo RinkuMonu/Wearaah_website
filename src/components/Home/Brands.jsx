@@ -44,7 +44,6 @@ const BrandsSection = () => {
               className="group relative p-4 "
             >
               <img
-                // src={brand.img}
                 src={`${BASE_URL}${brand?.banner}`}
                 alt={brand.name}
                 className=" object-cover h-100 "

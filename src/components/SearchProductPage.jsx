@@ -159,7 +159,7 @@ const SearchProductPage = () => {
             <div className="text-center py-10">Loading...</div>
           )}
 
-          {products.length === 0 ? (
+          {a.length === 0 ? (
             <div className="text-center py-20">
               <FiSearch className="mx-auto w-10 h-10 text-gray-400" />
               <h3 className="mt-4 text-xl font-bold">

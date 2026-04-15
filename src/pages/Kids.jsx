@@ -13,7 +13,7 @@ export default function Kids() {
             <KidsProducts />
             <BrandsSection />
             <KidsCategories />
-            <BudgetBuy />
+            {/* <BudgetBuy /> */}
             <TopFeaturedProducts />
         </>
     )
