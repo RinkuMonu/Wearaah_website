@@ -5,9 +5,9 @@ import { useAuth } from "../service/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 export default function LoginModal({ isOpen, onClose }) {
-  const { settoken,syncCartAfterLogin } = useAuth();
+  const { settoken, syncCartAfterLogin } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState("phone");
+  const [step, setStep] = useState("phone"); // "phone" | "otp"
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,20 +28,21 @@ export default function LoginModal({ isOpen, onClose }) {
       setLoading(true);
       setError("");
       const ress = await api.post("/otp/send", { mobile: phone });
-      console.log("otp send res", ress);
-      if (ress.data.success) {
+      if (ress.data?.success) {
         setStep("otp");
+      } else {
+        setError(ress.data?.message || "Failed to send verification code");
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to send OTP");
+      setError(err.response?.data?.message || "Failed to send verification code");
     } finally {
       setLoading(false);
     }
   };
 
   const verifyOtp = async () => {
-    if (otp.length !== 6) {  
-      setError("Please enter 6 digit OTP");
+    if (otp.length !== 6) {
+      setError("Please enter the 6-digit verification code");
       return;
     }
     try {
@@ -56,12 +57,13 @@ export default function LoginModal({ isOpen, onClose }) {
         localStorage.setItem("token", res.data?.token);
         settoken(res.data?.token);
         localStorage.setItem("user", JSON.stringify(res.data?.user));
-         navigate("/");
+        navigate("/");
       }
       setStep("phone");
+      setOtp("");
       onClose();
     } catch (err) {
-      setError(err.response?.data?.message || "Invalid OTP");
+      setError(err.response?.data?.message || "Invalid verification code");
     } finally {
       setLoading(false);
     }
@@ -70,109 +72,156 @@ export default function LoginModal({ isOpen, onClose }) {
   return (
     <>
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-99 animate-in fade-in-0 zoom-in duration-300"
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs z-99 animate-in fade-in-0 duration-300"
         onClick={onClose}
       />
 
-      <div className="fixed inset-0 z-999 flex items-center justify-center p-4 h-screen">
-        <div className="w-full bg-white/95 backdrop-blur-xl  shadow-2xl shadow-gray-900/10 border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4 duration-300 max-h-[95vh]">
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 h-[500px] lg:h-[600px]">
-            
-            <div className="relative overflow-hidden bg-linear-to-br from-gray-50 to-white lg:min-h-full">
-              <div 
-                className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                style={{ backgroundImage: "url('./images/9.webp')" }}
+      <div className="fixed inset-0 z-999 flex items-center justify-center p-4">
+        <div className="w-full max-w-3xl bg-white shadow-2xl border border-neutral-100 overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="grid grid-cols-1 md:grid-cols-2 min-h-[460px]">
+            {/* Visual Column */}
+            <div className="relative hidden md:block overflow-hidden bg-neutral-900">
+              <div
+                className="absolute inset-0 bg-cover bg-center opacity-85 transition-transform duration-700 hover:scale-105"
+                style={{ backgroundImage: "url('/images/9.webp')" }}
               />
-              <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent" />
-              <div className="absolute top-8 left-8 w-24 h-24 bg-white/20 rounded-2xl blur-xl animate-pulse" />
-              <div className="absolute bottom-12 right-8 w-32 h-32 bg-yellow-400/10 rounded-full blur-2xl rotate-12" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+              <div className="absolute inset-x-6 bottom-8 text-white">
+                <span className="text-[10px] font-bold tracking-[0.25em] text-[#c5a059] uppercase block mb-1">
+                  Wearaah Private Circle
+                </span>
+                <h4 className="text-xl font-serif font-light leading-snug">
+                  Experience Personalized Luxury Fashion &amp; Bespoke Styling
+                </h4>
+              </div>
             </div>
-            <div className="p-8 flex flex-col justify-center relative">
-              
+
+            {/* Form Column */}
+            <div className="p-8 sm:p-10 flex flex-col justify-center relative bg-white">
               <button
                 onClick={onClose}
-                className="group absolute top-4 right-4 w-12 h-12  shadow-lg flex items-center justify-center hover:bg-gray-50 transition-all duration-200 hover:scale-105 hover:shadow-xl"
+                className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center text-neutral-400 hover:text-black hover:bg-neutral-100 transition-colors"
+                aria-label="Close"
               >
-                <X size={20} className="text-gray-600 group-hover:text-gray-900" />
+                <X size={18} />
               </button>
 
-              <div className="text-center mb-8">
-                <h3 className="text-2xl lg:text-3xl font-bold bg-linear-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
-                  Welcome to Lionies
+              <div className="mb-6">
+                <img
+                  src="/logo/WEARAAH_Logo_4K_Transparent.png"
+                  alt="Wearaah"
+                  className="h-8 w-auto object-contain mb-3"
+                  onError={(e) => {
+                    e.currentTarget.src = "/logo/wearaah-transparent.png";
+                  }}
+                />
+                <div className="text-[10px] font-bold tracking-[0.25em] text-[#c5a059] uppercase mb-1">
+                  Client Portal
+                </div>
+                <h3 className="text-2xl font-serif font-normal text-neutral-900">
+                  Welcome to Wearaah
                 </h3>
-                <p className="text-gray-500 text-sm leading-relaxed max-w-[280px] mx-auto">
-                  Login using your mobile number
+                <p className="text-xs text-neutral-500 mt-1 font-light">
+                  {step === "phone"
+                    ? "Enter your mobile number to receive a one-time passcode"
+                    : `Enter the 6-digit code sent to +91 ${phone}`}
                 </p>
               </div>
 
               {step === "phone" && (
-                <>
-                  <div className="space-y-4 mb-6">
-                    <div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-neutral-700 block mb-1.5">
+                      Mobile Number
+                    </label>
+                    <div className="flex items-center border border-neutral-300 focus-within:border-[#c5a059] transition-colors rounded-xs overflow-hidden">
+                      <span className="px-3 py-3 text-xs font-semibold text-neutral-500 bg-neutral-50 border-r border-neutral-200">
+                        +91
+                      </span>
                       <input
                         type="tel"
-                        placeholder="Enter phone number"
+                        placeholder="Enter 10-digit number"
                         value={phone}
                         onChange={handlePhoneChange}
                         maxLength={10}
-                        className="w-full px-4 py-4 text-lg border-2 border-gray-200 rounded-md focus:border-[#927f68] focus:ring-4 focus:ring-[#927f68]/10 transition-all duration-200 bg-gray-50/50 hover:bg-white"
+                        className="w-full px-3 py-3 text-sm text-neutral-900 outline-none"
+                        autoFocus
                       />
-                      {phone.length > 0 && !isValidPhone && (
-                        <p className="text-xs text-red-500 mt-1 font-medium">Mobile must start with 6–9 and be 10 digits</p>
-                      )}
                     </div>
-                    {error && <p className="text-sm text-red-500 p-3 bg-red-50 border border-red-100 rounded-xl">{error}</p>}
+                    {phone.length > 0 && !isValidPhone && (
+                      <p className="text-[11px] text-red-500 mt-1">
+                        Please enter a valid 10-digit mobile number starting with 6–9
+                      </p>
+                    )}
                   </div>
+
+                  {error && (
+                    <p className="text-xs text-red-600 p-2.5 bg-red-50 border border-red-200 rounded-xs">
+                      {error}
+                    </p>
+                  )}
 
                   <button
                     disabled={!isValidPhone || loading}
                     onClick={sendOtp}
-                    className={`w-full py-3 px-6 text-lg font-semibold rounded-md shadow-md transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]
-                     ${isValidPhone && !loading 
-                       ? "bg-[#927f68] text-white hover:shadow-xl hover:shadow-[#927f68]/25" 
-                       : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                     }`}
+                    className="w-full py-3.5 px-4 bg-[#c5a059] hover:bg-[#b38e47] text-neutral-950 font-semibold text-xs uppercase tracking-[0.2em] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md"
                   >
-                    {loading ? "Sending OTP..." : "Send OTP"}
+                    {loading ? "Sending Passcode..." : "Send Verification Code"}
                   </button>
-                </>
+                </div>
               )}
 
               {step === "otp" && (
-                <>
-                  <div className="space-y-4 mb-6">
-                    <div>
-                      <input
-                        type="text"
-                        placeholder="Enter OTP"
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                        maxLength={6}
-                        className="w-full px-4 py-4 text-2xl text-center tracking-[0.3em] border-2 border-gray-200 rounded-xl focus:border-black focus:ring-4 focus:ring-black/10 transition-all duration-200 bg-linear-to-r from-gray-50 to-white font-mono"
-                      />
-                    </div>
-                    {error && <p className="text-sm text-red-500 p-3 bg-red-50 border border-red-100 rounded-xl">{error}</p>}
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-neutral-700 block mb-1.5">
+                      6-Digit Passcode
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="• • • • • •"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                      maxLength={6}
+                      className="w-full px-4 py-3 text-center text-xl tracking-[0.4em] font-mono border border-neutral-300 focus:border-[#c5a059] transition-colors outline-none rounded-xs"
+                      autoFocus
+                    />
                   </div>
+
+                  {error && (
+                    <p className="text-xs text-red-600 p-2.5 bg-red-50 border border-red-200 rounded-xs">
+                      {error}
+                    </p>
+                  )}
 
                   <button
                     onClick={verifyOtp}
                     disabled={otp.length !== 6 || loading}
-                    className="w-full py-4 px-6 rounded-xl text-lg font-bold bg-black text-white shadow-2xl hover:shadow-black/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                    className="w-full py-3.5 px-4 bg-neutral-950 hover:bg-[#c5a059] hover:text-black text-white font-semibold text-xs uppercase tracking-[0.2em] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md"
                   >
-                    {loading ? "Verifying..." : "Verify & Login"}
+                    {loading ? "Verifying..." : "Verify & Access Bag"}
                   </button>
 
-                  <button
-                    onClick={() => {
-                      setStep("phone");
-                      setOtp("");
-                    }}
-                    className="text-sm text-gray-500 hover:text-gray-900 font-medium mt-4 transition-colors flex items-center justify-center gap-1 hover:underline mx-auto"
-                  >
-                    Change number
-                  </button>
-                </>
+                  <div className="flex items-center justify-between pt-2">
+                    <button
+                      onClick={() => {
+                        setStep("phone");
+                        setOtp("");
+                        setError("");
+                      }}
+                      className="text-xs text-neutral-500 hover:text-neutral-900 transition-colors underline"
+                    >
+                      Change Number
+                    </button>
+                    <button
+                      onClick={sendOtp}
+                      disabled={loading}
+                      className="text-xs text-[#c5a059] hover:underline"
+                    >
+                      Resend Code
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>

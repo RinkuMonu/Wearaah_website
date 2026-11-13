@@ -118,27 +118,33 @@ const Faq = () => {
     const IconComponent = tabs.find(tab => tab.key === activeTab)?.icon || FaShippingFast;
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-slate-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8 font-sans">
             <div className="max-w-7xl mx-auto">
-                <div className="flex items-center justify-between mb-8">
-                    <div>
-                        <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Frequently Asked Questions</h2>
-                        <span className="text-sm text-gray-500">Find answers to common questions about orders, payments, returns & more</span>
-                    </div>
+                {/* PAGE HEADER */}
+                <div className="border-b border-neutral-200 pb-6 mb-10">
+                    <span className="text-[11px] font-normal tracking-[0.2em] uppercase text-neutral-400">
+                        CUSTOMER CARE
+                    </span>
+                    <h1 className="text-2xl sm:text-3xl font-normal tracking-wide uppercase text-neutral-900 mt-1">
+                        Frequently Asked Questions
+                    </h1>
+                    <p className="text-xs uppercase tracking-wider text-neutral-500 mt-1">
+                        Everything you need to know about shopping, orders, shipping, and returns with Wearaah
+                    </p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                     {/* SIDEBAR */}
                     <div className="lg:col-span-1">
-                        <div className="sticky top-8">
+                        <div className="sticky top-24 space-y-6">
                             {/* SEARCH */}
-                            <div className="bg-white rounded-2xl shadow-xl p-6 mb-8 border border-gray-100">
+                            <div className="border border-neutral-200 p-4">
                                 <div className="relative">
-                                    <HiOutlineSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                    <HiOutlineSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4" />
                                     <input
                                         type="text"
-                                        placeholder="Search FAQs..."
-                                        className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-all duration-200 text-lg"
+                                        placeholder="Search questions..."
+                                        className="w-full pl-10 pr-3 py-2 border border-neutral-200 text-xs uppercase tracking-wider focus:border-black focus:outline-none transition-colors"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                     />
@@ -146,16 +152,16 @@ const Faq = () => {
                             </div>
 
                             {/* TABS */}
-                            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-                                <div className="p-6 border-b border-gray-100">
-                                    <h3 className="font-bold text-xl text-gray-800 mb-4 flex items-center gap-3">
-                                        <IconComponent className="text-2xl text-blue-600" />
-                                        All Categories
+                            <div className="border border-neutral-200">
+                                <div className="p-4 border-b border-neutral-200 bg-neutral-50">
+                                    <h3 className="text-xs font-medium uppercase tracking-[0.16em] text-neutral-900 flex items-center gap-2">
+                                        Categories
                                     </h3>
                                 </div>
-                                <nav className="max-h-96 overflow-y-auto sidebar">
+                                <nav className="max-h-96 overflow-y-auto divide-y divide-neutral-100">
                                     {tabs.map((tab) => {
                                         const Icon = tab.icon;
+                                        const isSel = activeTab === tab.key;
                                         return (
                                             <button
                                                 key={tab.key}
@@ -164,16 +170,19 @@ const Faq = () => {
                                                     setSearchQuery("");
                                                     setOpenAccordion(null);
                                                 }}
-                                                className={`w-full flex items-center gap-4 p-5 hover:bg-blue-50 transition-all duration-200 group ${
-                                                    activeTab === tab.key
-                                                        ? "bg-linear-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 shadow-inner"
-                                                        : "hover:shadow-md"
+                                                className={`w-full flex items-center justify-between p-3.5 text-xs uppercase tracking-wider transition-colors text-left ${
+                                                    isSel
+                                                        ? "bg-black text-white font-normal"
+                                                        : "text-neutral-700 hover:bg-neutral-50 hover:text-black"
                                                 }`}
                                             >
-                                                <Icon className={`w-6 h-6 shrink-0 transition-transform ${
-                                                    activeTab === tab.key ? "scale-110 text-blue-600" : "text-gray-500 group-hover:text-blue-600"
-                                                }`} />
-                                                <span className="font-semibold text-left flex-1">{tab.label}</span>
+                                                <div className="flex items-center gap-3">
+                                                    <Icon className={`w-4 h-4 ${isSel ? "text-white" : "text-neutral-400"}`} />
+                                                    <span>{tab.label}</span>
+                                                </div>
+                                                <span className={`text-[10px] ${isSel ? "text-neutral-300" : "text-neutral-400"}`}>
+                                                    →
+                                                </span>
                                             </button>
                                         );
                                     })}
@@ -181,20 +190,22 @@ const Faq = () => {
                             </div>
 
                             {/* CONTACT */}
-                            <div className="mt-8 bg-linear-to-r from-emerald-500 to-green-600 text-white rounded-2xl shadow-2xl p-6">
-                                <h4 className="font-bold text-xl mb-3 flex items-center gap-3">
-                                    <FaHeadset className="w-6 h-6" />
-                                    Need Help?
+                            <div className="border border-neutral-200 p-5 bg-neutral-50">
+                                <h4 className="text-xs font-medium uppercase tracking-[0.16em] text-neutral-900 mb-2 flex items-center gap-2">
+                                    <FaHeadset className="w-4 h-4 text-black" />
+                                    Still Have Questions?
                                 </h4>
-                                <p className="text-emerald-100 mb-4">Can't find your answer?</p>
-                                <div className="space-y-3">
-                                    <a href="tel:+919876543210" className="flex items-center gap-3 hover:scale-105 transition-transform">
-                                        <FaPhoneAlt className="w-5 h-5" />
-                                        +91 01234567898
+                                <p className="text-[11px] uppercase tracking-wider text-neutral-500 mb-4">
+                                    Our support team is ready to assist you.
+                                </p>
+                                <div className="space-y-2 text-xs uppercase tracking-wider text-neutral-800">
+                                    <a href="tel:+919876543210" className="flex items-center gap-2.5 hover:text-black">
+                                        <FaPhoneAlt className="w-3.5 h-3.5 text-neutral-500" />
+                                        +91 12345 67890
                                     </a>
-                                    <a href="mailto:care@yourstore.com" className="flex items-center gap-3 hover:scale-105 transition-transform">
-                                        <RiCustomerService2Fill className="w-5 h-5" />
-                                        care@yourstore.com
+                                    <a href="mailto:support@wearaah.com" className="flex items-center gap-2.5 hover:text-black">
+                                        <RiCustomerService2Fill className="w-4 h-4 text-neutral-500" />
+                                        support@wearaah.com
                                     </a>
                                 </div>
                             </div>
@@ -202,84 +213,73 @@ const Faq = () => {
                     </div>
 
                     {/* MAIN CONTENT */}
-                    <div className="lg:col-span-4">
-                        <div className="bg-white/80 backdrop-blur-xl border border-white/50 overflow-hidden">
-                            {/* HEADER */}
-                            <div className="bg-[#0043dc] p-4 text-white">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 bg-white/20  flex items-center justify-center">
-                                        <IconComponent className="w-8 h-8 text-white" />
-                                    </div>
+                    <div className="lg:col-span-3">
+                        <div className="border border-neutral-200">
+                            {/* SECTION TITLE BAR */}
+                            <div className="bg-black p-5 text-white flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <IconComponent className="w-5 h-5 text-white/80" />
                                     <div>
-                                        <h2 className="text-3xl font-black">{tabs.find(t => t.key === activeTab)?.label}</h2>
-                                        <p className="opacity-90 mt-1">{filteredFaqs.length} questions</p>
+                                        <h2 className="text-sm font-normal uppercase tracking-[0.16em] text-white">
+                                            {tabs.find(t => t.key === activeTab)?.label}
+                                        </h2>
+                                        <p className="text-[10px] uppercase tracking-wider text-neutral-400 mt-0.5">
+                                            {filteredFaqs.length} Answers Available
+                                        </p>
                                     </div>
-                                    {searchQuery && (
-                                        <button
-                                            onClick={() => setSearchQuery("")}
-                                            className="ml-auto p-2 hover:bg-white/20 rounded-xl transition-all"
-                                        >
-                                            <IoIosClose className="w-6 h-6" />
-                                        </button>
-                                    )}
                                 </div>
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => setSearchQuery("")}
+                                        className="text-xs uppercase tracking-wider text-neutral-300 hover:text-white underline"
+                                    >
+                                        Clear Search
+                                    </button>
+                                )}
                             </div>
 
                             {/* ACCORDION */}
-                            <div className="p-8 divide-y divide-gray-100">
+                            <div className="divide-y divide-neutral-200 p-6">
                                 {filteredFaqs.length > 0 ? (
                                     filteredFaqs.map((item) => (
-                                        <div key={item.id} className="pb-6">
+                                        <div key={item.id} className="py-4 first:pt-0 last:pb-0">
                                             <button
                                                 onClick={() => toggleAccordion(item.id)}
-                                                className="w-full flex justify-between cursor-pointer  items-start py-4 px-2 focus:outline-0 outline-0 text-left group hover:bg-gray-50 rounded-xl p-4 transition-all duration-200"
+                                                className="w-full flex justify-between items-center text-left py-2 group focus:outline-none"
                                             >
-                                                <div className="flex-1">
-                                                    <h3 className="font-semibold text-lg text-gray-900 group-hover:text-blue-600 transition-colors pr-4">
-                                                        {item.question}
-                                                    </h3>
-                                                </div>
+                                                <h3 className="text-xs sm:text-sm font-normal uppercase tracking-wider text-neutral-900 group-hover:text-black pr-4">
+                                                    {item.question}
+                                                </h3>
                                                 <div className="shrink-0 ml-4">
                                                     <IoIosArrowDown 
-                                                        className={`w-6 h-6 text-gray-500 transition-transform duration-200 ${
-                                                            openAccordion === item.id ? 'rotate-180 text-blue-600' : ''
+                                                        className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${
+                                                            openAccordion === item.id ? 'rotate-180 text-black' : ''
                                                         }`} 
                                                     />
                                                 </div>
                                             </button>
 
                                             {openAccordion === item.id && (
-                                                <div className="mt-4 pt-6 border-t border-gray-100">
-                                                    <p className="text-gray-700 leading-relaxed text-lg">{item.answer}</p>
-                                                    
-                                                    {/* HELPFUL BUTTONS */}
-                                                    <div className="flex items-center gap-6 mt-8 pt-6 border-t border-gray-100">
-                                                        <span className="text-sm text-gray-500 font-medium">Helpful?</span>
-                                                        <div className="flex gap-3">
-                                                            <button className="flex cursor-pointer items-center gap-2 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-xl hover:bg-green-100 transition-all font-medium">
-                                                                Yes (87%)
-                                                            </button>
-                                                            <button className="flex cursor-pointer items-center gap-2 px-4 py-2 bg-red-50 text-red-700 border border-red-200 rounded-xl hover:bg-red-100 transition-all font-medium">
-                                                                No (13%)
-                                                            </button>
-                                                        </div>
-                                                    </div>
+                                                <div className="mt-3 pt-3 border-t border-neutral-100 text-xs text-neutral-600 leading-relaxed uppercase tracking-wider">
+                                                    <p>{item.answer}</p>
                                                 </div>
                                             )}
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="text-center py-20">
-                                        <HiOutlineSearch className="w-24 h-24 text-gray-300 mx-auto mb-6 opacity-50" />
-                                        <h3 className="text-2xl font-bold text-gray-500 mb-2">No results found</h3>
-                                        <p className="text-gray-400 mb-8 max-w-md mx-auto">
-                                            Try searching with different keywords or browse all questions in this category.
+                                    <div className="text-center py-16">
+                                        <HiOutlineSearch className="w-10 h-10 text-neutral-300 mx-auto mb-4" />
+                                        <h3 className="text-xs uppercase tracking-widest font-normal text-neutral-800 mb-1">
+                                            No Results Found
+                                        </h3>
+                                        <p className="text-xs uppercase tracking-wider text-neutral-400 mb-6">
+                                            Try searching with different keywords or browse other categories.
                                         </p>
                                         <button
                                             onClick={() => setSearchQuery("")}
-                                            className="px-8 py-3 bg-blue-600 text-white rounded-2xl font-semibold hover:bg-blue-700 transition-all shadow-lg"
+                                            className="px-6 py-2.5 bg-black text-white text-xs uppercase tracking-widest hover:bg-[#ED1C24] transition-colors"
                                         >
-                                            Clear Search
+                                            Reset Search
                                         </button>
                                     </div>
                                 )}

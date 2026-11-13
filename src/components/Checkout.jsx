@@ -20,6 +20,16 @@ import api from "./service/axios.js";
 
 const VALID_COUPON = "SAVE10";
 
+const resolveCheckoutImageUrl = (img) => {
+  if (!img) return "/images/placeholder.png";
+  if (img.startsWith("http")) return img;
+  if (img.startsWith("/uploads")) {
+    const base = (import.meta.env.VITE_BASE_URL || "").replace(/\/api\/?$/, "").replace(/\/+$/, "");
+    return `${base}${img}`;
+  }
+  return img.startsWith("/") ? img : `/${img}`;
+};
+
 const CheckoutPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -612,11 +622,10 @@ const CheckoutPage = () => {
                         className="flex items-start gap-3 p-3 hover:bg-gray-50 transition-colors"
                       >
                         <img
-                          src={
-                            item.image?.startsWith("http")
-                              ? item.image
-                              : `https://lrd46c05-5000.inc1.devtunnels.ms${item.image}`
-                          }
+                          src={resolveCheckoutImageUrl(item.image)}
+                          onError={(e) => {
+                            e.currentTarget.src = "/images/placeholder.png";
+                          }}
                           alt={item.name}
                           className="w-14 h-16 object-cover"
                         />

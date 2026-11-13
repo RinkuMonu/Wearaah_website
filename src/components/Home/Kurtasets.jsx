@@ -1,104 +1,127 @@
 import React, { useEffect } from "react";
-import { MdOutlineRemoveRedEye } from "react-icons/md";
-import { FaRegHeart } from "react-icons/fa";
+import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts } from "../../features/Productlist/ProductSlice";
-import { Link } from "react-router-dom";
+import ProductCard from "../common/ProductCard";
+import { FiArrowRight } from "react-icons/fi";
+import { resolveImageUrl } from "../../utils/resolveImage";
+
+const FALLBACK_SHIRTS = [
+  {
+    _id: "sh-1",
+    id: "sh-1",
+    name: "Classic Silk-Blend Egyptian Cotton Shirt",
+    brand: "Wearaah Essentials",
+    price: 2999,
+    originalPrice: 4499,
+    front: "/images/shirt1.jpg",
+    back: "/images/shirt2.jpg",
+    sizes: ["38", "40", "42", "44"],
+    colors: ["Crisp White"],
+  },
+  {
+    _id: "sh-2",
+    id: "sh-2",
+    name: "Embroidered Heritage Kurta Set",
+    brand: "Wearaah Royal",
+    price: 5499,
+    originalPrice: 7999,
+    front: "/images/23.jpg",
+    back: "/images/26.jpg",
+    sizes: ["38", "40", "42"],
+    colors: ["Ivory Gold"],
+  },
+  {
+    _id: "sh-3",
+    id: "sh-3",
+    name: "Bespoke French Cuff Evening Shirt",
+    brand: "Wearaah Atelier",
+    price: 3499,
+    originalPrice: 4999,
+    front: "/images/shirt4.jpg",
+    back: "/images/shirt5.jpg",
+    sizes: ["39", "40", "42"],
+    colors: ["Midnight Black"],
+  },
+  {
+    _id: "sh-4",
+    id: "sh-4",
+    name: "Handcrafted Silk Chanderi Kurta",
+    brand: "Wearaah Royal",
+    price: 4999,
+    originalPrice: 6999,
+    front: "/images/26.jpg",
+    back: "/images/23.jpg",
+    sizes: ["38", "40", "42"],
+    colors: ["Forest Emerald"],
+  },
+];
 
 export default function DesignerShirts() {
   const categoryId = "69c50b8293df3e7bd375833a";
-  const BASE_URL = import.meta.env.VITE_BASE_URL;
+  const BASE_URL = import.meta.env.VITE_BASE_URL || "";
   const dispatch = useDispatch();
-const key = JSON.stringify({ category: categoryId });
+  const key = JSON.stringify({ category: categoryId });
 
-const products = useSelector(
-  (state) => state.products.products[key]
-);
+  const rawProducts = useSelector((state) => state.products?.products?.[key]);
 
   useEffect(() => {
     dispatch(
       fetchProducts({
         category: categoryId,
-      }),
+      })
     );
-  }, [dispatch]);
+  }, [dispatch, categoryId]);
 
-    if (products?.length === 0) {
-    return;
-  }
+  const displayProducts = React.useMemo(() => {
+    if (Array.isArray(rawProducts) && rawProducts.length > 8) {
+      return rawProducts.slice(8, 12).map((p, idx) => {
+        const fallbackFront = FALLBACK_SHIRTS[idx % FALLBACK_SHIRTS.length].front;
+        const rawFront = Array.isArray(p.productImage) ? p.productImage[0] : p.productImage;
+        const rawBack = Array.isArray(p.productImage) ? p.productImage[1] : null;
+        const front = resolveImageUrl(rawFront, fallbackFront);
+        const back = rawBack ? resolveImageUrl(rawBack, front) : front;
+        return {
+          id: p._id,
+          _id: p._id,
+          name: p.name || "Artisan Shirt",
+          brand: p.brand?.name || p.brand || "Wearaah Signature",
+          price: p.startingPrice || p.price || 0,
+          originalPrice: p.mrp || p.originalPrice || 0,
+          front,
+          back,
+          sizes: p.sizes?.length ? p.sizes : ["38", "40", "42"],
+          colors: p.colors?.length ? p.colors : ["Standard"],
+        };
+      });
+    }
+    return FALLBACK_SHIRTS;
+  }, [rawProducts]);
+
   return (
-    <section className="py-16 bg-linear-to-b from-white via-gray-50 to-white">
-      <div className="mx-auto px-8">
-        <div className="flex items-center justify-between mb-8">
+    <section className="py-12 sm:py-16 bg-white border-b border-neutral-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-baseline justify-between mb-8 pb-3 border-b border-neutral-200">
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
+            <h2 className="text-xl sm:text-2xl font-normal text-neutral-900 uppercase tracking-[0.14em]">
               Designer Shirts
             </h2>
-            <span className="text-sm text-gray-500">Browse Popular Shirts</span>
+            <p className="text-xs text-neutral-400 tracking-wider mt-1 uppercase">
+              Browse Popular Shirts
+            </p>
           </div>
-          <button className="text-[#633426] font-semibold text-sm hover:text-orange-600 transition">
-            View All →
-          </button>
+          <Link
+            to="/productlist?category=shirts"
+            className="text-xs font-normal uppercase tracking-[0.15em] text-neutral-900 hover:text-[#ED1C24] pb-0.5 border-b border-neutral-900 hover:border-[#ED1C24] transition-all inline-flex items-center gap-1.5"
+          >
+            <span>View All</span>
+            <FiArrowRight size={13} />
+          </Link>
         </div>
 
-        {/* 4-Column Grid with Hover Effects */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {products?.map((trend) => (
-            <Link
-              to={`/product/${trend._id}`}
-              key={trend._id}
-              className="group relative cursor-pointer"
-            >
-              {/* Image Container */}
-              <div className="relative overflow-hidden  shadow-lg group-hover:shadow-2xl transition-all duration-500">
-                <img
-                  src={`${BASE_URL}${trend.productImage[0]}`}
-                  alt={trend.name}
-                  className="w-full h-72 md:h-80 object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-
-                {/* Price Badge */}
-                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-lg text-sm font-bold text-gray-900 z-20">
-                  {trend.startingPrice}
-                </div>
-
-                {/* Hover Overlay + Buttons */}
-                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
-                  <div className="w-full flex flex-col gap-3">
-                    {/* Top Icons Row */}
-                    <div className="flex justify-end gap-2">
-                      <div className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 cursor-pointer">
-                        <MdOutlineRemoveRedEye />
-                      </div>
-
-                      <div className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 cursor-pointer">
-                        <FaRegHeart />
-                      </div>
-                    </div>
-
-                    {/* Select Options Button */}
-                    <button className="w-full bg-white/95 backdrop-blur-sm text-gray-900 text-sm font-semibold py-3 px-6 rounded-2xl shadow-2xl hover:shadow-3xl cursor-pointer hover:bg-white transition-all duration-300 border border-white/50">
-                      Select Options
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Product Details */}
-              <div className="mt-4 px-2">
-                <h3 className="text-sm md:text-base font-semibold text-gray-900 leading-tight mb-1">
-                  {trend.name}
-                </h3>
-                <div className="flex items-center gap-1 text-xs text-yellow-400 mb-1">
-                  <span>★</span>
-                  <span>★</span>
-                  <span>★</span>
-                  <span>★</span>
-                  <span>☆</span>
-                  <span className="text-gray-500 ml-1">({trend?.rating})</span>
-                </div>
-              </div>
-            </Link>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+          {displayProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       </div>

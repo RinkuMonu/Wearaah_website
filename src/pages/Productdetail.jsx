@@ -38,7 +38,7 @@ import {
 } from "../features/Wishlist/wishlistSlice";
 import { useDispatch, useSelector } from "react-redux";
 
-const RECENTLY_VIEWED_KEY = "lionies_recently_viewed_v1";
+const RECENTLY_VIEWED_KEY = "wearaah_recently_viewed_v1";
 const CURRENCY_FORMATTER = new Intl.NumberFormat("en-IN", {
   maximumFractionDigits: 2,
   minimumFractionDigits: 2,
@@ -122,69 +122,7 @@ const RatingBar = ({ label, pct }) => (
   </div>
 );
 
-// const ProductCard = ({ item, location }) => {
-//   console.log("Rendering ProductCard for", item);
-//   const discount = Math.round(
-//     ((item.originalPrice - item.price) / item.originalPrice) * 100,
-//   );
-//   return (
-//     <Link
-//       to={`/product/${item.id}`}
-//       state={{ returnTo: location.pathname + location.search }}
-//       className="group block min-w-[180px] snap-start shrink-0"
-//     >
-//       <div className="bg-white overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-[#e4a156]/30">
-//         <div className="relative overflow-hidden h-[220px]">
-//           <img
-//             src={item.front}
-//             alt={item.name}
-//             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-//             loading="lazy"
-//           />
-//           {discount > 0 && (
-//             <div className="absolute top-2 left-2 bg-[#e4a156] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-//               -{discount}%
-//             </div>
-//           )}
-//           <button
-//             type="button"
-//             className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-[#fff0f4] shadow-sm"
-//           >
-//             <FiHeart size={13} className="text-[#e4a156]" />
-//           </button>
-//         </div>
-//         <div className="p-3">
-//           <p className="text-[10px] text-[#e4a156] font-bold uppercase tracking-wider">
-//             {item.brand}
-//           </p>
-//           <p className="text-sm font-medium text-gray-800 line-clamp-1 mt-0.5">
-//             {item.name}
-//           </p>
-//           <div className="flex items-center gap-2 mt-1.5">
-//             <p className="text-sm text-gray-900 font-bold">
-//               Rs. {CURRENCY_FORMATTER.format(item.price)}
-//             </p>
-//             {item.originalPrice > item.price && (
-//               <p className="text-xs text-gray-400 line-through">
-//                 Rs. {CURRENCY_FORMATTER.format(item.originalPrice)}
-//               </p>
-//             )}
-//           </div>
-//           {item?.rating && (
-//             <div className="flex items-center gap-1 mt-1.5">
-//               <Stars rating={item?.rating} size={10} />
-//               <span className="text-[10px] text-gray-400">
-//                 ({item?.totalRatings})
-//               </span>
-//             </div>
-//           )}
-//         </div>
-//       </div>
-//     </Link>
-//   );
-// };
-
-/* ─── Product card ───────────────────────────────────────── */
+/* ─── Product card (Clean Killer Jeans minimal style) ─────────────────────── */
 const ProductCard = ({ item, location }) => {
   const discount =
     item?.originalPrice && item?.price
@@ -197,10 +135,10 @@ const ProductCard = ({ item, location }) => {
     <Link
       to={`/product/${item.id}`}
       state={{ returnTo: location?.pathname + location?.search }}
-      className="group block min-w-[180px] snap-start shrink-0"
+      className="group block min-w-[200px] w-52 snap-start shrink-0"
     >
-      <div className="bg-white overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-[#e4a156]/30">
-        <div className="relative overflow-hidden h-[220px]">
+      <div className="bg-white overflow-hidden transition-all duration-300">
+        <div className="relative overflow-hidden aspect-[3/4] bg-neutral-100">
           <img
             src={item.front || "/placeholder.png"}
             alt={item.name}
@@ -208,51 +146,31 @@ const ProductCard = ({ item, location }) => {
             loading="lazy"
           />
 
-          {discount > 0 && (
-            <div className="absolute top-2 left-2 bg-[#e4a156] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-              -{discount}%
+          {item.stock === 0 ? (
+            <div className="absolute bottom-2 left-2 bg-black text-white text-[10px] font-normal tracking-widest px-2 py-0.5 uppercase">
+              SOLD OUT
             </div>
-          )}
-
-          {item.stock === 0 && (
-            <div className="absolute bottom-2 left-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded">
-              Out of Stock
+          ) : discount > 0 ? (
+            <div className="absolute bottom-2 left-2 bg-black text-white text-[10px] font-normal tracking-widest px-2 py-0.5 uppercase">
+              {discount}% OFF
             </div>
-          )}
-
-          {/* <button
-            type="button"
-            className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-[#fff0f4] shadow-sm"
-          >
-            <FiHeart
-              size={13}
-              className={`${
-                item.isWishlisted
-                  ? "text-red-500 fill-red-500"
-                  : "text-[#e4a156]"
-              }`}
-            />
-          </button> */}
+          ) : null}
         </div>
 
-        <div className="p-3">
-          <p className="text-[10px] text-[#e4a156] font-bold uppercase tracking-wider">
-            {item.brand || "Fashion"}
-          </p>
-
-          <p className="text-sm font-medium text-gray-800 line-clamp-1 mt-0.5">
+        <div className="pt-2.5 pb-1">
+          <p className="text-[12px] font-normal text-neutral-800 uppercase tracking-wide truncate">
             {item.name}
           </p>
 
-          <div className="flex items-center gap-2 mt-1.5">
-            <p className="text-sm text-gray-900 font-bold">
-              Rs. {CURRENCY_FORMATTER.format(item.price)}
-            </p>
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="text-xs sm:text-sm font-normal text-[#ED1C24]">
+              ₹{CURRENCY_FORMATTER.format(item.price)}
+            </span>
 
             {item.originalPrice > item.price && (
-              <p className="text-xs text-gray-400 line-through">
-                Rs. {CURRENCY_FORMATTER.format(item.originalPrice)}
-              </p>
+              <span className="text-[11px] text-neutral-400 line-through font-normal">
+                ₹{CURRENCY_FORMATTER.format(item.originalPrice)}
+              </span>
             )}
           </div>
         </div>
@@ -378,14 +296,14 @@ const SizeChartModal = ({ onClose, activeSizes, sizeSystem }) => {
             </div>
             {isBottomNum && (
               <p className="text-xs text-gray-400 leading-relaxed flex items-start gap-1.5">
-                <FiInfo size={11} className="shrink-0 mt-0.5 text-[#e4a156]" />
+                <FiInfo size={11} className="shrink-0 mt-0.5 text-neutral-500" />
                 Sizes are Indian waist measurements in inches. For best fit,
                 measure your natural waist and round up if between sizes.
               </p>
             )}
             {(isTopwear || isBottomAlpha) && (
               <p className="text-xs text-gray-400 leading-relaxed flex items-start gap-1.5">
-                <FiInfo size={11} className="shrink-0 mt-0.5 text-[#e4a156]" />
+                <FiInfo size={11} className="shrink-0 mt-0.5 text-neutral-500" />
                 Measurements are in inches. If between sizes, we recommend
                 sizing up for a comfortable fit.
               </p>
@@ -1253,8 +1171,8 @@ useEffect(() => {
     return (
       <section className="min-h-[70vh] flex items-center justify-center px-6">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e4a156] mx-auto" />
-          <p className="text-gray-500 mt-4">Loading product details...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-black mx-auto" />
+          <p className="text-xs uppercase tracking-widest text-neutral-500 mt-4">Loading product details...</p>
         </div>
       </section>
     );
@@ -1264,15 +1182,15 @@ useEffect(() => {
     return (
       <section className="min-h-[70vh] flex items-center justify-center px-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-2xl font-normal uppercase tracking-wider text-neutral-900">
             Product not found
           </h1>
-          <p className="text-gray-500 mt-2">
+          <p className="text-xs uppercase tracking-wider text-neutral-500 mt-2">
             The product you are looking for does not exist.
           </p>
           <Link
             to="/productlist"
-            className="inline-block mt-6 px-5 py-2.5 rounded-full bg-[#e4a156] text-white font-semibold"
+            className="inline-block mt-6 px-8 py-3 bg-black hover:bg-[#ED1C24] text-white text-xs font-normal uppercase tracking-widest transition-colors"
           >
             Browse Products
           </Link>
@@ -1287,15 +1205,15 @@ useEffect(() => {
     <div className="bg-white min-h-screen font-sans">
       {/* Toast */}
       {toast && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-full text-sm shadow-2xl flex items-center gap-2">
-          <FiCheck size={14} className="text-emerald-400" /> {toast}
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-black text-white px-6 py-3 rounded-none text-xs uppercase tracking-wider shadow-2xl flex items-center gap-2">
+          <FiCheck size={14} className="text-[#ED1C24]" /> {toast}
         </div>
       )}
 
       {/* Lightbox */}
       {lightboxOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
           onClick={() => setLightboxOpen(false)}
         >
           <img
@@ -1324,7 +1242,7 @@ useEffect(() => {
 
       <div className="max-w-7xl mx-auto px-4 md:px-10 py-8 pb-28 md:pb-12">
         {/* Breadcrumb */}
-        <div className="bg-white border-b border-gray-100 py-3 flex items-center justify-between text-xs text-gray-400 sticky top-0 z-30">
+        <div className="bg-white border-b border-neutral-100 py-3 flex items-center justify-between text-xs uppercase tracking-wider text-neutral-400 sticky top-0 z-30">
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -1333,30 +1251,30 @@ useEffect(() => {
                   ? navigate(location.state.returnTo)
                   : navigate(-1);
               }}
-              className="hover:text-[#e4a156] transition-colors"
+              className="hover:text-black transition-colors"
             >
               ← Back
             </button>
-            <span className="text-gray-200">/</span>
+            <span className="text-neutral-200">/</span>
             <span>{product.brand}</span>
-            <span className="text-gray-200">/</span>
-            <span className="text-gray-700 font-medium line-clamp-1 max-w-[200px]">
+            <span className="text-neutral-200">/</span>
+            <span className="text-neutral-800 font-normal line-clamp-1 max-w-[200px]">
               {product.name}
             </span>
           </div>
           <button
             type="button"
             onClick={copyShareLink}
-            className="flex items-center gap-1.5 hover:text-[#e4a156] transition-colors"
+            className="flex items-center gap-1.5 hover:text-black transition-colors"
           >
             {shareCopied ? <FiCheck size={13} /> : <FiCopy size={13} />}
             {shareCopied ? "Copied!" : "Share"}
           </button>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8 items-start mt-6">
+        <div className="flex flex-col lg:flex-row gap-10 items-start mt-6">
           {/* LEFT — desktop image grid */}
-          <div className="hidden lg:block sticky top-[60px] self-start w-[520px] shrink-0">
+          <div className="hidden lg:block sticky top-[90px] self-start w-[520px] shrink-0">
             <div className="grid grid-cols-2 gap-2">
               {gridImages.map(
                 (img, idx) =>
@@ -1368,8 +1286,8 @@ useEffect(() => {
                         setSelectedImage(img);
                         setLightboxOpen(true);
                       }}
-                      className="relative group overflow-hidden bg-gray-50"
-                      style={{ aspectRatio: "1 / 1.1" }}
+                      className="relative group overflow-hidden bg-neutral-100"
+                      style={{ aspectRatio: "3 / 4" }}
                     >
                       <img
                         src={img}
@@ -1377,20 +1295,20 @@ useEffect(() => {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading={idx === 0 ? "eager" : "lazy"}
                       />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/8 transition-colors flex items-center justify-center">
-                        <div className="opacity-0 group-hover:opacity-100 bg-white/80 backdrop-blur-sm rounded-full p-2 transition-opacity">
-                          <FiZoomIn size={16} className="text-gray-700" />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                        <div className="opacity-0 group-hover:opacity-100 bg-white/90 p-2 transition-opacity">
+                          <FiZoomIn size={16} className="text-neutral-800" />
                         </div>
                       </div>
                       {idx === 0 && discountPercent > 0 && (
-                        <div className="absolute top-3 left-3 bg-[#e4a156] text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-md">
+                        <div className="absolute bottom-3 left-3 bg-black text-white text-[10px] font-normal tracking-widest px-2.5 py-1 uppercase">
                           {discountPercent}% OFF
                         </div>
                       )}
                       {idx === 0 && isOutOfStock && (
                         <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
-                          <span className="text-red-500 font-bold text-sm border-2 border-red-400 px-4 py-1 rounded-full bg-white">
-                            OUT OF STOCK
+                          <span className="bg-black text-white text-xs font-normal tracking-widest px-4 py-1.5 uppercase">
+                            SOLD OUT
                           </span>
                         </div>
                       )}
@@ -1408,8 +1326,8 @@ useEffect(() => {
                   img && (
                     <div
                       key={idx}
-                      className="relative overflow-hidden bg-gray-50"
-                      style={{ aspectRatio: "1 / 1.1" }}
+                      className="relative overflow-hidden bg-neutral-100"
+                      style={{ aspectRatio: "3 / 4" }}
                     >
                       <img
                         src={img}
@@ -1418,7 +1336,7 @@ useEffect(() => {
                         loading={idx === 0 ? "eager" : "lazy"}
                       />
                       {idx === 0 && discountPercent > 0 && (
-                        <div className="absolute top-2 left-2 bg-[#e4a156] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        <div className="absolute bottom-2 left-2 bg-black text-white text-[10px] font-normal tracking-widest px-2 py-0.5 uppercase">
                           {discountPercent}% OFF
                         </div>
                       )}
@@ -1431,16 +1349,16 @@ useEffect(() => {
           {/* RIGHT — details */}
           <div className="flex-1 min-w-0 space-y-5">
             {/* Title / Rating / Price */}
-            <div className="bg-white shadow-sm p-6">
+            <div className="bg-white border border-neutral-100 p-6">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-bold text-[#e4a156] uppercase tracking-widest mb-1">
+                  <p className="text-xs font-normal text-neutral-500 uppercase tracking-[0.16em] mb-1">
                     {product.brand}
                   </p>
-                  <h1 className="text-xl font-bold text-gray-900 leading-snug">
+                  <h1 className="text-xl sm:text-2xl font-normal text-neutral-900 uppercase tracking-wide leading-snug">
                     {product.name}
                   </h1>
-                  <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+                  <p className="text-xs text-neutral-500 mt-2 leading-relaxed">
                     {product.description}
                   </p>
                 </div>
@@ -1448,10 +1366,10 @@ useEffect(() => {
                   type="button"
                   onClick={toggleWishlist}
                   disabled={updatingWishlist}
-                  className={`shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${
+                  className={`shrink-0 w-10 h-10 border flex items-center justify-center transition-all ${
                     isWishlisted
-                      ? "border-red-500 bg-red-50 text-red-500"
-                      : "border-gray-200 text-gray-400 hover:border-[#e4a156] hover:text-[#e4a156]"
+                      ? "border-[#ED1C24] bg-red-50 text-[#ED1C24]"
+                      : "border-neutral-200 text-neutral-600 hover:border-black hover:text-black"
                   } ${updatingWishlist ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                 >
                   {updatingWishlist ? (
@@ -1459,48 +1377,48 @@ useEffect(() => {
                   ) : (
                     <FiHeart
                       size={17}
-                      className={isWishlisted ? "fill-red-500" : ""}
+                      className={isWishlisted ? "fill-[#ED1C24]" : ""}
                     />
                   )}
                 </button>
               </div>
-              <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-50">
-                <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
+              <div className="flex items-center gap-3 mt-4 pt-4 border-t border-neutral-100">
+                <span className="inline-flex items-center gap-1.5 bg-neutral-900 text-white text-xs font-normal px-2.5 py-1">
                   {product.rating} <FiStar size={11} className="fill-white" />
                 </span>
                 <Stars rating={product.rating} />
-                <span className="text-sm text-gray-400">
+                <span className="text-xs uppercase tracking-wider text-neutral-400">
                   {product.reviews} reviews
                 </span>
               </div>
-              <div className="flex items-baseline gap-3 mt-4 pt-4 border-t border-dashed border-gray-100">
-                <span className="text-2xl font-extrabold text-gray-900">
-                  Rs. {CURRENCY_FORMATTER.format(displayPrice)}
+              <div className="flex items-baseline gap-3 mt-4 pt-4 border-t border-dashed border-neutral-100">
+                <span className="text-2xl font-normal text-[#ED1C24]">
+                  ₹{CURRENCY_FORMATTER.format(displayPrice)}
                 </span>
                 {originalPrice > displayPrice && (
-                  <span className="text-gray-400 line-through text-sm">
-                    Rs. {CURRENCY_FORMATTER.format(originalPrice)}
+                  <span className="text-neutral-400 line-through text-sm font-normal">
+                    ₹{CURRENCY_FORMATTER.format(originalPrice)}
                   </span>
                 )}
                 {discountPercent > 0 && (
-                  <span className="text-[#e4a156] font-bold text-sm bg-amber-50 px-2 py-0.5 rounded-full">
-                    ({discountPercent}% OFF)
+                  <span className="text-black font-normal text-xs uppercase tracking-wider bg-neutral-100 px-2 py-0.5">
+                    {discountPercent}% OFF
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-gray-400 mt-1">
+              <p className="text-[11px] text-neutral-400 mt-1 uppercase tracking-wider">
                 inclusive of all taxes
               </p>
             </div>
 
             {/* Color / Size / Quantity */}
-            <div className="bg-white shadow-sm p-6 space-y-6">
+            <div className="bg-white border border-neutral-100 p-6 space-y-6">
               {/* Color */}
               {colors.length > 0 && (
                 <div>
-                  <p className="text-sm font-semibold text-gray-700 mb-3">
+                  <p className="text-xs font-medium uppercase tracking-wider text-neutral-800 mb-3">
                     Color:{" "}
-                    <span className="font-normal text-gray-500">
+                    <span className="font-normal text-neutral-500">
                       {selectedColor}
                     </span>
                   </p>
@@ -1520,19 +1438,19 @@ useEffect(() => {
                             setSelectedSize("");
                           }}
                           title={color}
-                          className={`relative w-9 h-9 rounded-full transition-all duration-200 ${
+                          className={`relative w-8 h-8 rounded-full transition-all duration-200 ${
                             isSel
-                              ? "ring-2 ring-[#e4a156] ring-offset-2 scale-110 shadow-lg"
+                              ? "ring-2 ring-black ring-offset-2 scale-110 shadow-sm"
                               : "hover:scale-105"
                           } ${oos ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}`}
                           style={{
                             backgroundColor: bg,
-                            border: `2px solid ${isSel ? "#e4a156" : "#e5e7eb"}`,
+                            border: `2px solid ${isSel ? "#000" : "#e5e7eb"}`,
                           }}
                         >
                           {isSel && (
                             <FiCheck
-                              size={14}
+                              size={12}
                               className="absolute inset-0 m-auto text-white drop-shadow"
                             />
                           )}
@@ -1552,14 +1470,14 @@ useEffect(() => {
               <div>
                 <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-sm font-semibold text-gray-700">
+                    <p className="text-xs font-medium uppercase tracking-wider text-neutral-800">
                       Select Size
                     </p>
-                    <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full uppercase tracking-wide">
+                    <span className="text-[10px] font-normal text-neutral-500 bg-neutral-100 px-2 py-0.5 uppercase tracking-wider">
                       {categoryBadge}
                     </span>
                     {selectedSize && (
-                      <span className="text-xs font-semibold text-[#e4a156] bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                      <span className="text-xs font-normal text-black bg-neutral-100 border border-neutral-200 px-2 py-0.5 uppercase">
                         {selectedDisplaySize} ({sizeSystem})
                       </span>
                     )}
@@ -1567,28 +1485,28 @@ useEffect(() => {
                   <button
                     type="button"
                     onClick={() => setShowSizeChart(true)}
-                    className="text-xs text-[#e4a156] font-semibold hover:underline flex items-center gap-1 shrink-0"
+                    className="text-xs text-neutral-700 hover:text-black underline uppercase tracking-wider flex items-center gap-1 shrink-0"
                   >
                     <FiInfo size={11} /> Size Chart
                   </button>
                 </div>
 
                 {/* Size system switcher */}
-                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 w-fit mb-4">
+                <div className="flex items-center gap-1 bg-neutral-100 p-1 w-fit mb-4">
                   {SIZE_SYSTEMS.map((sys) => (
                     <button
                       key={sys}
                       type="button"
                       onClick={() => setSizeSystem(sys)}
-                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 min-w-[46px] ${
+                      className={`px-3 py-1 text-xs uppercase tracking-wider font-normal transition-all duration-200 ${
                         sizeSystem === sys
-                          ? "bg-white text-[#e4a156] shadow-sm"
-                          : "text-gray-500 hover:text-gray-700"
+                          ? "bg-black text-white shadow-xs"
+                          : "text-neutral-600 hover:text-black"
                       }`}
                     >
                       {sys}
                       {sys === "IN" && isNumericSizes && (
-                        <span className="block text-[8px] font-normal text-gray-400 leading-none -mt-0.5">
+                        <span className="block text-[8px] font-normal text-neutral-400 leading-none -mt-0.5">
                           inch
                         </span>
                       )}
@@ -1612,17 +1530,17 @@ useEffect(() => {
                             setSelectedSize(inKey);
                             setSizeError("");
                           }}
-                          className={`relative min-w-[52px] h-11 px-3 rounded-xl border-2 text-sm font-semibold transition-all duration-200 ${
+                          className={`relative min-w-[48px] h-10 px-3 border text-xs uppercase tracking-wider font-normal transition-all duration-200 ${
                             sel
-                              ? "bg-[#e4a156] text-white border-[#e4a156] shadow-md scale-105"
+                              ? "bg-black text-white border-black"
                               : oos
-                                ? "border-gray-100 text-gray-300 cursor-not-allowed bg-gray-50"
-                                : "border-gray-200 text-gray-700 hover:border-[#e4a156] hover:text-[#e4a156] hover:bg-amber-50"
+                                ? "border-neutral-100 text-neutral-300 cursor-not-allowed bg-neutral-50"
+                                : "border-neutral-200 text-neutral-800 hover:border-black hover:text-black"
                           }`}
                         >
                           {oos && (
-                            <span className="absolute inset-0 overflow-hidden rounded-xl flex items-center justify-center pointer-events-none">
-                              <span className="block w-[80%] h-px bg-gray-300 rotate-45" />
+                            <span className="absolute inset-0 overflow-hidden flex items-center justify-center pointer-events-none">
+                              <span className="block w-[80%] h-px bg-neutral-300 rotate-45" />
                             </span>
                           )}
                           <span className={oos ? "opacity-40" : ""}>
@@ -1630,9 +1548,8 @@ useEffect(() => {
                           </span>
                         </button>
                         {!oos && !sel && tip && (
-                          <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-3 py-1.5 rounded-lg opacity-0 group-hover/sz:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none shadow-xl">
+                          <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] px-2 py-1 uppercase tracking-wider opacity-0 group-hover/sz:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none shadow-md">
                             {tip}
-                            <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
                           </div>
                         )}
                       </div>
@@ -1640,15 +1557,15 @@ useEffect(() => {
                   })}
                 </div>
 
-                <p className="text-[11px] text-gray-400 mt-2.5 flex items-center gap-1.5">
-                  <FiInfo size={10} className="text-[#e4a156]" />
+                <p className="text-[11px] text-neutral-400 mt-2.5 flex items-center gap-1.5 uppercase tracking-wider">
+                  <FiInfo size={10} className="text-neutral-500" />
                   {isNumericSizes
                     ? "Showing waist sizes in inches. Switch to UK/US to see international equivalents."
-                    : "Switch IN / UK / US to see sizes in your preferred standard. Hover a size for all equivalents."}
+                    : "Switch IN / UK / US to see sizes in your preferred standard."}
                 </p>
 
                 {sizeError && (
-                  <p className="text-xs text-red-500 mt-2 flex items-center gap-1.5">
+                  <p className="text-xs text-[#ED1C24] mt-2 flex items-center gap-1.5 uppercase tracking-wider">
                     ⚠ {sizeError}
                   </p>
                 )}
@@ -1656,24 +1573,24 @@ useEffect(() => {
 
               {/* Quantity */}
               <div>
-                <p className="text-sm font-semibold text-gray-700 mb-2.5">
+                <p className="text-xs font-medium uppercase tracking-wider text-neutral-800 mb-2.5">
                   Quantity
                 </p>
-                <div className="inline-flex items-center border-2 border-gray-200 rounded-xl overflow-hidden">
+                <div className="inline-flex items-center border border-neutral-200">
                   <button
                     type="button"
                     onClick={() => setQuantity((p) => Math.max(1, p - 1))}
-                    className="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-xl font-light"
+                    className="w-9 h-9 flex items-center justify-center text-neutral-600 hover:bg-neutral-100 text-base"
                   >
                     −
                   </button>
-                  <span className="w-12 h-10 flex items-center justify-center font-bold text-gray-900 border-x-2 border-gray-200 text-sm">
+                  <span className="w-10 h-9 flex items-center justify-center text-xs font-normal text-neutral-900 border-x border-neutral-200">
                     {quantity}
                   </span>
                   <button
                     type="button"
                     onClick={() => setQuantity((p) => p + 1)}
-                    className="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-gray-50 text-xl font-light"
+                    className="w-9 h-9 flex items-center justify-center text-neutral-600 hover:bg-neutral-100 text-base"
                   >
                     +
                   </button>
@@ -1682,37 +1599,37 @@ useEffect(() => {
             </div>
 
             {/* CTA */}
-            <div className="bg-white shadow-sm p-4">
+            <div className="bg-white border border-neutral-100 p-4">
               <div className="flex gap-3">
                 <button
                   type="button"
                   onClick={addToCart}
                   disabled={!selectedSize || isOutOfStock}
-                  className="flex-1 h-12 rounded-xl border-2 border-[#e4a156] text-[#e4a156] font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 h-12 bg-black hover:bg-[#ED1C24] text-white font-normal text-xs uppercase tracking-[0.16em] flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  <FiShoppingCart size={16} /> ADD TO BAG
+                  <FiShoppingCart size={15} /> ADD TO BAG
                 </button>
                 <button
                   type="button"
                   onClick={handleBuyNow}
                   disabled={!selectedSize || isOutOfStock}
-                  className="flex-1 h-12 rounded-xl bg-gradient-to-r from-[#e4a156] to-[#d4854a] text-white font-bold text-sm flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-amber-200 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md"
+                  className="flex-1 h-12 bg-[#ED1C24] hover:bg-black text-white font-normal text-xs uppercase tracking-[0.16em] flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   BUY NOW
                 </button>
               </div>
               {isOutOfStock && (
-                <div className="mt-3 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5 text-sm text-red-600 font-medium text-center">
+                <div className="mt-3 bg-neutral-50 border border-neutral-200 px-4 py-2.5 text-xs text-[#ED1C24] font-normal uppercase tracking-wider text-center">
                   This product is currently out of stock.
                 </div>
               )}
             </div>
 
             {/* Delivery */}
-            <div className="bg-white shadow-sm p-5">
-              <p className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-4">
-                <span className="w-8 h-8 bg-amber-50 rounded-full flex items-center justify-center">
-                  <FiTruck size={15} className="text-[#e4a156]" />
+            <div className="bg-white border border-neutral-100 p-5">
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-neutral-800 flex items-center gap-2 mb-4">
+                <span className="w-7 h-7 bg-neutral-100 flex items-center justify-center">
+                  <FiTruck size={14} className="text-black" />
                 </span>
                 Delivery Options
               </p>
@@ -1724,34 +1641,34 @@ useEffect(() => {
                   }
                   maxLength={6}
                   placeholder="Enter 6-digit Pincode"
-                  className="flex-1 h-11 rounded-xl border-2 border-gray-200 px-4 text-sm focus:outline-none focus:border-[#e4a156] transition-colors"
+                  className="flex-1 h-11 border border-neutral-200 px-4 text-xs focus:outline-none focus:border-black transition-colors"
                 />
                 <button
                   type="button"
                   onClick={checkDelivery}
-                  className="px-5 h-11 rounded-xl bg-amber-50 border-2 border-[#e4a156] text-[#e4a156] text-sm font-bold hover:bg-amber-100 transition-colors"
+                  className="px-6 h-11 bg-black text-white text-xs font-normal uppercase tracking-widest hover:bg-neutral-800 transition-colors"
                 >
                   Check
                 </button>
               </div>
               {deliveryState && (
                 <div
-                  className={`mt-3 rounded-xl p-3 text-sm ${
+                  className={`mt-3 p-3 text-xs uppercase tracking-wider ${
                     deliveryState.type === "error"
-                      ? "bg-red-50 text-red-500 border border-red-100"
-                      : "bg-emerald-50 border border-emerald-100"
+                      ? "bg-red-50 text-[#ED1C24] border border-red-100"
+                      : "bg-neutral-50 border border-neutral-200"
                   }`}
                 >
                   {deliveryState.type === "success" ? (
                     <div className="space-y-1">
-                      <p className="text-emerald-700 font-bold">
+                      <p className="text-black font-medium">
                         ✓ {deliveryState.message}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-[11px] text-neutral-500">
                         COD: {deliveryState.cod} · Shipping:{" "}
                         {deliveryState.shipping}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-[11px] text-neutral-500">
                         {deliveryState.returns}
                       </p>
                     </div>
@@ -1763,15 +1680,15 @@ useEffect(() => {
             </div>
 
             {/* Offers */}
-            <div className="bg-white shadow-sm p-5">
+            <div className="bg-white border border-neutral-100 p-5">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-gray-800">
+                <h3 className="text-xs font-medium uppercase tracking-wider text-neutral-800">
                   🎁 Available Offers
                 </h3>
                 <button
                   type="button"
                   onClick={() => setShowAllOffers((p) => !p)}
-                  className="text-xs text-[#e4a156] font-semibold hover:underline"
+                  className="text-xs text-neutral-700 hover:text-black underline uppercase tracking-wider"
                 >
                   {showAllOffers ? "Show Less" : "View All"}
                 </button>
@@ -1781,9 +1698,9 @@ useEffect(() => {
                   (offer) => (
                     <li
                       key={offer}
-                      className="flex items-start gap-2.5 text-xs text-gray-600 bg-amber-50/50 rounded-lg px-3 py-2.5"
+                      className="flex items-start gap-2.5 text-xs text-neutral-600 bg-neutral-50 px-3 py-2.5 uppercase tracking-wider"
                     >
-                      <span className="text-emerald-500 shrink-0 mt-0.5">
+                      <span className="text-[#ED1C24] shrink-0 mt-0.5">
                         ✦
                       </span>
                       <span>{offer}</span>
@@ -1793,56 +1710,22 @@ useEffect(() => {
               </ul>
             </div>
 
-            {/* Accordion */}
-            {/* Accordion */}
-            {/* <div className="bg-white shadow-sm overflow-hidden">
-  {Object.entries(specifications).map(([key, value], i) => (
-    <div key={key} className={i > 0 ? "border-t border-gray-50" : ""}>
-      <button
-        type="button"
-        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50/80 transition-colors"
-        onClick={() => setOpenSection((prev) => (prev === key ? "" : key))}
-      >
-        <span className="text-sm font-semibold text-gray-800">
-          { key.charAt(0).toUpperCase() + key.slice(1)}
-        </span>
-        <FiChevronDown
-          size={16}
-          className={`text-gray-400 transition-transform duration-300 ${
-            openSection === key ? "rotate-180 text-[#e4a156]" : ""
-          }`}
-        />
-      </button>
-      {openSection === key && (
-        <div className="px-5 pb-4 text-sm text-gray-600 leading-relaxed bg-gray-50/50 border-t border-gray-50">
-          <p className="pt-3 capitalize">{String(value).replace(/-/g, " ")}</p>
-        </div>
-      )}
-    </div>
-  ))}
-
-  
-  {Object.keys(specifications).length === 0 && (
-    <p className="px-5 py-4 text-sm text-gray-400">No specifications available.</p>
-  )}
-</div> */}
-            {/* Specifications */}
             {/* Specifications */}
             {Object.keys(specifications).length > 0 && (
-              <div className="bg-white shadow-sm p-5">
-                <h3 className="text-sm font-bold text-gray-800 mb-4">
+              <div className="bg-white border border-neutral-100 p-5">
+                <h3 className="text-xs font-medium uppercase tracking-wider text-neutral-800 mb-4">
                   Product Specifications
                 </h3>
                 <div className="grid grid-cols-2 gap-x-6">
                   {Object.entries(specifications).map(([key, value]) => (
                     <div
                       key={key}
-                      className="flex items-center justify-between py-2.5 border-b border-gray-50"
+                      className="flex items-center justify-between py-2.5 border-b border-neutral-100 text-xs"
                     >
-                      <span className="text-sm text-gray-500">
+                      <span className="text-neutral-500 uppercase tracking-wider">
                         {key.charAt(0).toUpperCase() + key.slice(1)}
                       </span>
-                      <span className="text-sm font-medium text-gray-800 capitalize">
+                      <span className="text-neutral-800 uppercase tracking-wider">
                         {String(value).replace(/-/g, " ")}
                       </span>
                     </div>
@@ -1852,16 +1735,15 @@ useEffect(() => {
             )}
 
             {/* Reviews */}
-            {/* Reviews - Updated Section */}
-            <div className="bg-white shadow-sm p-6">
+            <div className="bg-white border border-neutral-100 p-6">
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-base font-bold text-gray-900">
-                  Ratings & Reviews
+                <h2 className="text-sm font-medium uppercase tracking-wider text-neutral-900">
+                  Ratings &amp; Reviews
                 </h2>
                 <select
                   value={reviewSort}
                   onChange={(e) => setReviewSort(e.target.value)}
-                  className="h-9 border-2 border-gray-200 rounded-xl px-3 text-xs focus:outline-none focus:border-[#e4a156] text-gray-600"
+                  className="h-9 border border-neutral-200 px-3 text-xs uppercase tracking-wider focus:outline-none focus:border-black text-neutral-600"
                 >
                   <option value="helpful">Most Helpful</option>
                   <option value="latest">Latest First</option>
@@ -1869,20 +1751,19 @@ useEffect(() => {
               </div>
 
               {reviewStats && (
-                <div className="flex gap-8 mb-6 bg-gray-50 p-4">
+                <div className="flex gap-8 mb-6 bg-neutral-50 p-4">
                   <div className="text-center shrink-0">
-                    <p className="text-5xl font-black text-gray-900 leading-none">
+                    <p className="text-4xl font-normal text-neutral-900 leading-none">
                       {reviewStats.avgRating?.toFixed(1) || "0.0"}
                     </p>
                     <Stars rating={reviewStats.avgRating || 0} size={15} />
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-[11px] uppercase tracking-wider text-neutral-400 mt-1">
                       {reviewStats.totalReviews || 0} reviews
                     </p>
                   </div>
                   <div className="flex-1 space-y-2">
-                    {/* Optional: Add detailed rating breakdown if available */}
                     {reviewStats.avgQuality && (
-                      <div className="text-xs text-gray-600">
+                      <div className="text-xs text-neutral-600 uppercase tracking-wider">
                         <div>
                           Quality: {reviewStats.avgQuality?.toFixed(1)} ★
                         </div>
@@ -1896,35 +1777,35 @@ useEffect(() => {
 
               {loadingReviews && reviews.length === 0 ? (
                 <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e4a156]" />
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black" />
                 </div>
               ) : (
                 <div className="space-y-5">
                   {sortedReviews.map((review) => (
                     <article
                       key={review._id}
-                      className="border-t border-gray-50 pt-5"
+                      className="border-t border-neutral-100 pt-5"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-200 to-orange-300 flex items-center justify-center text-xs font-bold text-white">
+                          <div className="w-8 h-8 bg-neutral-900 flex items-center justify-center text-xs font-normal text-white uppercase">
                             {review.user?.name?.[0] ||
                               review.user?.email?.[0] ||
                               "U"}
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-gray-800 leading-none">
+                            <p className="text-xs font-medium uppercase tracking-wider text-neutral-800 leading-none">
                               {review.user?.name ||
                                 review.user?.email?.split("@")[0] ||
                                 "Anonymous"}
                             </p>
-                            <span className="inline-flex items-center gap-1 bg-emerald-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded mt-0.5">
+                            <span className="inline-flex items-center gap-1 bg-black text-white text-[10px] font-normal px-1.5 py-0.5 mt-0.5">
                               {review.rating}{" "}
                               <FiStar size={9} className="fill-white" />
                             </span>
                           </div>
                         </div>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-[11px] uppercase tracking-wider text-neutral-400">
                           {new Date(review.createdAt).toLocaleDateString(
                             "en-IN",
                             {
@@ -1937,55 +1818,37 @@ useEffect(() => {
                       </div>
 
                       {review.title && (
-                        <p className="text-sm font-semibold text-gray-700 mt-1">
+                        <p className="text-xs font-medium uppercase tracking-wider text-neutral-800 mt-1">
                           {review.title}
                         </p>
                       )}
 
-                      <p className="text-sm text-gray-600 leading-relaxed mt-1">
+                      <p className="text-xs text-neutral-600 leading-relaxed mt-1">
                         {review.comment}
                       </p>
-
-                      {review.ratingBreakdown && (
-                        <div className="flex gap-3 mt-2 text-xs text-gray-500">
-                          {review.ratingBreakdown.quality && (
-                            <span>
-                              Quality: {review.ratingBreakdown.quality}★
-                            </span>
-                          )}
-                          {review.ratingBreakdown.fit && (
-                            <span>Fit: {review.ratingBreakdown.fit}★</span>
-                          )}
-                          {review.ratingBreakdown.valueForMoney && (
-                            <span>
-                              Value: {review.ratingBreakdown.valueForMoney}★
-                            </span>
-                          )}
-                        </div>
-                      )}
 
                       <div className="flex items-center gap-4 mt-3">
                         <button
                           onClick={() =>
                             handleReviewLike(review._id, review.userAction)
                           }
-                          className={`text-xs flex items-center gap-1.5 transition-colors ${
+                          className={`text-xs uppercase tracking-wider flex items-center gap-1.5 transition-colors ${
                             review.userAction === "liked"
-                              ? "text-[#e4a156] font-semibold"
-                              : "text-gray-400 hover:text-[#e4a156]"
+                              ? "text-black font-medium"
+                              : "text-neutral-400 hover:text-black"
                           }`}
                         >
                           <FiThumbsUp
                             size={14}
                             className={
                               review.userAction === "liked"
-                                ? "fill-[#e4a156]"
+                                ? "fill-black"
                                 : ""
                             }
                           />
                           <span>Helpful</span>
                           {review.likes > 0 && (
-                            <span className="text-xs font-medium">
+                            <span className="text-xs">
                               ({review.likes})
                             </span>
                           )}
@@ -1995,23 +1858,23 @@ useEffect(() => {
                           onClick={() =>
                             handleReviewDislike(review._id, review.userAction)
                           }
-                          className={`text-xs flex items-center gap-1.5 transition-colors ${
+                          className={`text-xs uppercase tracking-wider flex items-center gap-1.5 transition-colors ${
                             review.userAction === "disliked"
-                              ? "text-red-500 font-semibold"
-                              : "text-gray-400 hover:text-red-500"
+                              ? "text-[#ED1C24] font-medium"
+                              : "text-neutral-400 hover:text-[#ED1C24]"
                           }`}
                         >
                           <FiThumbsDown
                             size={14}
                             className={
                               review.userAction === "disliked"
-                                ? "fill-red-500"
+                                ? "fill-[#ED1C24]"
                                 : ""
                             }
                           />
                           <span>Not helpful</span>
                           {review.dislikes > 0 && (
-                            <span className="text-xs font-medium">
+                            <span className="text-xs">
                               ({review.dislikes})
                             </span>
                           )}
@@ -2025,7 +1888,7 @@ useEffect(() => {
                       <button
                         onClick={loadMoreReviews}
                         disabled={loadingReviews}
-                        className="px-6 py-2 rounded-xl border-2 border-[#e4a156] text-[#e4a156] text-sm font-semibold hover:bg-amber-50 disabled:opacity-50"
+                        className="px-6 py-2.5 border border-black text-black text-xs uppercase tracking-widest hover:bg-black hover:text-white transition-colors disabled:opacity-50"
                       >
                         {loadingReviews ? "Loading..." : "Load More Reviews"}
                       </button>
@@ -2033,7 +1896,7 @@ useEffect(() => {
                   )}
 
                   {!loadingReviews && reviews.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-neutral-400 text-xs uppercase tracking-wider">
                       <p>
                         No reviews yet. Be the first to review this product!
                       </p>
@@ -2046,17 +1909,16 @@ useEffect(() => {
         </div>
 
         {/* You May Also Like */}
-        <div className="mt-14">
-          <div className="flex items-center justify-between mb-6">
+        <div className="mt-16 pt-8 border-t border-neutral-100">
+          <div className="flex items-baseline justify-between mb-6">
             <div>
-              <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+              <h2 className="text-sm sm:text-base font-normal uppercase tracking-[0.16em] text-neutral-900">
                 You May Also Like
               </h2>
-              <div className="h-1 w-12 bg-gradient-to-r from-[#e4a156] to-amber-300 rounded-full mt-1.5" />
             </div>
             <Link
               to="/productlist"
-              className="text-sm text-[#e4a156] font-semibold hover:underline flex items-center gap-1"
+              className="text-xs text-neutral-500 hover:text-black uppercase tracking-wider"
             >
               View All →
             </Link>
@@ -2065,45 +1927,39 @@ useEffect(() => {
             className="flex gap-4 overflow-x-auto pb-4 snap-x"
             style={{ scrollbarWidth: "none" }}
           >
-            <div
-  className="flex gap-4 overflow-x-auto pb-4 snap-x"
-  style={{ scrollbarWidth: "none" }}
->
-  {wishlistItems?.length > 0 ? (
-    wishlistItems.map((w) => {
-      const item = {
-        id: w.product._id,
-        name: w.product.name,
-        front: w.variant.image || w.product.image,
-        price: w.variant.price,
-        originalPrice: w.variant.mrp,
-        brand: "Brand", // optional (API me nahi hai)
-        stock: w.variant.stock,
-      };
+            {wishlistItems?.length > 0 ? (
+              wishlistItems.map((w) => {
+                const item = {
+                  id: w.product._id,
+                  name: w.product.name,
+                  front: w.variant?.image || w.product?.image,
+                  price: w.variant?.price || w.product?.startingPrice || 0,
+                  originalPrice: w.variant?.mrp || w.product?.mrp || 0,
+                  brand: "Wearaah",
+                  stock: w.variant?.stock,
+                };
 
-      return (
-        <ProductCard
-          key={w._id}
-          item={item}
-          location={location}
-        />
-      );
-    })
-  ) : (
-    <p className="text-gray-500 text-sm">No items in wishlist</p>
-  )}
-</div>
+                return (
+                  <ProductCard
+                    key={w._id}
+                    item={item}
+                    location={location}
+                  />
+                );
+              })
+            ) : (
+              <p className="text-neutral-400 text-xs uppercase tracking-wider">Explore our new arrivals and popular styles</p>
+            )}
           </div>
         </div>
 
         {/* Recently Viewed */}
         {recentlyViewed.length > 0 && (
-          <div className="mt-12">
+          <div className="mt-12 pt-8 border-t border-neutral-100">
             <div className="mb-6">
-              <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+              <h2 className="text-sm sm:text-base font-normal uppercase tracking-[0.16em] text-neutral-900">
                 Recently Viewed
               </h2>
-              <div className="h-1 w-12 bg-gradient-to-r from-gray-400 to-gray-200 rounded-full mt-1.5" />
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
               {recentlyViewed.map((item) => (
@@ -2112,22 +1968,21 @@ useEffect(() => {
                   key={item.id}
                   className="group block"
                 >
-                  <div className="bg-white overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100">
-                    <div className="relative overflow-hidden aspect-square">
+                  <div className="bg-white overflow-hidden">
+                    <div className="relative overflow-hidden aspect-[3/4] bg-neutral-100">
                       <img
                         src={item.front}
                         alt={item.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
-                    <div className="p-2.5">
-                      <p className="text-xs font-medium text-gray-700 line-clamp-2 leading-snug">
+                    <div className="pt-2">
+                      <p className="text-xs font-normal text-neutral-800 line-clamp-1 uppercase tracking-wide">
                         {item.name}
                       </p>
-                      <p className="text-xs font-bold text-[#e4a156] mt-1">
-                        Rs. {CURRENCY_FORMATTER.format(item.price)}
+                      <p className="text-xs font-normal text-[#ED1C24] mt-1">
+                        ₹{CURRENCY_FORMATTER.format(item.price)}
                       </p>
                     </div>
                   </div>
@@ -2139,21 +1994,21 @@ useEffect(() => {
       </div>
 
       {/* Mobile sticky bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 px-4 py-3 md:hidden z-40 shadow-2xl">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 px-4 py-3 md:hidden z-40 shadow-lg">
         <div className="flex items-center gap-2">
           <div className="flex-1">
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider">
+            <p className="text-[10px] text-neutral-400 uppercase tracking-wider">
               Price
             </p>
-            <p className="font-extrabold text-gray-900 text-base leading-tight">
-              Rs. {CURRENCY_FORMATTER.format(displayPrice)}
+            <p className="font-normal text-neutral-900 text-base leading-tight">
+              ₹{CURRENCY_FORMATTER.format(displayPrice)}
             </p>
           </div>
           <button
             type="button"
             onClick={addToCart}
             disabled={!selectedSize || isOutOfStock}
-            className="h-11 px-4 rounded-xl border-2 border-[#e4a156] text-[#e4a156] text-sm font-bold disabled:opacity-40 hover:bg-amber-50"
+            className="h-10 px-5 bg-black text-white text-xs font-normal uppercase tracking-[0.14em] disabled:opacity-40 hover:bg-[#ED1C24] transition-colors"
           >
             ADD TO BAG
           </button>
@@ -2161,7 +2016,7 @@ useEffect(() => {
             type="button"
             onClick={handleBuyNow}
             disabled={!selectedSize || isOutOfStock}
-            className="h-11 px-5 rounded-xl bg-gradient-to-r from-[#e4a156] to-[#d4854a] text-white text-sm font-bold disabled:opacity-40 shadow-lg"
+            className="h-10 px-6 bg-[#ED1C24] text-white text-xs font-normal uppercase tracking-[0.14em] disabled:opacity-40 hover:bg-black transition-colors"
           >
             BUY NOW
           </button>

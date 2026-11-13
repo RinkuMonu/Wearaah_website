@@ -1,117 +1,130 @@
-import { useEffect } from "react";
-import { BsCart } from "react-icons/bs";
+import React, { useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts } from "../../features/Productlist/ProductSlice";
-import { Link } from "react-router-dom";
+import ProductCard from "../common/ProductCard";
+import { FiArrowRight } from "react-icons/fi";
+import { resolveImageUrl } from "../../utils/resolveImage";
 
-const Blazercoat = () => {
+const FALLBACK_BLAZERS = [
+  {
+    _id: "bl-1",
+    id: "bl-1",
+    name: "Double-Breasted Cashmere Blazer",
+    brand: "Wearaah Couture",
+    price: 8999,
+    originalPrice: 12999,
+    front: "/images/1.jpg",
+    back: "/images/2.jpg",
+    sizes: ["38", "40", "42", "44"],
+    colors: ["Midnight Blue", "Camel"],
+  },
+  {
+    _id: "bl-2",
+    id: "bl-2",
+    name: "Structured Velvet Evening Tuxedo",
+    brand: "Wearaah Atelier",
+    price: 10499,
+    originalPrice: 15999,
+    front: "/images/4.jpg",
+    back: "/images/5.jpg",
+    sizes: ["38", "40", "42"],
+    colors: ["Deep Black", "Burgundy"],
+  },
+  {
+    _id: "bl-3",
+    id: "bl-3",
+    name: "Unstructured Linen Summer Blazer",
+    brand: "Wearaah Studio",
+    price: 5999,
+    originalPrice: 8499,
+    front: "/images/2.jpg",
+    back: "/images/1.jpg",
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Ecru Oat", "Navy"],
+  },
+  {
+    _id: "bl-4",
+    id: "bl-4",
+    name: "Heritage Tweed Overcoat",
+    brand: "Wearaah Signature",
+    price: 9499,
+    originalPrice: 13999,
+    front: "/images/5.jpg",
+    back: "/images/4.jpg",
+    sizes: ["38R", "40R", "42R"],
+    colors: ["Herringbone Grey"],
+  },
+];
+
+export default function Blazercoat() {
   const categoryId = "69c50b8293df3e7bd375833a";
-  const BASE_URL = import.meta.env.VITE_BASE_URL;
+  const BASE_URL = import.meta.env.VITE_BASE_URL || "";
   const dispatch = useDispatch();
   const key = JSON.stringify({ category: categoryId });
 
-const products = useSelector(
-  (state) => state.products.products[key]
-);
+  const rawProducts = useSelector((state) => state.products?.products?.[key]);
 
   useEffect(() => {
     dispatch(
       fetchProducts({
         category: categoryId,
-      }),
+      })
     );
-  }, [dispatch]);
-  if (products?.length === 0) {
-    return;
-  }
+  }, [dispatch, categoryId]);
+
+  const displayProducts = React.useMemo(() => {
+    if (Array.isArray(rawProducts) && rawProducts.length > 4) {
+      return rawProducts.slice(4, 8).map((p, idx) => {
+        const fallbackFront = FALLBACK_BLAZERS[idx % FALLBACK_BLAZERS.length].front;
+        const rawFront = Array.isArray(p.productImage) ? p.productImage[0] : p.productImage;
+        const rawBack = Array.isArray(p.productImage) ? p.productImage[1] : null;
+        const front = resolveImageUrl(rawFront, fallbackFront);
+        const back = rawBack ? resolveImageUrl(rawBack, front) : front;
+        return {
+          id: p._id,
+          _id: p._id,
+          name: p.name || "Tailored Blazer",
+          brand: p.brand?.name || p.brand || "Wearaah Couture",
+          price: p.startingPrice || p.price || 0,
+          originalPrice: p.mrp || p.originalPrice || 0,
+          front,
+          back,
+          sizes: p.sizes?.length ? p.sizes : ["38", "40", "42"],
+          colors: p.colors?.length ? p.colors : ["Standard"],
+        };
+      });
+    }
+    return FALLBACK_BLAZERS;
+  }, [rawProducts]);
+
   return (
-    <>
-      <div className="mx-auto px-8 py-10">
-        <div className="flex items-center justify-between mb-8">
+    <section className="py-12 sm:py-16 bg-white border-b border-neutral-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-baseline justify-between mb-8 pb-3 border-b border-neutral-200">
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
+            <h2 className="text-xl sm:text-2xl font-normal text-neutral-900 uppercase tracking-[0.14em]">
               Blazer and Coat
             </h2>
-            <span className="text-sm text-gray-500">
+            <p className="text-xs text-neutral-400 tracking-wider mt-1 uppercase">
               Shop now for ultimate comfort
-            </span>
+            </p>
           </div>
-          <button className="text-[#633426] font-semibold text-sm hover:text-orange-600 transition">
-            View All →
-          </button>
+          <Link
+            to="/productlist?category=blazers"
+            className="text-xs font-normal uppercase tracking-[0.15em] text-neutral-900 hover:text-[#ED1C24] pb-0.5 border-b border-neutral-900 hover:border-[#ED1C24] transition-all inline-flex items-center gap-1.5"
+          >
+            <span>View All</span>
+            <FiArrowRight size={13} />
+          </Link>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-          {products?.slice(0, 10).map((product) => (
-            <Link
-              to={`/product/${product._id}`}
-              key={product._id}
-              className="group cursor-pointer"
-            >
-              <div className="relative overflow-hidden bg-gray-100">
-                <img
-                  src={`${BASE_URL}${product.productImage[0]}`}
-                  alt="product"
-                  className="w-full transition duration-500 group-hover:opacity-0"
-                />
 
-                <img
-                  src={`${BASE_URL}${product?.productImage[1]}`}
-                  alt="product hover"
-                  className="w-full absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition duration-500"
-                />
-
-                <div className="absolute top-3 -right-15 group-hover:right-3 transition-all duration-500 flex flex-col gap-2">
-                  {/* <div className="relative group/cart">
-                    <div className="bg-white p-2 rounded-full shadow-lg cursor-pointer hover:bg-gray-50 transition-colors duration-200">
-                      <BsCart size={18} className="text-gray-800" />
-                    </div>
-                    <span className="absolute right-12 top-1/2 -translate-y-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover/cart:opacity-100 transition whitespace-nowrap shadow-lg z-20">
-                      Add to cart
-                    </span>
-                  </div> */}
-
-                  <div className="relative group/quickview">
-                    <div className="bg-white p-2 rounded-full shadow-lg cursor-pointer hover:bg-gray-50 transition-colors duration-200">
-                      <svg
-                        className="w-5 h-5 text-gray-800"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                        />
-                      </svg>
-                    </div>
-                    <span className="absolute right-12 top-1/2 -translate-y-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover/quickview:opacity-100 transition whitespace-nowrap shadow-lg z-20">
-                      Quick View
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <p className="mt-3 text-sm font-medium">{product.name}</p>
-              <p className="text-red-500 font-semibold">
-                Rs. {product?.startingPrice}{" "}
-                <span className="line-through text-gray-400 ml-2">
-                  Rs. {product?.mrp}
-                </span>
-              </p>
-            </Link>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+          {displayProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       </div>
-    </>
+    </section>
   );
-};
-
-export default Blazercoat;
+}

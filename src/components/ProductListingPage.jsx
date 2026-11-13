@@ -8,6 +8,7 @@ import {
   FiList,
   FiSearch,
   FiStar,
+  FiShoppingBag,
 } from "react-icons/fi";
 import { CiFilter } from "react-icons/ci";
 import api from "./service/axios";
@@ -18,9 +19,265 @@ import {
   fatchSubCategoryByCategoryId,
 } from "../features/subCategory/subCategorySlice";
 import { fatchBrands } from "../features/Brands/brandSlice";
-import { b, i } from "framer-motion/client";
+import ProductCard from "./common/ProductCard";
+import { toast } from "react-toastify";
+import {
+  addToWishlist,
+  removeFromWishlist,
+  selectWishlistItems,
+} from "../features/Wishlist/wishlistSlice";
+import { useAuth } from "./service/AuthContext";
+import {
+  getCartItems,
+  setCartItems,
+  CART_UPDATED_EVENT,
+} from "../utils/cartStorage";
+import { resolveImageUrl, DEFAULT_PRODUCT_IMAGES } from "../utils/resolveImage";
 
 const PAGE_SIZE = 8;
+
+// Curated New Arrivals dataset matching Killer Jeans reference
+const NEW_ARRIVALS_DATA = [
+  // ─── 7 JEANS ──────────────────────────────────────────────────────────────
+  {
+    _id: "na-jeans-1",
+    id: "na-jeans-1",
+    name: "MEN'S BLUE SLIM FIT JEANS",
+    category: "jeans",
+    price: 3599,
+    originalPrice: 4499,
+    front: "/images/jeans.jpg",
+    back: "/images/11.webp",
+    badge: "SOLD OUT",
+    sizes: ["30", "32", "34", "36"],
+    colors: ["Blue"],
+  },
+  {
+    _id: "na-jeans-2",
+    id: "na-jeans-2",
+    name: "MEN'S DARK GREY SKINNY FIT JEANS",
+    category: "jeans",
+    price: 3299,
+    originalPrice: 4199,
+    front: "/images/10.webp",
+    back: "/images/12.webp",
+    badge: "SOLD OUT",
+    sizes: ["30", "32", "34", "36"],
+    colors: ["Dark Grey"],
+  },
+  {
+    _id: "na-jeans-3",
+    id: "na-jeans-3",
+    name: "MEN'S DARK BLUE SLIM FIT JEANS",
+    category: "jeans",
+    price: 3899,
+    originalPrice: 4999,
+    front: "/images/12.webp",
+    back: "/images/10.webp",
+    badge: "SOLD OUT",
+    sizes: ["30", "32", "34", "36"],
+    colors: ["Dark Blue"],
+  },
+  {
+    _id: "na-jeans-4",
+    id: "na-jeans-4",
+    name: "MEN'S LIGHT BLUE SLIM FIT JEANS",
+    category: "jeans",
+    price: 3599,
+    originalPrice: 4399,
+    front: "/images/11.webp",
+    back: "/images/jeans.jpg",
+    badge: "SOLD OUT",
+    sizes: ["30", "32", "34", "36"],
+    colors: ["Light Blue"],
+  },
+  {
+    _id: "na-jeans-5",
+    id: "na-jeans-5",
+    name: "MEN'S RAW INDIGO SLIM JEANS",
+    category: "jeans",
+    price: 3799,
+    originalPrice: 4699,
+    front: "/images/21.webp",
+    back: "/images/22.webp",
+    badge: "SOLD OUT",
+    sizes: ["30", "32", "34", "36"],
+    colors: ["Indigo"],
+  },
+  {
+    _id: "na-jeans-6",
+    id: "na-jeans-6",
+    name: "MEN'S VINTAGE WASH TAPERED JEANS",
+    category: "jeans",
+    price: 3699,
+    originalPrice: 4599,
+    front: "/images/22.webp",
+    back: "/images/21.webp",
+    badge: "SOLD OUT",
+    sizes: ["30", "32", "34", "36"],
+    colors: ["Vintage Wash"],
+  },
+  {
+    _id: "na-jeans-7",
+    id: "na-jeans-7",
+    name: "MEN'S ONYX BLACK STRETCH JEANS",
+    category: "jeans",
+    price: 3599,
+    originalPrice: 4499,
+    front: "/images/cargopants.webp",
+    back: "/images/10.webp",
+    badge: "SOLD OUT",
+    sizes: ["30", "32", "34", "36"],
+    colors: ["Onyx Black"],
+  },
+
+  // ─── 5 T-SHIRTS ───────────────────────────────────────────────────────────
+  {
+    _id: "na-tee-1",
+    id: "na-tee-1",
+    name: "MEN'S OLIVE SOLID SLIM FIT T-SHIRTS",
+    category: "t-shirts",
+    price: 1399,
+    originalPrice: 1999,
+    front: "/images/tee1.jpg",
+    back: "/images/plain.webp",
+    badge: "SOLD OUT",
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Olive"],
+  },
+  {
+    _id: "na-tee-2",
+    id: "na-tee-2",
+    name: "MEN'S GREY PRINTED SLIM FIT T-SHIRTS",
+    category: "t-shirts",
+    price: 1399,
+    originalPrice: 1999,
+    front: "/images/printed.webp",
+    back: "/images/plain.webp",
+    badge: "SOLD OUT",
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Grey"],
+  },
+  {
+    _id: "na-tee-3",
+    id: "na-tee-3",
+    name: "MEN'S BLUE PRINTED SLIM FIT T-SHIRTS",
+    category: "t-shirts",
+    price: 1399,
+    originalPrice: 1999,
+    front: "/images/tshirts.avif",
+    back: "/images/printed.webp",
+    badge: "SOLD OUT",
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Blue"],
+  },
+  {
+    _id: "na-tee-4",
+    id: "na-tee-4",
+    name: "MEN'S WHITE GRAPHIC CREW T-SHIRT",
+    category: "t-shirts",
+    price: 1299,
+    originalPrice: 1799,
+    front: "/images/plain.webp",
+    back: "/images/tee1.jpg",
+    badge: "SOLD OUT",
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["White"],
+  },
+  {
+    _id: "na-tee-5",
+    id: "na-tee-5",
+    name: "MEN'S CHARCOAL MINIMAL POCKET T-SHIRT",
+    category: "t-shirts",
+    price: 1499,
+    originalPrice: 2099,
+    front: "/images/polo.webp",
+    back: "/images/plain.webp",
+    badge: "SOLD OUT",
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Charcoal"],
+  },
+
+  // ─── PLAIN SHIRTS ────────────────────────────────────────────────────────
+  {
+    _id: "na-shirt-1",
+    id: "na-shirt-1",
+    name: "MEN'S CRISP WHITE LINEN PLAIN SHIRT",
+    category: "shirts",
+    price: 2499,
+    originalPrice: 3499,
+    front: "/images/1.jpg",
+    back: "/images/2.jpg",
+    badge: "SOLD OUT",
+    sizes: ["38", "40", "42", "44"],
+    colors: ["Crisp White"],
+  },
+  {
+    _id: "na-shirt-2",
+    id: "na-shirt-2",
+    name: "MEN'S SKY BLUE OXFORD COTTON SHIRT",
+    category: "shirts",
+    price: 2299,
+    originalPrice: 3199,
+    front: "/images/2.jpg",
+    back: "/images/1.jpg",
+    badge: "SOLD OUT",
+    sizes: ["38", "40", "42", "44"],
+    colors: ["Sky Blue"],
+  },
+  {
+    _id: "na-shirt-3",
+    id: "na-shirt-3",
+    name: "MEN'S MIDNIGHT BLACK SOLID CASUAL SHIRT",
+    category: "shirts",
+    price: 2599,
+    originalPrice: 3599,
+    front: "/images/4.jpg",
+    back: "/images/5.jpg",
+    badge: "SOLD OUT",
+    sizes: ["38", "40", "42", "44"],
+    colors: ["Midnight Black"],
+  },
+  {
+    _id: "na-shirt-4",
+    id: "na-shirt-4",
+    name: "MEN'S BEIGE LINEN RESORT SHIRT",
+    category: "shirts",
+    price: 2699,
+    originalPrice: 3699,
+    front: "/images/8.webp",
+    back: "/images/9.webp",
+    badge: "SOLD OUT",
+    sizes: ["38", "40", "42", "44"],
+    colors: ["Beige"],
+  },
+  {
+    _id: "na-shirt-5",
+    id: "na-shirt-5",
+    name: "MEN'S SAGE GREEN OVERSIZED PLAIN SHIRT",
+    category: "shirts",
+    price: 2399,
+    originalPrice: 3299,
+    front: "/images/14.webp",
+    back: "/images/15.jpg",
+    badge: "SOLD OUT",
+    sizes: ["38", "40", "42", "44"],
+    colors: ["Sage Green"],
+  },
+  {
+    _id: "na-shirt-6",
+    id: "na-shirt-6",
+    name: "MEN'S NAVY BLUE MANDARIN COLLAR SHIRT",
+    category: "shirts",
+    price: 2499,
+    originalPrice: 3499,
+    front: "/images/shirts.avif",
+    back: "/images/3.jpg",
+    badge: "SOLD OUT",
+    sizes: ["38", "40", "42", "44"],
+    colors: ["Navy Blue"],
+  },
+];
 
 const parseArray = (v) => (v ? v.split(",").filter(Boolean) : []);
 const emptyFilters = () => ({
@@ -34,6 +291,171 @@ const emptyFilters = () => ({
   minDiscount: "",
   minRating: "",
 });
+
+const NewArrivalItemCard = ({ product }) => {
+  const dispatch = useDispatch();
+  const { user } = useAuth();
+  const wishlistItems = useSelector(selectWishlistItems) || [];
+  const [isHovered, setIsHovered] = useState(false);
+
+  const isWishlisted = wishlistItems.some(
+    (item) => (item.product?._id || item.productId || item._id) === product.id
+  );
+
+  const handleWishlist = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      toast.info("Please sign in to save items to your wishlist");
+      return;
+    }
+    try {
+      if (isWishlisted) {
+        await dispatch(removeFromWishlist({ productId: product.id })).unwrap();
+        toast.success("Removed from wishlist");
+      } else {
+        await dispatch(addToWishlist({ productId: product.id })).unwrap();
+        toast.success("Added to your wishlist");
+      }
+    } catch (err) {
+      toast.info(isWishlisted ? "Item removed" : "Saved to wishlist");
+    }
+  };
+
+  const handleQuickAdd = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const existing = getCartItems();
+    const size = product.sizes?.[0] || "32";
+    const color = product.colors?.[0] || "Standard";
+
+    const idx = existing.findIndex(
+      (item) => (item.productId === product.id || item.id === product.id) && item.size === size
+    );
+    if (idx > -1) {
+      existing[idx].quantity += 1;
+    } else {
+      existing.push({
+        lineId: `${product.id}-${size}-${Date.now()}`,
+        productId: product.id,
+        id: product.id,
+        quantity: 1,
+        size,
+        color,
+        price: product.price,
+        mrp: product.originalPrice,
+        name: product.name,
+        image: product.front,
+      });
+    }
+    setCartItems(existing);
+    window.dispatchEvent(new Event(CART_UPDATED_EVENT));
+    toast.success(`Added ${product.name} to cart`);
+  };
+
+  const categoryFallback =
+    product.category === "shirts"
+      ? "/images/shirts.avif"
+      : product.category === "t-shirts"
+      ? "/images/polo.webp"
+      : "/images/jeans.jpg";
+
+  const frontImg = resolveImageUrl(product.front, categoryFallback);
+  const backImg = product.back ? resolveImageUrl(product.back, frontImg) : frontImg;
+
+  return (
+    <div
+      className="group flex flex-col bg-white"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <Link
+        to={`/productdetail?id=${product.id}&name=${encodeURIComponent(product.name)}`}
+        className="block relative aspect-[3/4] bg-[#f4f4f4] overflow-hidden"
+      >
+        <img
+          src={frontImg}
+          alt={product.name}
+          className={`absolute inset-0 w-full h-full object-cover object-top transition-all duration-700 ease-out ${
+            backImg && backImg !== frontImg && isHovered
+              ? "opacity-0 scale-105"
+              : "opacity-100 scale-100"
+          }`}
+          onError={(e) => {
+            if (!e.currentTarget.dataset.failed) {
+              e.currentTarget.dataset.failed = "true";
+              e.currentTarget.src = categoryFallback;
+            }
+          }}
+        />
+
+        {backImg && backImg !== frontImg && (
+          <img
+            src={backImg}
+            alt={`${product.name} alternate view`}
+            className={`absolute inset-0 w-full h-full object-cover object-top transition-all duration-700 ease-out ${
+              isHovered ? "opacity-100 scale-105" : "opacity-0 scale-100"
+            }`}
+            onError={(e) => {
+              if (!e.currentTarget.dataset.failed) {
+                e.currentTarget.dataset.failed = "true";
+                e.currentTarget.src = categoryFallback;
+              }
+            }}
+          />
+        )}
+
+        {/* Wishlist Heart Icon Top-Right */}
+        <button
+          onClick={handleWishlist}
+          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/80 hover:bg-white text-neutral-800 hover:text-[#08266B] flex items-center justify-center transition-all shadow-xs cursor-pointer z-10"
+          aria-label="Wishlist"
+        >
+          <FiHeart
+            size={16}
+            className={isWishlisted ? "fill-[#08266B] text-[#08266B]" : ""}
+          />
+        </button>
+
+        {/* Bottom Left Badge */}
+        {product.badge && (
+          <span className="absolute bottom-3 left-3 bg-black text-white text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 select-none pointer-events-none">
+            {product.badge}
+          </span>
+        )}
+
+        {/* Bottom Right Cart Trigger */}
+        <button
+          onClick={handleQuickAdd}
+          className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-neutral-900 hover:text-[#08266B] flex items-center justify-center transition-all shadow-xs cursor-pointer opacity-90 group-hover:opacity-100 z-10"
+          aria-label="Add to bag"
+        >
+          <FiShoppingBag size={15} />
+        </button>
+      </Link>
+
+      {/* Info below image */}
+      <div className="pt-3">
+        <Link
+          to={`/productdetail?id=${product.id}&name=${encodeURIComponent(product.name)}`}
+          className="block text-xs sm:text-[13px] font-medium uppercase tracking-wider text-neutral-900 hover:text-[#08266B] transition-colors truncate"
+        >
+          {product.name}
+        </Link>
+        <div className="mt-1 flex items-center gap-2">
+          <span className="text-xs sm:text-[13px] font-normal text-neutral-900">
+            Rs. {product.price.toLocaleString("en-IN")}.00
+          </span>
+          {product.originalPrice > product.price && (
+            <span className="text-[11px] text-neutral-400 line-through">
+              Rs. {product.originalPrice.toLocaleString("en-IN")}.00
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ProductListingPage = () => {
   const isInitialLoad = useRef(true);
@@ -352,7 +774,27 @@ const ProductListingPage = () => {
     return [];
   }, [selectedSubCategory]);
 
-  if ((loadState === "error" || loadState === "offline") && !products.length) {
+  const isNewArrivalPage =
+    filters.isNewArrival || searchParams.get("isNewArrival") === "true";
+  const [activeNewArrivalTab, setActiveNewArrivalTab] = useState("all");
+  const [newArrivalSort, setNewArrivalSort] = useState("featured");
+
+  const displayedNewArrivals = useMemo(() => {
+    let list = [...NEW_ARRIVALS_DATA];
+    if (activeNewArrivalTab !== "all") {
+      list = list.filter((p) => p.category === activeNewArrivalTab);
+    }
+    if (newArrivalSort === "price-low") {
+      list.sort((a, b) => a.price - b.price);
+    } else if (newArrivalSort === "price-high") {
+      list.sort((a, b) => b.price - a.price);
+    } else if (newArrivalSort === "name") {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return list;
+  }, [activeNewArrivalTab, newArrivalSort]);
+
+  if ((loadState === "error" || loadState === "offline") && !products.length && !isNewArrivalPage) {
     return (
       <section className="min-h-screen bg-white p-8 text-center">
         <FiAlertCircle className="mx-auto w-12 h-12 text-[#995d37]" />
@@ -364,7 +806,7 @@ const ProductListingPage = () => {
         </p>
         <button
           onClick={() => dispatch(fetchProducts(buildParams()))}
-          className="mt-6 px-6 py-3 rounded-xl bg-[#d18736] text-white font-semibold"
+          className="mt-6 px-6 py-2.5 bg-black hover:bg-[#ED1C24] text-white text-xs uppercase tracking-wider font-medium transition-colors"
         >
           Retry
         </button>
@@ -374,12 +816,126 @@ const ProductListingPage = () => {
             : products.slice(0, 4).map((p) => (
                 <div key={p.id} className="border rounded-xl p-3">
                   <img
-                    src={`${BASE_URL}${p.productImage}`}
+                    src={resolveImageUrl(Array.isArray(p.productImage) ? p.productImage[0] : p.productImage, DEFAULT_PRODUCT_IMAGES[0])}
                     className="h-32 w-full rounded object-cover"
+                    alt={p.name || "Product"}
+                    onError={(e) => {
+                      if (!e.currentTarget.dataset.failed) {
+                        e.currentTarget.dataset.failed = "true";
+                        e.currentTarget.src = DEFAULT_PRODUCT_IMAGES[0];
+                      }
+                    }}
                   />
                   <p className="text-sm mt-2">{p.name}</p>
                 </div>
               ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (isNewArrivalPage) {
+    return (
+      <section className="min-h-screen bg-white pb-16 font-sans">
+        {/* ─── 1. FIRST SCREEN HERO BANNER (Exact Screenshot 4) ─── */}
+        <div className="relative w-full bg-[#f6f5f3] overflow-hidden min-h-[360px] sm:min-h-[460px] md:min-h-[520px] flex items-center border-b border-neutral-200">
+          <div className="w-full max-w-[1440px] mx-auto px-6 sm:px-12 lg:px-16 py-10 flex flex-col md:flex-row items-center justify-between relative z-10">
+            
+            {/* Left Typography */}
+            <div className="max-w-xl text-neutral-900 mb-8 md:mb-0">
+              <h2 className="text-3xl sm:text-5xl md:text-6xl font-black uppercase tracking-tight leading-[1.08] font-display">
+                LIGHT,<br />
+                BREEZY AND PERFECT<br />
+                <span className="text-[#08266B]">FOR THE SEASON!</span>
+              </h2>
+              <p className="mt-4 text-xs sm:text-sm uppercase tracking-[0.2em] text-neutral-500 font-medium">
+                Summer • Denim &amp; Contemporary Collection 2026
+              </p>
+            </div>
+
+            {/* Right Editorial Model */}
+            <div className="w-full md:w-auto flex justify-center md:justify-end">
+              <div className="w-72 sm:w-80 md:w-96 aspect-[3/4] overflow-hidden shadow-2xl rounded-xs bg-neutral-200">
+                <img
+                  src="/images/15.jpg"
+                  alt="New Arrivals Campaign"
+                  className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-700"
+                />
+              </div>
+            </div>
+
+          </div>
+
+          {/* Large Background Watermark Typography */}
+          <div className="absolute right-4 sm:right-10 bottom-2 sm:bottom-4 select-none pointer-events-none opacity-20">
+            <span className="text-5xl sm:text-7xl md:text-8xl font-black tracking-wider uppercase text-neutral-900 leading-none block text-right font-display">
+              NEW<br />ARRIVALS
+            </span>
+          </div>
+        </div>
+
+        {/* ─── 2. SUBHEADER BAR (Exact Screenshot 1) ─── */}
+        <div className="border-b border-neutral-200 bg-white sticky top-[64px] sm:top-[80px] z-30 shadow-xs">
+          <div className="w-full max-w-[1440px] mx-auto px-6 sm:px-10 lg:px-16 py-4 flex flex-wrap items-center justify-between gap-4">
+            
+            {/* Left: Breadcrumbs & Product Count */}
+            <div>
+              <div className="text-[11px] uppercase tracking-widest text-neutral-400 font-medium mb-0.5">
+                <Link to="/" className="hover:text-black">Home</Link>
+                <span className="mx-1.5">/</span>
+                <span className="text-neutral-800 font-semibold">New Arrivals</span>
+              </div>
+              <span className="text-xs sm:text-sm uppercase tracking-[0.16em] font-bold text-neutral-900">
+                {displayedNewArrivals.length} PRODUCTS
+              </span>
+            </div>
+
+            {/* Center: Category Filter Tabs */}
+            <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto py-1">
+              {[
+                { id: "all", label: "ALL PRODUCTS" },
+                { id: "jeans", label: "JEANS (7)" },
+                { id: "t-shirts", label: "T-SHIRTS (5)" },
+                { id: "shirts", label: "PLAIN SHIRTS (6)" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveNewArrivalTab(tab.id)}
+                  className={`px-4 py-1.5 text-xs font-semibold tracking-wider uppercase transition-all rounded-full cursor-pointer whitespace-nowrap ${
+                    activeNewArrivalTab === tab.id
+                      ? "bg-[#08266B] text-white shadow-xs"
+                      : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Right: Filter & Sort Toggle */}
+            <div className="flex items-center gap-4">
+              <select
+                value={newArrivalSort}
+                onChange={(e) => setNewArrivalSort(e.target.value)}
+                className="text-xs uppercase tracking-wider font-semibold border-b border-black py-1 px-1 bg-transparent outline-none cursor-pointer"
+              >
+                <option value="featured">FILTER &amp; SORT: FEATURED</option>
+                <option value="price-low">PRICE: LOW TO HIGH</option>
+                <option value="price-high">PRICE: HIGH TO LOW</option>
+                <option value="name">NAME (A-Z)</option>
+              </select>
+            </div>
+
+          </div>
+        </div>
+
+        {/* ─── 3. 3-COLUMN PRODUCT GRID (Exact Screenshots 1, 2, 3, 5) ─── */}
+        <div className="w-full max-w-[1440px] mx-auto px-6 sm:px-10 lg:px-16 py-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10 lg:gap-12">
+            {displayedNewArrivals.map((prod) => (
+              <NewArrivalItemCard key={prod.id} product={prod} />
+            ))}
+          </div>
         </div>
       </section>
     );
@@ -419,10 +975,10 @@ const ProductListingPage = () => {
             </nav>
 
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-end sm:items-center text-right sm:text-left">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-900 leading-tight">
+              <h1 className="text-xl sm:text-2xl font-normal text-gray-900 uppercase tracking-widest leading-tight">
                 {formatCategory(category)}
               </h1>
-              <p className="text-lg sm:text-xl text-gray-500 bg-gray-100 px-3 py-1 rounded-full font-medium min-w-[90px]">
+              <p className="text-xs text-gray-500 uppercase tracking-widest font-normal">
                 {products?.length || 0} products
               </p>
             </div>
@@ -448,7 +1004,7 @@ const ProductListingPage = () => {
                         loading="lazy"
                       />
                     </span>
-                    <span className="text-xs font-semibold text-gray-700">
+                    <span className="text-xs font-normal uppercase tracking-wider text-gray-700">
                       {tile.name}
                     </span>
                   </button>
@@ -456,22 +1012,22 @@ const ProductListingPage = () => {
             </div>
           </div>
           <button
-            className="lg:hidden px-4 py-2 rounded-lg bg-[#d18736] text-white font-semibold"
+            className="lg:hidden px-4 py-2 bg-black hover:bg-[#ED1C24] text-white text-xs uppercase tracking-wider font-medium"
             onClick={() => setShowMobileFilters((v) => !v)}
           >
-            Filter
+            Filter &amp; Sort
           </button>
           <div className="hidden lg:flex items-center gap-3">
-            <div className="flex gap-1 p-1 rounded-xl">
+            <div className="flex gap-1 p-1 rounded-sm">
               <button
                 onClick={() => setViewMode("grid")}
-                className={`p-2 rounded ${viewMode === "grid" ? "bg-[#d18736] text-white" : ""}`}
+                className={`p-2 rounded ${viewMode === "grid" ? "bg-black text-white" : "text-gray-600"}`}
               >
                 <FiGrid />
               </button>
               <button
                 onClick={() => setViewMode("list")}
-                className={`p-2 rounded ${viewMode === "list" ? "bg-[#d18736] text-white" : ""}`}
+                className={`p-2 rounded ${viewMode === "list" ? "bg-black text-white" : "text-gray-600"}`}
               >
                 <FiList />
               </button>
@@ -593,7 +1149,7 @@ const ProductListingPage = () => {
           <main className="w-full lg:flex-1 relative">
             {loadState === "loading" && (
               <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
-                <div className="h-10 w-10 border-4 border-[#d18736] border-t-transparent rounded-full animate-spin"></div>
+                <div className="h-10 w-10 border-4 border-[#ED1C24] border-t-transparent rounded-full animate-spin"></div>
               </div>
             )}
             {products?.length === 0 ? (
@@ -606,13 +1162,13 @@ const ProductListingPage = () => {
                 <div className="mt-6 flex justify-center gap-3">
                   <button
                     onClick={clearAll}
-                    className="px-5 py-2 rounded-lg bg-[#d18736] text-white"
+                    className="px-5 py-2 bg-black hover:bg-[#ED1C24] text-white text-xs uppercase tracking-wider transition-colors"
                   >
                     Remove filters
                   </button>
                   <button
                     onClick={() => setSortBy("popularity")}
-                    className="px-5 py-2 rounded-lg border border-[#d18736] text-[#d18736]"
+                    className="px-5 py-2 border border-black hover:border-[#ED1C24] hover:text-[#ED1C24] text-black text-xs uppercase tracking-wider transition-colors"
                   >
                     Show trending
                   </button>
@@ -620,96 +1176,34 @@ const ProductListingPage = () => {
               </div>
             ) : (
               <div
-                className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1 divide-y"}`}
+                className={`grid gap-4 sm:gap-6 ${viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1"}`}
               >
                 {isLoading
                   ? "Loading..."
-                  : products?.slice(0, visibleCount).map((p, idx) => (
-                      <div key={idx} className="group">
-                        <Link
-                          to={`/product/${p._id}`}
-                          state={{
-                            returnTo: `${location.pathname}${location.search}`,
-                          }}
-                          className="block"
-                          onClick={() =>
-                            track("product_click", {
-                              productId: p._id,
-                              index: idx + 1,
-                            })
-                          }
-                        >
-                          <div className="relative h-72 overflow-hidden">
-                            <div className="absolute top-2 left-2 z-20 flex flex-col gap-1">
-                              {p.mrp > p.startingPrice && (
-                                <span className="px-2 py-1 text-xs text-white bg-green-600 rounded">
-                                  -
-                                  {Math.round(
-                                    ((p.mrp - p.startingPrice) / p.mrp) * 100,
-                                  ) || 0}
-                                  % OFF
-                                </span>
-                              )}
-                              {p.trending && (
-                                <span className="px-2 py-1 text-xs text-white bg-black/80 rounded">
-                                  Trending
-                                </span>
-                              )}
-                              {p.isNew && (
-                                <span className="px-2 py-1 text-xs text-white bg-blue-600 rounded">
-                                  New
-                                </span>
-                              )}
-                              {p.sponsored && (
-                                <span className="px-2 py-1 text-xs bg-white rounded">
-                                  Sponsored
-                                </span>
-                              )}
-                            </div>
-
-                            <img
-                              src={`${BASE_URL}${p.productImage[0]}`}
-                              alt={p.name}
-                              loading="lazy"
-                              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            />
-                            <img
-                              src={`${BASE_URL}${p.productImage[1]}`}
-                              alt={`${p.name} hover`}
-                              loading="lazy"
-                              className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-all duration-500"
-                            />
-                          </div>
-                          <div className="pt-3">
-                            <p className="text-xs uppercase text-gray-500 font-semibold">
-                              {p.brand}
-                            </p>
-                            <h3 className="font-semibold text-sm mt-1 truncate">
-                              {p.name}
-                            </h3>
-                            <div className="mt-2 flex items-center gap-2">
-                              <span className="font-bold text-[#633426]">
-                                INR {p.startingPrice}
-                              </span>
-                              <span className="text-xs text-gray-400 line-through">
-                                INR {p.mrp}
-                              </span>
-                            </div>
-                            <div className="mt-2 flex items-center justify-between text-xs">
-                              <span className="flex items-center gap-1 text-gray-600">
-                                <FiStar className="text-yellow-500" />
-                                {p.rating} ({p.reviews})
-                              </span>
-                              {p.inStock && p.sizesAvailable.length === 1 && (
-                                <span className="text-orange-600 font-semibold">
-                                  Only 1 size left
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </Link>
-                      </div>
-                    ))}
+                  : products?.slice(0, visibleCount).map((p, idx) => {
+                      const frontImg = resolveImageUrl(
+                        Array.isArray(p.productImage) ? p.productImage[0] : p.productImage,
+                        DEFAULT_PRODUCT_IMAGES[idx % DEFAULT_PRODUCT_IMAGES.length]
+                      );
+                      const backImg = resolveImageUrl(
+                        Array.isArray(p.productImage) && p.productImage[1] ? p.productImage[1] : null,
+                        frontImg
+                      );
+                      const cardData = {
+                        id: p._id,
+                        _id: p._id,
+                        name: p.name,
+                        brand: p.brand?.name || p.brand || "Wearaah Studio",
+                        price: p.startingPrice || p.price || 0,
+                        originalPrice: p.mrp || p.originalPrice || 0,
+                        front: frontImg,
+                        back: backImg,
+                        sizes: p.sizesAvailable?.length ? p.sizesAvailable : (p.sizes || ["M"]),
+                        colors: p.colors?.length ? p.colors : ["Standard"],
+                        isNewArrival: p.isNew || p.isNewArrival,
+                      };
+                      return <ProductCard key={p._id || idx} product={cardData} />;
+                    })}
               </div>
             )}
             <div ref={sentinelRef} className="h-6" />
@@ -721,7 +1215,7 @@ const ProductListingPage = () => {
                       Math.min(n + PAGE_SIZE, products.length),
                     )
                   }
-                  className="px-6 py-2 rounded-lg border border-[#d18736] text-[#d18736]"
+                  className="px-6 py-2.5 border border-black hover:border-[#ED1C24] hover:text-[#ED1C24] text-black text-xs uppercase tracking-wider font-medium transition-colors"
                 >
                   Load more
                 </button>
@@ -738,7 +1232,7 @@ const ProductListingPage = () => {
                 Please login to add wishlist items.
               </p>
               <div className="mt-5 flex gap-3">
-                <button className="w-full py-2 rounded-lg bg-[#d18736] text-white">
+                <button className="w-full py-2.5 bg-black hover:bg-[#ED1C24] text-white text-xs uppercase tracking-wider font-medium transition-colors">
                   Login
                 </button>
                 <button

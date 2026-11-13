@@ -1,192 +1,180 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { BsCart } from "react-icons/bs";
-import { getCartItems, setCartItems } from "../../utils/cartStorage";
-import { fetchProducts } from "../../features/Productlist/ProductSlice";
 import { useDispatch, useSelector } from "react-redux";
+import { fetchProducts } from "../../features/Productlist/ProductSlice";
 import { fatchBrands } from "../../features/Brands/brandSlice";
 import { fetchBanner } from "../../features/Banner/bannerSlice";
+import ProductCard from "../common/ProductCard";
+import { FiArrowRight } from "react-icons/fi";
+import { resolveImageUrl, DEFAULT_PRODUCT_IMAGES } from "../../utils/resolveImage";
 
-const CURRENCY_FORMATTER = new Intl.NumberFormat("en-IN", {
-  maximumFractionDigits: 2,
-  minimumFractionDigits: 2,
-});
+const FALLBACK_NEW_ARRIVALS = [
+  {
+    _id: "na-1",
+    id: "na-1",
+    name: "Milano Tailored Wool Blazer",
+    brand: "Wearaah Couture",
+    price: 6499,
+    originalPrice: 8999,
+    front: "/images/1.jpg",
+    back: "/images/2.jpg",
+    isNewArrival: true,
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Charcoal", "Midnight Navy"],
+  },
+  {
+    _id: "na-2",
+    id: "na-2",
+    name: "Classic Silk-Blend Oxford Shirt",
+    brand: "Wearaah Essentials",
+    price: 2999,
+    originalPrice: 4299,
+    front: "/images/shirt1.jpg",
+    back: "/images/shirt2.jpg",
+    isNewArrival: true,
+    sizes: ["38", "40", "42", "44"],
+    colors: ["Crisp White", "Powder Blue"],
+  },
+  {
+    _id: "na-3",
+    id: "na-3",
+    name: "Pleated Relaxed Trouser",
+    brand: "Wearaah Studio",
+    price: 3499,
+    originalPrice: 4999,
+    front: "/images/3.jpg",
+    back: "/images/4.jpg",
+    isNewArrival: true,
+    sizes: ["30", "32", "34", "36"],
+    colors: ["Sand Khaki", "Onyx Black"],
+  },
+  {
+    _id: "na-4",
+    id: "na-4",
+    name: "Heritage Double-Breasted Suit",
+    brand: "Wearaah Signature",
+    price: 9999,
+    originalPrice: 14999,
+    front: "/images/5.jpg",
+    back: "/images/1.jpg",
+    isNewArrival: true,
+    sizes: ["38R", "40R", "42R"],
+    colors: ["Midnight Blue", "Tweed Grey"],
+  },
+];
 
 const TopProducts = React.memo(function TopProducts() {
-  const BASE_URL = import.meta.env.VITE_BASE_URL;
+  const BASE_URL = import.meta.env.VITE_BASE_URL || "";
   const dispatch = useDispatch();
   const key = JSON.stringify({ isNewArrival: true });
 
-  const products = useSelector((state) => state.products.products[key]);
-
+  const rawProducts = useSelector((state) => state.products?.products?.[key]);
   const banners = useSelector(
-    (state) => state.banner.banners["summer-sale"] || [],
+    (state) => state.banner?.banners?.["summer-sale"] || []
   );
 
   useEffect(() => {
-    dispatch(
-      fetchProducts({
-        isNewArrival: true,
-      }),
-    );
+    dispatch(fetchProducts({ isNewArrival: true }));
     dispatch(fatchBrands());
     dispatch(
       fetchBanner({
         position: "summer-sale",
         deviceType: "desktop",
-      }),
+      })
     );
   }, [dispatch]);
 
-  const handleAddToCart = React.useCallback((product) => {
-    const existing = getCartItems();
-    const selectedSize = product.sizes?.[0] || "M";
-    const selectedColor = product.colors?.[0] || "Black";
-    const currentIndex = existing.findIndex(
-      (item) =>
-        item.productId === product.id &&
-        item.size === selectedSize &&
-        item.color === selectedColor,
-    );
-
-    if (currentIndex > -1) {
-      existing[currentIndex].quantity += 1;
-    } else {
-      existing.push({
-        lineId: `${product.id}-${selectedSize}-${selectedColor}`,
-        productId: product.id,
-        quantity: 1,
-        size: selectedSize,
-        color: selectedColor,
-        price: product.price,
-        name: product.name,
-        image: product.front,
+  const displayProducts = React.useMemo(() => {
+    if (Array.isArray(rawProducts) && rawProducts.length > 0) {
+      return rawProducts.slice(0, 8).map((p, idx) => {
+        const fallbackFront = DEFAULT_PRODUCT_IMAGES[idx % DEFAULT_PRODUCT_IMAGES.length];
+        const rawFront = Array.isArray(p.productImage) ? p.productImage[0] : p.productImage;
+        const rawBack = Array.isArray(p.productImage) ? p.productImage[1] : null;
+        const front = resolveImageUrl(rawFront, fallbackFront);
+        const back = rawBack ? resolveImageUrl(rawBack, front) : front;
+        return {
+          id: p._id,
+          _id: p._id,
+          name: p.name || "Curated Piece",
+          brand: p.brand?.name || p.brand || "Wearaah Studio",
+          price: p.startingPrice || p.price || 0,
+          originalPrice: p.mrp || p.originalPrice || 0,
+          front,
+          back,
+          sizes: p.sizes?.length ? p.sizes : ["M"],
+          colors: p.colors?.length ? p.colors : ["Standard"],
+          isNewArrival: true,
+        };
       });
     }
+    return FALLBACK_NEW_ARRIVALS;
+  }, [rawProducts]);
 
-    setCartItems(existing);
-  }, []);
-
-  const formattedProducts = React.useMemo(() => {
-    if (!Array.isArray(products)) return [];
-
-    return products.slice(0, 10).map((product) => {
-      const price = product.startingPrice || 0;
-      const originalPrice = product.mrp || 0;
-      console.log(product, "product in formatted products");
-      const discountPercent =
-        originalPrice > 0
-          ? Math.round(((originalPrice - price) / originalPrice) * 100)
-          : 0;
-
-      const imagePathFront = product.productImage?.[0];
-      const imagePathBack = product.productImage?.[1];
-
-      return {
-        id: product._id,
-        name: product.name || "No Name",
-        price,
-        originalPrice,
-        front: imagePathFront
-          ? `${BASE_URL}${imagePathFront}`
-          : "/placeholder.png",
-        back: imagePathBack
-          ? `${BASE_URL}${imagePathBack}`
-          : "/placeholder.png",
-        sizes: ["M"],
-        colors: ["Black"],
-        discountPercent,
-        formattedPrice: CURRENCY_FORMATTER.format(price),
-        formattedOriginal: CURRENCY_FORMATTER.format(originalPrice),
-      };
-    });
-  }, [products]);
-  if (products?.length == 0) {
-    return;
-  }
-
-  // if (error) {
-  //   return <p className="text-center py-10 text-red-500">{error}</p>;
-  // }
+  const promoBanner = banners?.[0]?.images
+    ? resolveImageUrl(banners[0].images, "/images/centerbanner.webp")
+    : "/images/centerbanner.webp";
 
   return (
-    <>
-      <div className=" mx-auto px-8 py-10">
-        <div className="flex items-center justify-between mb-8">
+    <section className="w-full py-12 sm:py-16 bg-white border-b border-neutral-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Section Header */}
+        <div className="flex items-baseline justify-between mb-8 pb-3 border-b border-neutral-200">
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
+            <h2 className="text-xl sm:text-2xl font-normal text-neutral-900 uppercase tracking-[0.14em]">
               New Arrival Products
             </h2>
-            <span className="text-sm text-gray-500">
+            <p className="text-xs text-neutral-400 tracking-wider mt-1 uppercase">
               Shop now for ultimate comfort
-            </span>
+            </p>
           </div>
           <Link
-            to={`/productlist?isNewArrival=${true}`}
-            className="text-[#633426] font-semibold text-sm hover:text-orange-600 transition"
+            to="/productlist?isNewArrival=true"
+            className="text-xs font-normal uppercase tracking-[0.15em] text-neutral-900 hover:text-[#ED1C24] pb-0.5 border-b border-neutral-900 hover:border-[#ED1C24] transition-all inline-flex items-center gap-1.5"
           >
-            View All
+            <span>View All</span>
+            <FiArrowRight size={13} />
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-          {formattedProducts.slice(0, 4).map((product) => (
-            <article key={product.id} className="group cursor-pointer">
-              <div className="relative overflow-hidden bg-gray-100 h-[260px]">
-                <Link to={`/product/${product.id}`}>
-                  <img
-                    src={product.front}
-                    alt={product.name}
-                    className="w-full transition duration-500 group-hover:opacity-0"
-                  />
-
-                  <img
-                    src={product.back}
-                    alt={`${product.name} back`}
-                    className="w-full absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition duration-500"
-                  />
-                  {product.discountPercent > 0 && (
-                    <span className="absolute left-2 top-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
-                      {product.discountPercent}% OFF
-                    </span>
-                  )}
-                </Link>
-
-                <div className="absolute top-3 -right-15 group-hover:right-3 transition-all duration-500">
-                  <button
-                    onClick={() => handleAddToCart(product)}
-                    className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50"
-                  >
-                    <BsCart size={18} />
-                  </button>
-                </div>
-              </div>
-
-              <Link to={`/product/${product.id}`}>
-                <p className="mt-3 text-sm font-medium">{product.name}</p>
-
-                <p className="text-red-500 font-semibold">
-                  Rs. {product.formattedPrice}
-                  <span className="line-through text-gray-400 ml-2">
-                    Rs. {product.formattedOriginal}
-                  </span>
-                </p>
-              </Link>
-            </article>
+        {/* 4-column balanced Product Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+          {displayProducts.slice(0, 8).map((product) => (
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       </div>
 
-      <div className="w-full my-10">
-        <img
-          src={`${BASE_URL}${banners[0]?.images}`}
-          alt="Shop your size banner"
-          className="w-full"
-          loading="lazy"
-          decoding="async"
-        />
+      {/* Promotional Editorial Banner */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 sm:mt-16">
+        <Link
+          to="/productlist?category=sale"
+          className="relative block w-full overflow-hidden group shadow-sm"
+        >
+          <img
+            src={promoBanner}
+            alt="Wearaah Promotional Showcase"
+            className="w-full h-44 sm:h-64 md:h-80 object-cover object-center transition-transform duration-700 group-hover:scale-105"
+            loading="lazy"
+            onError={(e) => {
+              e.currentTarget.src = "/images/centerbanner.webp";
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent flex items-center px-6 sm:px-12">
+            <div className="text-white max-w-lg">
+              <span className="text-[10px] sm:text-xs font-normal tracking-[0.25em] text-[#ED1C24] uppercase block mb-1">
+                LIMITED TIME EDIT
+              </span>
+              <h3 className="text-xl sm:text-3xl font-normal uppercase mb-3 text-white leading-tight tracking-wider">
+                UP TO 50% OFF SELECTED MENSWEAR
+              </h3>
+              <span className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#ED1C24] text-white text-xs font-medium uppercase tracking-wider group-hover:bg-white group-hover:text-black transition-all">
+                Shop The Sale &rarr;
+              </span>
+            </div>
+          </div>
+        </Link>
       </div>
-    </>
+    </section>
   );
 });
 

@@ -1,132 +1,148 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { BsCart } from "react-icons/bs";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts } from "../../features/Productlist/ProductSlice";
+import ProductCard from "../common/ProductCard";
+import { FiArrowRight } from "react-icons/fi";
+import { resolveImageUrl } from "../../utils/resolveImage";
+
+const FALLBACK_JEANS = [
+  {
+    _id: "jean-1",
+    id: "jean-1",
+    name: "Straight-Leg Japanese Selvedge Denim",
+    brand: "Wearaah Denim",
+    price: 3999,
+    originalPrice: 5999,
+    front: "/images/jeans.jpg",
+    back: "/images/3.jpg",
+    isNewArrival: false,
+    sizes: ["30", "32", "34", "36"],
+    colors: ["Raw Indigo", "Washed Blue"],
+  },
+  {
+    _id: "jean-2",
+    id: "jean-2",
+    name: "Relaxed Fit Vintage Wash Jeans",
+    brand: "Wearaah Denim",
+    price: 3499,
+    originalPrice: 4999,
+    front: "/images/cargopants.webp",
+    back: "/images/jeans.jpg",
+    isNewArrival: false,
+    sizes: ["30", "32", "34"],
+    colors: ["Light Vintage"],
+  },
+  {
+    _id: "jean-3",
+    id: "jean-3",
+    name: "Tapered Black Comfort-Stretch Denim",
+    brand: "Wearaah Studio",
+    price: 3699,
+    originalPrice: 5499,
+    front: "/images/10.webp",
+    back: "/images/11.webp",
+    isNewArrival: false,
+    sizes: ["30", "32", "34", "36"],
+    colors: ["Jet Black"],
+  },
+  {
+    _id: "jean-4",
+    id: "jean-4",
+    name: "Classic Indigo Clean Rinse Jean",
+    brand: "Wearaah Essentials",
+    price: 3299,
+    originalPrice: 4799,
+    front: "/images/12.webp",
+    back: "/images/13.webp",
+    isNewArrival: false,
+    sizes: ["30", "32", "34", "36"],
+    colors: ["Deep Indigo"],
+  },
+];
 
 export default function JoggersSection() {
   const subCategoryId = "69c23c0df1295fef10514873";
-  const BASE_URL = import.meta.env.VITE_BASE_URL;
+  const BASE_URL = import.meta.env.VITE_BASE_URL || "";
   const dispatch = useDispatch();
- const key = JSON.stringify({ subCategory: subCategoryId });
+  const key = JSON.stringify({ subCategory: subCategoryId });
 
-const products = useSelector(
-  (state) => state.products.products[key]
-);
+  const rawProducts = useSelector((state) => state.products?.products?.[key]);
 
   useEffect(() => {
     dispatch(
       fetchProducts({
         subCategory: subCategoryId,
-      }),
+      })
     );
-  }, [dispatch]);
+  }, [dispatch, subCategoryId]);
 
-  if (products?.length === 0) {
-    return;
-  }
+  const displayProducts = React.useMemo(() => {
+    if (Array.isArray(rawProducts) && rawProducts.length > 0) {
+      return rawProducts.slice(0, 4).map((p, idx) => {
+        const fallbackFront = FALLBACK_JEANS[idx % FALLBACK_JEANS.length].front;
+        const rawFront = Array.isArray(p.productImage) ? p.productImage[0] : p.productImage;
+        const rawBack = Array.isArray(p.productImage) ? p.productImage[1] : null;
+        const front = resolveImageUrl(rawFront, fallbackFront);
+        const back = rawBack ? resolveImageUrl(rawBack, front) : front;
+        return {
+          id: p._id,
+          _id: p._id,
+          name: p.name || "Tailored Denim",
+          brand: p.brand?.name || p.brand || "Wearaah Denim",
+          price: p.startingPrice || p.price || 0,
+          originalPrice: p.mrp || p.originalPrice || 0,
+          front,
+          back,
+          sizes: p.sizes?.length ? p.sizes : ["30", "32", "34", "36"],
+          colors: p.colors?.length ? p.colors : ["Standard"],
+        };
+      });
+    }
+    return FALLBACK_JEANS;
+  }, [rawProducts]);
+
   return (
-    <section className="py-12 bg-white">
-      <div className="mx-auto px-8">
-        <div className="flex items-center justify-between mb-8">
+    <section className="py-12 sm:py-16 bg-white border-b border-neutral-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-baseline justify-between mb-6 pb-3 border-b border-neutral-200">
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
+            <h2 className="text-xl sm:text-2xl font-normal text-neutral-900 uppercase tracking-[0.14em]">
               Jeans
             </h2>
-            <span className="text-sm text-gray-500">
+            <p className="text-xs text-neutral-400 tracking-wider mt-1 uppercase">
               Shop now for ultimate comfort
-            </span>
+            </p>
           </div>
           <Link
-            to={
-              "/productlist?subCategoryId=69c23c0df1295fef10514873&subCategory=jeans"
-            }
-            className="text-[#633426] font-semibold text-sm hover:text-orange-600 transition"
+            to={`/productlist?subCategoryId=${subCategoryId}&subCategory=jeans`}
+            className="text-xs font-normal uppercase tracking-[0.15em] text-neutral-900 hover:text-[#ED1C24] pb-0.5 border-b border-neutral-900 hover:border-[#ED1C24] transition-all inline-flex items-center gap-1.5"
           >
-            View All →
+            <span>View All</span>
+            <FiArrowRight size={13} />
           </Link>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-          {products?.slice(0, 4)?.map((product) => (
-            <div key={product._id} className="group cursor-pointer">
-              <Link
-                to={`/product/${product._id}`}
-                className="block  overflow-hidden "
-              >
-                <div className="relative h-full">
-                  <div className="absolute top-0 left-0 z-20">
-                    <span className="text-white text-xs px-2 py-1 font-bold  bg-green-500/90">
-                      {product.name}
-                    </span>
-                  </div>
 
-                  <img
-                    src={`${BASE_URL}${product?.productImage[0]}`}
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
+        {/* Denim Fit Filter Tags */}
+        <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar mb-8 pb-1">
+          {["All Jeans", "Slim Fit", "Straight Fit", "Relaxed Fit", "Ankle Length", "Tapered"].map((fit, idx) => (
+            <Link
+              key={fit}
+              to={`/productlist?subCategoryId=${subCategoryId}&subCategory=jeans`}
+              className={`px-4 py-1.5 text-xs font-normal uppercase tracking-wider whitespace-nowrap transition-all border ${
+                idx === 0
+                  ? "bg-black text-white border-black"
+                  : "bg-white text-neutral-700 border-neutral-200 hover:border-black hover:text-black"
+              }`}
+            >
+              {fit}
+            </Link>
+          ))}
+        </div>
 
-                  <div className="absolute top-3 -right-20 group-hover:right-3 transition-all duration-500 flex flex-col gap-1 z-30">
-                    {/* <div className="relative group/cart">
-                      <div className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50 transition-colors duration-200">
-                        <BsCart size={16} className="text-gray-800" />
-                      </div>
-                      <span
-                        className="absolute -right-28 top-1/2 -translate-y-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 
-                                                           group-hover/cart:opacity-100 transition-all duration-200 whitespace-nowrap shadow-lg z-10"
-                      >
-                        Add to cart
-                      </span>
-                    </div> */}
-
-                    <div className="relative group/qv">
-                      <div className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50 transition-colors duration-200">
-                        <svg
-                          className="w-4 h-4 text-gray-800"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                          />
-                        </svg>
-                      </div>
-                      <Link
-                        to={`/product/${product._id}`}
-                        className="absolute -right-28 top-1/2 -translate-y-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 
-                                                           group-hover/qv:opacity-100 transition-all duration-200 whitespace-nowrap shadow-lg z-10"
-                      >
-                        Quick View
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 px-0 pt-2">
-                  <h3 className="font-semibold text-sm text-gray-900 mb-1 truncate">
-                    {product.name}
-                  </h3>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-lg font-bold text-[#633426]">
-                      Rs. {product.startingPrice}
-                    </span>
-                    <span className="text-xs text-gray-400 line-through">
-                      Rs. {product.mrp}
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+          {displayProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       </div>

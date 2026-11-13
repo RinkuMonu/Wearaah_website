@@ -42,6 +42,16 @@ export default function CartOffCanvas({ isOpen, onClose }) {
     return foundColor || "Black";
   };
 
+  const resolveCartImageUrl = (img) => {
+    if (!img) return "/images/placeholder.png";
+    if (img.startsWith("http")) return img;
+    if (img.startsWith("/uploads")) {
+      const base = (import.meta.env.VITE_BASE_URL || "").replace(/\/api\/?$/, "").replace(/\/+$/, "");
+      return `${base}${img}`;
+    }
+    return img.startsWith("/") ? img : `/${img}`;
+  };
+
   // Helper function to get stock from item
   const getItemStock = (item) => {
     if (user && item.variant) {
@@ -316,15 +326,15 @@ export default function CartOffCanvas({ isOpen, onClose }) {
         <div className="sticky top-0 bg-white border-b border-gray-200 z-10 p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <ShoppingBag size={24} className="text-[#927f68]" />
-              <h2 className="text-xl font-bold text-gray-900">Cart</h2>
+              <ShoppingBag size={20} className="text-[#ED1C24]" />
+              <h2 className="text-base font-normal text-gray-900 uppercase tracking-widest">Shopping Bag</h2>
             </div>
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               aria-label="Close cart"
             >
-              <X size={20} className="text-gray-500" />
+              <X size={18} className="text-gray-500" />
             </button>
           </div>
         </div>
@@ -335,24 +345,27 @@ export default function CartOffCanvas({ isOpen, onClose }) {
             <div className="lg:max-h-full lg:overflow-y-auto pr-0 lg:pr-4 col-span-8">
               {isLoading && currentCartItems?.length === 0 ? (
                 <div className="text-center py-20 lg:py-32">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#927f68] mx-auto"></div>
-                  <p className="text-gray-500 mt-4">Loading your cart...</p>
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ED1C24] mx-auto"></div>
+                  <p className="text-gray-500 mt-4 font-normal">Loading your shopping bag...</p>
                 </div>
               ) : !currentCartItems || currentCartItems.length === 0 ? (
                 <div className="text-center py-20 lg:py-32">
                   <ShoppingBag
-                    size={64}
-                    className="mx-auto text-gray-300 mb-6"
+                    size={48}
+                    className="mx-auto text-gray-300 mb-4"
                   />
-                  <p className="text-gray-500 text-xl mb-6 font-medium">
-                    Your cart is empty
+                  <p className="text-gray-900 text-lg mb-2 font-normal uppercase tracking-wider">
+                    Your Shopping Bag is empty
+                  </p>
+                  <p className="text-gray-500 text-xs mb-6 max-w-xs mx-auto font-normal">
+                    Explore our latest men's denim &amp; contemporary collections.
                   </p>
                   <Link
                     to="/productlist"
                     onClick={onClose}
-                    className="inline-block bg-[#927f68] text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-[#7a6650] transition-all duration-200 shadow-xl hover:shadow-2xl hover:-translate-y-1"
+                    className="inline-block bg-[#ED1C24] text-white px-7 py-3 font-normal text-xs uppercase tracking-[0.15em] hover:bg-black transition-all duration-200"
                   >
-                    Continue Shopping
+                    Start Shopping &rarr;
                   </Link>
                 </div>
               ) : (
@@ -398,7 +411,10 @@ export default function CartOffCanvas({ isOpen, onClose }) {
                         <div className="flex items-start gap-4 lg:gap-6">
                           <div className="shrink-0">
                             <img
-                              src={imageUrl?.startsWith('http') ? imageUrl : `https://lrd46c05-5000.inc1.devtunnels.ms${imageUrl}`}
+                              src={resolveCartImageUrl(imageUrl)}
+                              onError={(e) => {
+                                e.currentTarget.src = "/images/placeholder.png";
+                              }}
                               className="w-20 h-24 lg:w-24 lg:h-28 rounded-2xl object-cover shadow-lg group-hover:scale-[1.02] transition-transform duration-200"
                               alt={name}
                             />
@@ -435,36 +451,36 @@ export default function CartOffCanvas({ isOpen, onClose }) {
                               <button
                                 onClick={() => decreaseQty(productId, variantId)}
                                 disabled={isLoading || isOutOfStock}
-                                className="w-11 h-11 rounded-2xl border-2 border-gray-200 flex items-center justify-center hover:bg-gray-50 hover:border-[#927f68] transition-all duration-200 text-gray-700 hover:text-[#927f68] shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-10 h-10 border border-neutral-300 flex items-center justify-center hover:bg-black hover:text-white transition-all text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed"
                               >
-                                <Minus size={18} />
+                                <Minus size={16} />
                               </button>
-                              <span className="w-12 text-center font-bold text-lg text-gray-900 bg-white px-4 py-2 rounded-xl shadow-sm border">
+                              <span className="w-10 text-center font-normal text-sm text-black">
                                 {item.quantity}
                               </span>
                               <button
                                 onClick={() => increaseQty(productId, variantId)}
                                 disabled={isLoading || isOutOfStock || isMaxQuantityReached}
-                                className="w-11 h-11 rounded-2xl border-2 border-gray-200 flex items-center justify-center hover:bg-gray-50 hover:border-[#927f68] transition-all duration-200 text-gray-700 hover:text-[#927f68] shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-10 h-10 border border-neutral-300 flex items-center justify-center hover:bg-black hover:text-white transition-all text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed"
                               >
-                                <Plus size={18} />
+                                <Plus size={16} />
                               </button>
                             </div>
                           </div>
 
                           <div className="flex flex-col items-end gap-3 shrink-0 ml-4">
-                            <div className="font-bold text-xl lg:text-2xl text-gray-900 leading-none">
+                            <div className="font-normal text-lg lg:text-xl text-black leading-none">
                               ₹{(price * item.quantity).toLocaleString()}
                             </div>
                             {mrp > price && (
-                              <div className="text-sm text-gray-400 line-through">
+                              <div className="text-xs text-gray-400 line-through">
                                 ₹{mrp.toLocaleString()}
                               </div>
                             )}
                             <button
                               onClick={() => removeItem(productId, variantId)}
                               disabled={isLoading}
-                              className="text-sm lg:text-base text-red-500 hover:text-red-600 font-semibold hover:underline transition-colors opacity-0 group-hover:opacity-100 group-hover:translate-y-1 duration-200 disabled:opacity-50"
+                              className="text-xs text-red-500 hover:text-red-600 font-normal hover:underline transition-colors opacity-0 group-hover:opacity-100 group-hover:translate-y-1 duration-200 disabled:opacity-50"
                             >
                               Remove
                             </button>
@@ -477,59 +493,59 @@ export default function CartOffCanvas({ isOpen, onClose }) {
               )}
             </div>
             {currentCartItems?.length > 0 && (
-              <div className="col-span-4 lg:sticky lg:top-4 lg:self-start bg-linear-to-b from-white/90 via-white/70 to-gray-50/80 backdrop-blur-xl border border-gray-100/50 rounded-3xl p-8 shadow-2xl lg:shadow-none lg:border-none">
-                <h3 className="text-2xl lg:text-xl font-black text-gray-900 mb-8 tracking-tight">
+              <div className="col-span-4 lg:sticky lg:top-4 lg:self-start bg-neutral-50 border border-neutral-200 p-6 shadow-sm">
+                <h3 className="text-base font-normal uppercase tracking-wider text-gray-900 mb-6">
                   Order Summary
                 </h3>
 
-                <div className="space-y-4 mb-5">
+                <div className="space-y-3 mb-5">
                   <div className="flex justify-between py-1 border-b border-gray-100">
-                    <span className="text-[14px] text-gray-700 font-semibold">
+                    <span className="text-xs text-gray-600 font-normal">
                       Subtotal
                     </span>
-                    <span className="text-[13px] font-black text-gray-900">
+                    <span className="text-xs font-normal text-gray-900">
                       ₹{subtotal.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-gray-100">
-                    <span className="text-[14px] text-gray-700 font-semibold">
+                    <span className="text-xs text-gray-600 font-normal">
                       Tax (GST)
                     </span>
-                    <span className="text-[13px] font-black text-gray-900">
+                    <span className="text-xs font-normal text-gray-900">
                       ₹{tax.toLocaleString()}
                     </span>
                   </div>
                   {discount > 0 && (
-                    <div className="flex justify-between py-1 border-b border-gray-100 bg-green-50 rounded-2xl p-4 -mx-4">
-                      <span className="text-[14px] font-semibold text-green-800">
+                    <div className="flex justify-between py-1 border-b border-gray-100 bg-green-50 rounded-md p-2 -mx-2">
+                      <span className="text-xs font-normal text-green-800">
                         Discount
                       </span>
-                      <span className="text-[13px] font-black text-green-600">
+                      <span className="text-xs font-normal text-green-600">
                         -₹{discount.toLocaleString()}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between py-1 border-b border-gray-100">
-                    <span className="text-[14px] text-gray-700 font-semibold">
+                    <span className="text-xs text-gray-600 font-normal">
                       Shipping
                     </span>
-                    <span className="text-[13px] font-black text-gray-900">
+                    <span className="text-xs font-normal text-gray-900">
                       {shipping === 0 ? "Free" : `₹${shipping.toLocaleString()}`}
                     </span>
                   </div>
                 </div>
 
-                <div className="mb-3">
+                <div className="mb-4">
                   <div className="flex justify-between items-baseline mb-1">
-                    <span className="text-[15px] font-black text-gray-900">
+                    <span className="text-xs font-normal uppercase text-black tracking-wider">
                       Total
                     </span>
-                    <span className="text-[18px] lg:text-[15px] font-black bg-linear-to-r from-[#927f68] to-[#A68A6D] bg-clip-text text-transparent tracking-tight">
+                    <span className="text-lg font-normal text-black">
                       ₹{total.toLocaleString()}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600">
-                    Estimated delivery by 25 Apr 2026
+                  <p className="text-[11px] text-gray-500 font-normal">
+                    Inclusive of all taxes &amp; duties
                   </p>
                 </div>
 
@@ -595,12 +611,12 @@ export default function CartOffCanvas({ isOpen, onClose }) {
                     const stock = user ? (item.variant?.stock || 0) : (item.stock || 0);
                     return stock === 0;
                   })}
-                  className={`block w-full text-center py-3 px-8 rounded-md text-base transition-all duration-300 ${
+                  className={`block w-full text-center py-3.5 px-8 text-xs font-normal uppercase tracking-[0.16em] transition-all duration-300 ${
                     currentCartItems?.length && !isLoading && !currentCartItems?.some(item => {
                       const stock = user ? (item.variant?.stock || 0) : (item.stock || 0);
                       return stock === 0;
                     })
-                      ? "bg-linear-to-r from-[#927f68] to-[#A68A6D] text-white hover:-translate-y-0.5"
+                      ? "bg-[#ED1C24] hover:bg-black text-white shadow-sm cursor-pointer"
                       : "bg-gray-200 text-gray-400 cursor-not-allowed shadow-none"
                   }`}
                 >
@@ -617,17 +633,17 @@ export default function CartOffCanvas({ isOpen, onClose }) {
                 </button>
 
                 {/* Coupon Section */}
-                <div className="mt-8 pt-8 border-t border-gray-100">
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">
-                    Have a Coupon?
+                <div className="mt-6 pt-6 border-t border-gray-100">
+                  <label className="block text-xs font-normal uppercase tracking-wider text-black mb-3">
+                    Have a Promo Code?
                   </label>
-                  <div className="flex gap-3">
+                  <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder="Enter coupon code"
-                      className="flex-1 px-5 py-4 border-2 border-gray-200 rounded-md text-base placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[#927f68]/20 focus:border-[#927f68] transition-all duration-200 shadow-sm"
+                      placeholder="Enter promo code"
+                      className="flex-1 px-3 py-2.5 border border-neutral-300 text-xs placeholder-gray-400 focus:outline-none focus:border-black transition-all"
                     />
-                    <button className="text-center py-3 px-8 rounded-md text-base transition-all duration-300 bg-[#927f68] hover:bg-[#7a6650] text-white font-bold shadow-xl hover:shadow-2xl hover:-translate-y-0.5 whitespace-nowrap">
+                    <button className="text-center py-2.5 px-5 bg-black hover:bg-[#ED1C24] text-white text-xs font-normal uppercase tracking-wider transition-colors">
                       Apply
                     </button>
                   </div>

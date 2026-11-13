@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo, useLayoutEffect } from "react";
-import { FiShoppingBag } from "react-icons/fi";
+import { FiShoppingCart } from "react-icons/fi";
 import { CART_UPDATED_EVENT, getCartCount } from "../../utils/cartStorage";
 import { useAuth } from "../service/AuthContext";
 import { useDispatch, useSelector } from "react-redux";
@@ -101,23 +101,20 @@ export default function CartTrigger({ onOpen }) {
   return (
     <button
       onClick={onOpen}
-      className="flex flex-col items-center relative focus:outline-none cursor-pointer group"
+      className="relative p-1.5 text-neutral-900 hover:text-black transition-colors focus:outline-none cursor-pointer flex items-center justify-center"
       aria-label="Shopping cart"
     >
-      <FiShoppingBag 
-        size={18} 
-        className="group-hover:scale-110 transition-transform duration-200" 
+      <FiShoppingCart 
+        size={20} 
+        strokeWidth={1.5}
+        className="transition-transform duration-200 hover:scale-105" 
       />
 
       {displayCount && (
-        <span className="absolute -top-2 -right-2 min-w-4 h-4 px-1 rounded-full bg-red-600 text-white text-[10px] leading-4 animate-pulse">
+        <span className="absolute -top-1 -right-1.5 bg-[#08266B] text-white text-[10px] font-semibold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center shadow-xs">
           {displayCount}
         </span>
       )}
-
-      <span className="hidden sm:block lg:inline text-xs font-medium mt-0.5">
-        Basket
-      </span>
     </button>
   );
 }

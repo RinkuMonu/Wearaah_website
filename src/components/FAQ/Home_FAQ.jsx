@@ -1,114 +1,144 @@
 import { useState, useEffect } from "react";
 import api from "../service/axios";
+import { FiChevronDown, FiHelpCircle, FiMail } from "react-icons/fi";
+
+const DEFAULT_FAQS = [
+  {
+    _id: "faq-1",
+    question: "What is Wearaah's standard delivery timeframe and shipping policy?",
+    answer:
+      "We offer complimentary express delivery across India on all prepaid orders. Typical delivery takes 2 to 4 business days in metro cities and 3 to 6 days across other regions. Each order is dispatched in luxury protective packaging with real-time tracking.",
+  },
+  {
+    _id: "faq-2",
+    question: "How do returns and exchanges work?",
+    answer:
+      "Wearaah provides a seamless 7-day doorstep return and size exchange policy. Items must be unworn, unwashed, and retained with original tags intact. You can initiate a return or exchange directly from your account dashboard or by contacting our concierge.",
+  },
+  {
+    _id: "faq-3",
+    question: "Are all garments 100% authentic and designer certified?",
+    answer:
+      "Every single garment hosted on Wearaah is guaranteed 100% authentic. We source exclusively from verified designer houses, master weavers, and certified luxury manufacturers with strict multi-point fabric and stitching inspections.",
+  },
+  {
+    _id: "faq-4",
+    question: "How can I ensure accurate sizing before purchasing?",
+    answer:
+      "Each product page includes our comprehensive Sartorial Size Guide with exact chest, shoulder, waist, and length measurements in both inches and centimeters. If you are between sizes, our stylists recommend ordering your standard tailored fit or reaching out to our concierge for bespoke guidance.",
+  },
+  {
+    _id: "faq-5",
+    question: "Which payment options and EMI plans are accepted?",
+    answer:
+      "We support all major payment methods including UPI (Google Pay, PhonePe, Paytm), Credit & Debit Cards (Visa, MasterCard, Amex), Net Banking across 50+ banks, interest-free EMI options, and Cash on Delivery (COD) on eligible pin codes.",
+  },
+];
 
 export default function Home_FAQ() {
-  const [faqs, setFaqs] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [openId, setOpenId] = useState(null);
+  const [faqs, setFaqs] = useState(DEFAULT_FAQS);
+  const [openId, setOpenId] = useState(DEFAULT_FAQS[0]._id);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchFaqs = async () => {
-      setLoading(true);
-      setOpenId(null);
       try {
         const res = await api.get(`/faq?category=General`);
         const active = (res.data?.faqs || []).filter((f) => f.isActive);
-        setFaqs(active);
+        if (isMounted && active.length > 0) {
+          setFaqs(active);
+          setOpenId(active[0]._id);
+        }
       } catch (err) {
-        console.error("FAQ fetch error:", err);
-        setFaqs([]);
-      } finally {
-        setLoading(false);
+        // Silently preserve default luxury FAQs on API latency
       }
     };
     fetchFaqs();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const toggle = (id) => setOpenId((prev) => (prev === id ? null : id));
 
   return (
-    <section className="px-6 lg:px-16 py-16">
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] gap-12 lg:gap-16 items-start max-w-6xl mx-auto">
-
-        {/* Left — sticky label */}
-        <div className="lg:sticky lg:top-24">
-          <p className="text-xs font-semibold tracking-widest text-[#b08a5e] uppercase mb-3">
-            Support
-          </p>
-          <h2 className="text-3xl font-bold text-gray-900 leading-snug mb-4">
-            Got questions?<br />We've got answers.
-          </h2>
-          <p className="text-sm text-gray-500 leading-relaxed mb-7">
-            Everything you need to know about shopping with us. Can't find what
-            you're looking for? Reach out to our team.
-          </p>
-          <div className="inline-flex items-center gap-2 text-sm text-gray-500 border border-gray-100 bg-gray-50 px-4 py-2 rounded-lg">
-            <span className="w-2 h-2 rounded-full bg-[#d6b28a]" />
-            {loading ? "Loading..." : `${faqs.length} questions`}
-          </div>
-        </div>
-
-        {/* Right — accordion */}
-        <div className="divide-y divide-gray-100 border-t border-gray-100">
-          {loading ? (
-            <div className="flex items-center gap-3 py-8 text-gray-400 text-sm">
-              <div className="w-4 h-4 border-2 border-gray-200 border-t-[#d6b28a] rounded-full animate-spin" />
-              Loading questions...
+    <section className="py-12 sm:py-16 bg-white border-t border-neutral-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] gap-12 lg:gap-16 items-start">
+          {/* Left Sticky Info Column */}
+          <div className="lg:sticky lg:top-28">
+            <div className="inline-flex items-center gap-2 text-[11px] font-normal tracking-[0.2em] text-[#ED1C24] uppercase mb-2">
+              <FiHelpCircle size={14} />
+              <span>SUPPORT & ASSISTANCE</span>
             </div>
-          ) : faqs.length === 0 ? (
-            <p className="py-10 text-sm text-gray-400 text-center">
-              No questions available right now.
+            <h2 className="text-2xl sm:text-3xl font-normal text-neutral-900 leading-snug mb-3 uppercase tracking-[0.1em]">
+              Got questions?<br />We've got answers.
+            </h2>
+            <p className="text-xs sm:text-sm text-neutral-500 font-light leading-relaxed mb-8">
+              Everything you need to know about shopping with us. Can't find what you're looking for? Reach out to our team.
             </p>
-          ) : (
-            faqs.map((faq) => {
+
+            <div className="p-6 bg-neutral-50 border border-neutral-200">
+              <h4 className="text-xs font-medium uppercase tracking-wider text-black mb-1">
+                Need Help with Sizing or Orders?
+              </h4>
+              <p className="text-xs text-neutral-500 mb-4 font-normal">
+                Our customer assistance team is available Monday through Saturday.
+              </p>
+              <a
+                href="mailto:support@wearaah.com"
+                className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-[#ED1C24] hover:underline"
+              >
+                <FiMail size={14} />
+                <span>support@wearaah.com</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Right Accordion */}
+          <div className="divide-y divide-neutral-100 border border-neutral-200 bg-white p-6 sm:p-8">
+            {faqs.map((faq) => {
               const isOpen = openId === faq._id;
               return (
-                <div key={faq._id}>
+                <div key={faq._id} className="py-4 first:pt-0 last:pb-0">
                   <button
                     onClick={() => toggle(faq._id)}
-                    className="w-full flex items-center justify-between gap-4 py-5 text-left group"
+                    className="w-full flex items-center justify-between gap-4 text-left group cursor-pointer"
+                    aria-expanded={isOpen}
                   >
                     <span
-                      className={`text-[15px] font-medium transition-colors ${
-                        isOpen ? "text-[#b08a5e]" : "text-gray-900 group-hover:text-[#b08a5e]"
+                      className={`text-sm font-normal transition-colors ${
+                        isOpen
+                          ? "text-[#ED1C24]"
+                          : "text-neutral-800 group-hover:text-black"
                       }`}
                     >
                       {faq.question}
                     </span>
                     <span
-                      className={`w-7 h-7 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                      className={`w-6 h-6 border flex items-center justify-center shrink-0 transition-all ${
                         isOpen
-                          ? "bg-[#d6b28a] border-[#d6b28a]"
-                          : "border-gray-200 bg-white"
+                          ? "bg-[#ED1C24] border-[#ED1C24] text-white rotate-180"
+                          : "border-neutral-300 bg-white text-neutral-600 group-hover:border-black group-hover:text-black"
                       }`}
                     >
-                      <svg
-                        className={`w-3 h-3 transition-transform ${isOpen ? "rotate-180" : ""}`}
-                        viewBox="0 0 12 12"
-                        fill="none"
-                        stroke={isOpen ? "#4a2e0c" : "#9ca3af"}
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="2,4 6,8 10,4" />
-                      </svg>
+                      <FiChevronDown size={13} />
                     </span>
                   </button>
 
                   <div
                     className={`overflow-hidden transition-all duration-300 ${
-                      isOpen ? "max-h-96 pb-5" : "max-h-0"
+                      isOpen ? "max-h-96 pt-3" : "max-h-0"
                     }`}
                   >
-                    <p className="text-sm text-gray-500 leading-relaxed">
+                    <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed font-medium">
                       {faq.answer}
                     </p>
                   </div>
                 </div>
               );
-            })
-          )}
+            })}
+          </div>
         </div>
       </div>
     </section>

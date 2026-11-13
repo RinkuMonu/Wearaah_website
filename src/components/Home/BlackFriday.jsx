@@ -1,19 +1,20 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { FiArrowRight, FiClock } from "react-icons/fi";
 
 export default function CountdownBanner() {
   const [timeLeft, setTimeLeft] = useState({
     days: 2,
-    hours: 23,
-    minutes: 59,
-    seconds: 57
+    hours: 14,
+    minutes: 42,
+    seconds: 35,
   });
 
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         let { days, hours, minutes, seconds } = prev;
-        
+
         if (seconds > 0) {
           seconds--;
         } else if (minutes > 0) {
@@ -29,7 +30,7 @@ export default function CountdownBanner() {
           hours = 23;
           days--;
         }
-        
+
         return { days, hours, minutes, seconds };
       });
     }, 1000);
@@ -38,54 +39,80 @@ export default function CountdownBanner() {
   }, []);
 
   return (
-    <Link to="/" className="px-8 py-4 h-60 flex items-center justify-center gap-8 text-white  relative overflow-hidden">
-      <div 
-        className="absolute inset-0"
+    <section className="relative w-full overflow-hidden bg-black text-white my-8 sm:my-12 border-y-2 border-[#ED1C24]">
+      {/* Background with mood overlay */}
+      <div
+        className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-luminosity scale-105 transition-transform duration-1000"
         style={{
-          backgroundImage: `url("../images/31.webp")`, 
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
+          backgroundImage: `url("/images/31.webp")`,
         }}
       />
-      
-      <div className="flex items-center gap-6 z-10">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 border-r pr-3">
-            <span className="text-2xl md:text-5xl font-bold  px-4 py-2 ">02</span>
-            <span className="text-xs uppercase tracking-widest">Days</span>
+      <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-black/90" />
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 flex flex-col lg:flex-row items-center justify-between gap-8">
+        {/* Left: Brand Announcement */}
+        <div className="flex flex-col items-center lg:items-start text-center lg:text-left max-w-lg">
+          <div className="inline-flex items-center gap-2 px-3 py-0.5 bg-[#ED1C24] text-white text-[11px] font-normal uppercase tracking-[0.2em] mb-3">
+            <FiClock size={12} />
+            <span>FLASH DEAL ENDS SOON</span>
           </div>
-         
-          <div className="flex items-center gap-1 border-r pr-3">
-            <span className="text-2xl md:text-5xl font-bold  px-4 py-2 ">{timeLeft.hours.toString().padStart(2, '0')}</span>
-            <span className="text-xs uppercase tracking-widest">Hours</span>
+          <h2 className="text-2xl sm:text-4xl font-normal tracking-[0.14em] text-white mb-2 uppercase">
+            BLACK FRIDAY
+          </h2>
+          <p className="text-xs sm:text-sm text-neutral-300 font-light tracking-wider uppercase">
+            Don't miss an additional 10% off your order when you spend ₹500 or more
+          </p>
+        </div>
+
+        {/* Center: Countdown Timer */}
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex flex-col items-center bg-neutral-900 border border-neutral-800 p-3 sm:p-4 min-w-[60px] sm:min-w-[72px]">
+            <span className="text-2xl sm:text-4xl font-normal text-[#ED1C24]">
+              {timeLeft.days.toString().padStart(2, "0")}
+            </span>
+            <span className="text-[9px] sm:text-[10px] uppercase tracking-widest text-neutral-400 mt-1 font-normal">
+              Days
+            </span>
           </div>
-         
-          <div className="flex items-center gap-1 border-r pr-3">
-            <span className="text-2xl md:text-5xl font-bold  px-4 py-2 ">{timeLeft.minutes.toString().padStart(2, '0')}</span>
-            <span className="text-xs uppercase tracking-west">Mins</span>
+          <span className="text-lg sm:text-2xl text-neutral-600">:</span>
+          <div className="flex flex-col items-center bg-neutral-900 border border-neutral-800 p-3 sm:p-4 min-w-[60px] sm:min-w-[72px]">
+            <span className="text-2xl sm:text-4xl font-normal text-[#ED1C24]">
+              {timeLeft.hours.toString().padStart(2, "0")}
+            </span>
+            <span className="text-[9px] sm:text-[10px] uppercase tracking-widest text-neutral-400 mt-1 font-normal">
+              Hours
+            </span>
           </div>
-         
-          <div className="flex items-center gap-1 border-r pr-3">
-            <span className="text-2xl md:text-5xl font-bold  px-4 py-2 ">{timeLeft.seconds.toString().padStart(2, '0')}</span>
-            <span className="text-xs uppercase tracking-widest">Secs</span>
+          <span className="text-lg sm:text-2xl text-neutral-600">:</span>
+          <div className="flex flex-col items-center bg-neutral-900 border border-neutral-800 p-3 sm:p-4 min-w-[60px] sm:min-w-[72px]">
+            <span className="text-2xl sm:text-4xl font-normal text-[#ED1C24]">
+              {timeLeft.minutes.toString().padStart(2, "0")}
+            </span>
+            <span className="text-[9px] sm:text-[10px] uppercase tracking-widest text-neutral-400 mt-1 font-normal">
+              Mins
+            </span>
+          </div>
+          <span className="text-lg sm:text-2xl text-neutral-600">:</span>
+          <div className="flex flex-col items-center bg-neutral-900 border border-neutral-800 p-3 sm:p-4 min-w-[60px] sm:min-w-[72px]">
+            <span className="text-2xl sm:text-4xl font-normal text-[#ED1C24]">
+              {timeLeft.seconds.toString().padStart(2, "0")}
+            </span>
+            <span className="text-[9px] sm:text-[10px] uppercase tracking-widest text-neutral-400 mt-1 font-normal">
+              Secs
+            </span>
           </div>
         </div>
-      </div>
 
-      <div className="flex flex-col items-center gap-2 z-10 mx-8 flex-1">
-        <div className="text-2xl md:text-3xl lg:text-4xl font-black tracking-tight bg-gradient-to-r from-yellow-200 via-white to-yellow-100 bg-clip-text text-transparent drop-shadow-xl">
-          BLACK FRIDAY
+        {/* Right: CTA */}
+        <div>
+          <Link
+            to="/productlist?category=sale"
+            className="inline-flex items-center gap-2 px-7 py-3 bg-[#ED1C24] hover:bg-white hover:text-black text-white font-medium text-xs uppercase tracking-[0.16em] transition-all"
+          >
+            <span>Shop Black Friday Deals &rarr;</span>
+          </Link>
         </div>
       </div>
-
-      <div className="max-w-md z-10 text-right">
-        <p className="text-lg md:text-xl font-semibold leading-tight mb-2">
-          Don't miss an additional 10% off your order when you spend ₹500 or more
-        </p>
-      </div>
-
-      <div className="absolute left-4 top-1/2 -translate-y-1/2 w-24 h-24 bg-linear-to-r from-yellow-400/20 to-orange-400/20 rounded-full blur-xl -z-10" />
-      <div className="absolute right-4 bottom-4 w-20 h-20 bg-linear-to-l from-yellow-400/20 to-orange-400/20 rounded-full blur-xl -z-10" />
-    </Link>
+    </section>
   );
 }

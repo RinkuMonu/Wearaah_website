@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   FiTruck,
   FiGift,
   FiHeart,
-  FiMapPin,
   FiRotateCw,
   FiMenu,
+  FiSearch,
+  FiX,
+  FiChevronRight,
 } from "react-icons/fi";
-
 import { LuLogIn, LuUser } from "react-icons/lu";
 import { X } from "lucide-react";
 import CartTrigger from "./CartTrigger";
@@ -24,18 +25,17 @@ import api from "../service/axios";
 import { selectWishlistItems } from "../../features/Wishlist/wishlistSlice";
 
 const MENU_LINKS = [
-  { to: "/", label: "Home" },
-  { to: "/kids", label: "Kids" },
-  { to: "/productlist?gender=Men", label: "Mens" },
-  { to: "/productlist?gender=Women", label: "Womens" },
-  // { to: "/new-arrivals", label: "New Arrivals" },
-  { to: "/brands", label: "Brands" },
+  { to: "/mens", label: "MENS", id: "mens" },
+  { to: "/kids", label: "KIDS", id: "kids" },
+  { to: "/productlist?category=accessories", label: "ACCESSORIES", id: "accessories" },
+  { to: "/productlist?isNewArrival=true", label: "NEW ARRIVALS", id: "new-arrivals" },
+  { to: "/productlist?category=linen", label: "LINEN", id: "linen" },
 ];
 
 export default function Header() {
-  const BASE_URL = import.meta.env.VITE_BASE_URL;
+  const BASE_URL = import.meta.env.VITE_BASE_URL || "";
   const dispatch = useDispatch();
-  const { categories, loading, error } = useSelector((state) => state.category);
+  const { categories } = useSelector((state) => state.category);
   const { subcategories } = useSelector((state) => state.subCategory);
   const { brands } = useSelector((state) => state.brands);
   const wishlistItems = useSelector(selectWishlistItems);
@@ -43,11 +43,9 @@ export default function Header() {
   const { loginOpen, setLoginOpen, user } = useAuth();
   const [cartOpen, setCartOpen] = useState(false);
   const [showAllMenu, setShowAllMenu] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [openAccordion, setOpenAccordion] = useState(null);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [allCategory, setAllCategory] = useState();
-  console.log(allCategory);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [mobileExpandedSection, setMobileExpandedSection] = useState(null);
+  const [allCategory, setAllCategory] = useState([]);
 
   const lastScrollYRef = useRef(0);
   const [isVisible, setIsVisible] = useState(true);
@@ -56,16 +54,12 @@ export default function Header() {
   const [suggestions, setSuggestions] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [desktopSearchOpen, setDesktopSearchOpen] = useState(false);
+
   const navigate = useNavigate();
   const searchRef = useRef(null);
   const debounceRef = useRef(null);
-
-  const [searchParams] = useSearchParams();
-
-  const search = searchParams.get("search");
-  const subCategoryId = searchParams.get("subCategoryId");
-  const category = searchParams.get("ctd");
-  const brand = searchParams.get("brandId");
 
   const fetchSuggestions = useCallback(async (query) => {
     if (!query.trim() || query.length < 2) {
@@ -77,19 +71,17 @@ export default function Header() {
     setSearchLoading(true);
     try {
       const res = await api.get(
-        `/variant/autosuggest?q=${encodeURIComponent(query)}`,
+        `/variant/autosuggest?q=${encodeURIComponent(query)}`
       );
       setSuggestions(res.data?.data || []);
       setShowSuggestions(true);
     } catch (err) {
-      console.error("Search error:", err);
       setSuggestions([]);
     } finally {
       setSearchLoading(false);
     }
   }, []);
 
-  // Debounced input handler
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setSearchQuery(value);
@@ -97,10 +89,18 @@ export default function Header() {
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       fetchSuggestions(value);
-    }, 300); // 300ms debounce
+    }, 250);
   };
 
-  // Close suggestions on outside click
+  const handleSearchSubmit = (queryToUse) => {
+    const term = queryToUse || searchQuery;
+    if (term.trim()) {
+      navigate(`/productSearch?search=${encodeURIComponent(term.trim())}`);
+      setShowSuggestions(false);
+      setMobileSearchOpen(false);
+    }
+  };
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
@@ -111,7 +111,6 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Cleanup debounce on unmount
   useEffect(() => {
     return () => clearTimeout(debounceRef.current);
   }, []);
@@ -123,10 +122,10 @@ export default function Header() {
       const currentScrollY = window.scrollY;
       const lastScrollY = lastScrollYRef.current;
 
-      if (currentScrollY <= 300) {
+      if (currentScrollY <= 150) {
         setIsSticky(false);
         setIsVisible(true);
-      } else if (currentScrollY > lastScrollY) {
+      } else if (currentScrollY > lastScrollY && currentScrollY > 250) {
         setIsVisible(false);
         setIsSticky(false);
       } else {
@@ -149,15 +148,9 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const closeMobileMenus = useCallback(() => {
-    setMobileMenuOpen(false);
-    setMobileNavOpen(false);
-  }, []);
-
   const handleImageError = useCallback((e) => {
     if (e.currentTarget.src.includes("placeholder.png")) return;
-
-    e.currentTarget.src = "../images/placeholder.png";
+    e.currentTarget.src = "/images/placeholder.png";
   }, []);
 
   useEffect(() => {
@@ -172,1015 +165,612 @@ export default function Header() {
     }
   }, [categories]);
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error: {error}</p>;
+  useEffect(() => {
+    if (mobileDrawerOpen || showAllMenu) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileDrawerOpen, showAllMenu]);
 
   return (
     <>
+      {/* ─── 1. TOP ANNOUNCEMENT BAR ─── */}
       <div
-        className={`hidden lg:flex items-center justify-between px-6 py-2.5 bg-black text-white text-xs transition-all duration-300 
-        ${isSticky ? "opacity-0 h-0 overflow-hidden" : "opacity-100"}`}
+        className={`bg-black text-white text-[11px] sm:text-[12px] font-medium tracking-[0.16em] uppercase py-2.5 transition-all duration-300 ${
+          isSticky ? "hidden" : "block"
+        }`}
       >
-        <div className="flex items-center space-x-6">
-          <span className="flex items-center gap-1">
-            <FiTruck /> Free Shipping
+        <div className="max-w-7xl mx-auto px-4 text-center flex items-center justify-center gap-2">
+          <span className="text-[#08266B] font-black text-xs sm:text-sm">&gt;</span>
+          <span className="text-white/95">
+            BUY JEANS ONLY 2599
           </span>
-          <span className="flex items-center gap-1">
-            <FiRotateCw /> Return To Store
-          </span>
-          <span className="flex items-center gap-1">
-            <FiGift /> Online Gift Card
-          </span>
-        </div>
-        <div className="flex items-center space-x-6">
-          <span className="flex items-center gap-1">
-            <FiMapPin /> Delivering To
-          </span>
-          <Link to="#" className="hover:text-gray-300 transition-colors">
-            Download Our Apps
-          </Link>
-          <Link to="#" className="hover:text-gray-300 transition-colors">
-            Store Locator
-          </Link>
-          <Link to="#" className="hover:text-gray-300 transition-colors">
-            Help
-          </Link>
+          <span className="text-[#08266B] font-black text-xs sm:text-sm">&lt;</span>
         </div>
       </div>
 
+      {/* ─── 2. MAIN HEADER ─── */}
       <header
-        className={`w-full left-0 right-0 z-50 transition-all duration-300 shadow-md
-        ${isSticky ? "fixed top-0" : "relative"} 
-        ${isVisible ? "translate-y-0" : "-translate-y-full"}`}
+        className={`w-full left-0 right-0 z-40 transition-all duration-300 bg-white border-b border-neutral-200/70 ${
+          isSticky ? "fixed top-0 shadow-xs" : "relative"
+        } ${isVisible ? "translate-y-0" : "-translate-y-full"}`}
       >
-        <div
-          className={`bg-white/95 backdrop-blur-sm ${isSticky ? "py-2 px-4 sm:px-6" : "py-4 px-6"}`}
-        >
-          <div className="flex items-center justify-start gap-10">
-            <Link
-              to="/"
-              className="text-white font-black text-xl sm:text-2xl px-4 py-2 rounded-md hover:scale-105 transition-all lowercase whitespace-nowrap"
+        <div className="w-full px-4 sm:px-8 lg:px-12 xl:px-16 relative flex items-center justify-between h-16 sm:h-20">
+          
+          {/* Left: Mobile Menu & Desktop Navigation (Positioned to the side) */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMobileDrawerOpen(true)}
+              className="lg:hidden p-2 text-neutral-900 hover:text-[#08266B] focus:outline-none"
+              aria-label="Open navigation menu"
             >
-              <img src="./logo/wearaahpnglogo.png" alt="logo" className=" w-36 object-contain" />
+              <FiMenu size={22} strokeWidth={1.5} />
+            </button>
+
+            <nav className="hidden lg:flex items-center space-x-5 xl:space-x-7 text-[12px] xl:text-[13px] tracking-[0.14em] font-semibold uppercase text-neutral-900">
+              {MENU_LINKS.map(({ to, label, id }) => {
+                const isMens = id === "mens";
+                const isKids = id === "kids";
+                return (
+                  <div key={label} className="group py-6">
+                    <Link
+                      to={to}
+                      onClick={() => {
+                        window.scrollTo({ top: 0, behavior: "instant" });
+                      }}
+                      className="py-1 hover:text-[#08266B] transition-colors duration-200 flex items-center gap-1 group-hover:text-[#08266B] relative font-semibold cursor-pointer select-none"
+                    >
+                      <span>{label}</span>
+                      <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#08266B] scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" />
+                    </Link>
+
+                    {/* Mega Menu: MENS (Exact Screenshot 1) */}
+                    {isMens && (
+                      <div className="fixed top-[64px] sm:top-[80px] left-0 right-0 w-full bg-white shadow-xl border-t border-neutral-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div className="w-full max-w-[1440px] mx-auto px-8 sm:px-12 lg:px-16 py-8 flex items-start gap-12 lg:gap-16">
+                          {/* Left Heading */}
+                          <div className="w-36 sm:w-44 shrink-0 pt-1">
+                            <h3 className="text-sm uppercase tracking-[0.16em] font-semibold text-neutral-900">
+                              CLOTHING
+                            </h3>
+                          </div>
+
+                          {/* 4 Columns of Categories */}
+                          <div className="flex-1 grid grid-cols-4 gap-x-10 lg:gap-x-14 pt-1">
+                            {/* Column 1 */}
+                            <div className="space-y-5">
+                              <Link to="/mens" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                All Products
+                              </Link>
+                              <Link to="/productlist?search=T-Shirt" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                T-Shirts
+                              </Link>
+                              <Link to="/productlist?search=Sweater" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                Sweaters
+                              </Link>
+                            </div>
+
+                            {/* Column 2 */}
+                            <div className="space-y-5">
+                              <Link to="/productlist?search=Jeans" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                Jeans
+                              </Link>
+                              <Link to="/productlist?search=Pants" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                Pants
+                              </Link>
+                              <Link to="/productlist?search=Sweatshirt" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                Sweatshirts
+                              </Link>
+                            </div>
+
+                            {/* Column 3 */}
+                            <div className="space-y-5">
+                              <Link to="/productlist?search=Shorts" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                Shorts
+                              </Link>
+                              <Link to="/productlist?search=Cargo" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                Cargo
+                              </Link>
+                              <Link to="/productlist?search=Flat+Knits" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                Flat Knits
+                              </Link>
+                            </div>
+
+                            {/* Column 4 */}
+                            <div className="space-y-5">
+                              <Link to="/productlist?search=Shirt" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                Shirts
+                              </Link>
+                              <Link to="/productlist?search=Trouser" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                Trousers
+                              </Link>
+                              <Link to="/productlist?search=Jacket" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                Jackets
+                              </Link>
+                            </div>
+                          </div>
+
+                          {/* Right Model Photo */}
+                          <div className="w-64 sm:w-72 shrink-0 aspect-[3/4] overflow-hidden bg-neutral-100 shadow-sm">
+                            <img
+                              src="/images/15.jpg"
+                              alt="Men's Fashion"
+                              className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Mega Menu: KIDS (Exact Screenshot 2) */}
+                    {isKids && (
+                      <div className="fixed top-[64px] sm:top-[80px] left-0 right-0 w-full bg-white shadow-xl border-t border-neutral-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div className="w-full max-w-[1440px] mx-auto px-8 sm:px-12 lg:px-16 py-8 flex items-start gap-12 lg:gap-16">
+                          {/* Left Heading */}
+                          <div className="w-36 sm:w-44 shrink-0 pt-1">
+                            <h3 className="text-sm uppercase tracking-[0.16em] font-semibold text-neutral-900">
+                              CLOTHING
+                            </h3>
+                          </div>
+
+                          {/* 4 Columns of Categories */}
+                          <div className="flex-1 grid grid-cols-4 gap-x-10 lg:gap-x-14 pt-1">
+                            {/* Column 1 */}
+                            <div className="space-y-5">
+                              <Link to="/kids" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                All Products
+                              </Link>
+                              <Link to="/productlist?search=Kids+Jeans" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                Jeans
+                              </Link>
+                              <Link to="/productlist?search=Kids+Shorts" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                Shorts
+                              </Link>
+                            </div>
+
+                            {/* Column 2 */}
+                            <div className="space-y-5">
+                              <Link to="/productlist?search=Kids+Jacket" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                Jackets
+                              </Link>
+                              <Link to="/productlist?search=Kids+Sweatshirt" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                Sweat Shirts
+                              </Link>
+                              <Link to="/productlist?search=Kids+Trouser" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                Trouser
+                              </Link>
+                            </div>
+
+                            {/* Column 3 */}
+                            <div className="space-y-5">
+                              <Link to="/productlist?search=Kids+Shirt" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                Shirts
+                              </Link>
+                              <Link to="/productlist?search=Kids+Cargo" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                Cargo
+                              </Link>
+                              <Link to="/productlist?search=Kids+Track+Pants" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                Track Pants
+                              </Link>
+                            </div>
+
+                            {/* Column 4 */}
+                            <div className="space-y-5">
+                              <Link to="/productlist?search=Kids+T-Shirt" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                T-Shirts
+                              </Link>
+                              <Link to="/productlist?search=Kids+Joggers" className="block text-[13px] sm:text-sm text-neutral-800 hover:text-[#08266B] font-normal transition-colors">
+                                Joggers
+                              </Link>
+                            </div>
+                          </div>
+
+                          {/* Right Model Photo */}
+                          <div className="w-64 sm:w-72 shrink-0 aspect-[3/4] overflow-hidden bg-neutral-100 shadow-sm">
+                            <img
+                              src="/images/Kids/kids-boy.jpg"
+                              alt="Kids Boy Fashion"
+                              className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-500"
+                              onError={(e) => {
+                                e.currentTarget.src = "/images/Kids/KB1.jpg";
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Center: Brand Logo - WEARAAH (Precisely Centered like reference) */}
+          <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-auto">
+            <Link to="/" className="py-1 flex items-center justify-center group" aria-label="Wearaah Home">
+              <img
+                src="/logo/wearaah-transparent.png"
+                alt="Wearaah"
+                className="h-8 sm:h-9 md:h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+                onError={(e) => {
+                  e.currentTarget.src = "/logo/WEARAAH_Logo_4K_Transparent.png";
+                }}
+              />
+            </Link>
+          </div>
+
+          {/* Right: Minimalist Outline Utility Icons */}
+          <div className="flex items-center justify-end space-x-4 sm:space-x-6 text-neutral-900">
+            {/* Search Toggle Icon */}
+            <button
+              onClick={() => setDesktopSearchOpen(!desktopSearchOpen)}
+              className="p-1.5 hover:text-[#08266B] transition-colors cursor-pointer"
+              aria-label="Search"
+            >
+              <FiSearch size={20} strokeWidth={1.5} />
+            </button>
+
+            {/* Wishlist Icon */}
+            <Link
+              to="/wishlist"
+              className="relative p-1.5 hover:text-[#08266B] transition-colors"
+              aria-label="Wishlist"
+            >
+              <FiHeart size={20} strokeWidth={1.5} />
+              {wishlistItems?.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-[#08266B] text-white text-[10px] font-semibold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center shadow-xs">
+                  {wishlistItems.length > 99 ? "99+" : wishlistItems.length}
+                </span>
+              )}
             </Link>
 
-            <div className="hidden md:flex w-full items-center gap-2 text-sm font-medium ">
-              {MENU_LINKS.map(({ to, label }) => (
-                <div key={to} className=" group">
-                  <Link
-                    to={to}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all group-hover:text-[#d6b28a]"
-                  >
-                    <span>{label}</span>
-                    {to !== "/" && to !== "/kids" && <MdKeyboardArrowDown />}
-                  </Link>
+            {/* Shopping Cart Icon */}
+            <CartTrigger onOpen={() => setCartOpen(true)} />
 
-                  {/* {to === "/new-arrivals" && (
-                    <div className="absolute top-full left-0 w-[95vw] bg-white shadow-2xl border border-[#cccc] p-8 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-999 mt-2 mx-4">
-                      <div className="flex items-center justify-between gap-4 mb-6">
-                        <h3 className="font-bold text-lg text-gray-900">
-                          New in Store
-                        </h3>
-                        <Link
-                          to="/new-arrivals"
-                          className="text-sm text-[#d6b28a] hover:underline font-medium"
-                        >
-                          View all →
-                        </Link>
-                      </div>
-                      <div className="grid grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-4 w-full">
-                        {[
-                          { img: "21.webp", label: "Blouses" },
-                          { img: "22.webp", label: "Cardigans" },
-                          { img: "23.jpg", label: "Jackets" },
-                          { img: "24.webp", label: "Trousers" },
-                          { img: "25.webp", label: "Lingerie" },
-                          { img: "26.jpg", label: "Sale" },
-                          { img: "printed.webp", label: "Accessories" },
-                          { img: "21.webp", label: "Shorts" },
-                          { img: "22.webp", label: "Tops" },
-                        ].map(({ img, label }, i) => (
-                          <Link
-                            key={i}
-                            to={`/new-arrivals/${label.toLowerCase().replace(/\s+/g, "-")}`}
-                            className="group/item flex flex-col items-center gap-2 p-3 hover:bg-gray-50 rounded-lg transition-all"
-                          >
-                            <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden shadow-md group-hover/item:scale-105 transition-transform">
-                              <img
-                                src={`/images/${img}`}
-                                alt={label}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <span className="text-xs font-medium text-gray-800 text-center">
-                              {label}
-                            </span>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )} */}
-
-                  {label === "Mens" && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-screen max-w-7xl bg-white shadow-2xl border border-[#cccc] p-8 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-999 mt-2">
-                      <div className="flex items-center justify-between gap-4 mb-8 max-w-7xl mx-auto">
-                        <h3 className="font-bold text-xl text-gray-900">
-                          Shop Mens Collection
-                        </h3>
-                        <Link
-                          to="/productlist"
-                          className="text-sm text-[#d6b28a] hover:underline font-medium"
-                        >
-                          View all →
-                        </Link>
-                      </div>
-
-                      <div className="relative flex justify-between items-start max-w-7xl mx-auto">
-                        <div className="w-[60%]  border-t border-gray-200 py-10 h-[-webkit-fill-available]">
-                          <div className="grid grid-cols-5 divide-x divide-gray-300 h-[inherit]">
-                            <div className="space-y-4 px-6">
-                              {allCategory
-                                ?.filter((item) => item?.isActive)
-                                ?.sort(
-                                  (a, b) => a.displayOrder - b.displayOrder,
-                                ) // sort by displayOrder
-                                ?.map((data, index) => {
-                                  return (
-                                    <Link
-                                      key={data?._id}
-                                      to={{
-                                        pathname: "/productlist",
-                                        search: `?gender=Men&category=${data.slug}&ctd=${data._id}`,
-                                      }}
-                                      className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded"
-                                    >
-                                      <img
-                                        src={`${BASE_URL}${data?.smallimage}`}
-                                        alt={data?.name}
-                                        className="w-10 h-10 object-cover rounded"
-                                      />
-
-                                      <span className="font-medium">
-                                        {data?.name}
-                                      </span>
-                                    </Link>
-                                  );
-                                })}
-                              {/* <Link
-                                to="/blouses"
-                                className="block hover:underline font-medium"
-                              >
-                                Blouses
-                              </Link>
-                              <Link
-                                to="/tops"
-                                className="block hover:underline font-medium"
-                              >
-                                Tops
-                              </Link> */}
-                            </div>
-                            {/* <div className="space-y-4 px-6">
-                              <Link
-                                to="/jackets"
-                                className="block hover:underline font-medium"
-                              >
-                                Jackets
-                              </Link>
-                              <Link
-                                to="/sweaters"
-                                className="block hover:underline font-medium"
-                              >
-                                Sweaters
-                              </Link>
-                              <Link
-                                to="/cardigans"
-                                className="block hover:underline font-medium"
-                              >
-                                Cardigans
-                              </Link>
-                            </div>
-                            <div className="space-y-4 px-6">
-                              <Link
-                                to="/jeans"
-                                className="block hover:underline font-medium"
-                              >
-                                Jeans and trousers
-                              </Link>
-                              <Link
-                                to="/skirts"
-                                className="block hover:underline font-medium"
-                              >
-                                Skirts
-                              </Link>
-                              <Link
-                                to="/shorts"
-                                className="block hover:underline font-medium"
-                              >
-                                Shorts
-                              </Link>
-                            </div>
-                            <div className="space-y-4 px-6">
-                              <Link
-                                to="/lingerie"
-                                className="block hover:underline font-medium"
-                              >
-                                Lingerie
-                              </Link>
-                              <Link
-                                to="/bras"
-                                className="block hover:underline font-medium"
-                              >
-                                Bras
-                              </Link>
-                              <Link
-                                to="/bottoms"
-                                className="block hover:underline font-medium"
-                              >
-                                Bottoms
-                              </Link>
-                            </div>
-                            <div className="space-y-4 px-6">
-                              <Link
-                                to="/accessories"
-                                className="block hover:underline font-medium"
-                              >
-                                Accessories
-                              </Link>
-                              <Link
-                                to="/shop-all"
-                                className="block hover:underline font-medium"
-                              >
-                                Shop all
-                              </Link>
-                            </div> */}
-                          </div>
-                        </div>
-                        <div className="w-[40%] h-[420px] overflow-hidden shadow-2xl">
-                          <div className="relative h-full">
-                            <img
-                              src="/images/26.jpg"
-                              alt="Shop Now"
-                              className="absolute inset-0 w-full h-full object-cover"
-                            />
-                            <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
-                            <div className="absolute bottom-6 left-6 right-6 text-white">
-                              <h4 className="font-bold text-xl mb-4 leading-tight">
-                                A color of New structures
-                              </h4>
-                              <Link
-                                to="/mens/shop-all"
-                                className="bg-white text-[#d6b28a] px-8 py-3 rounded-lg font-bold text-sm hover:scale-105 transition-all inline-block shadow-lg"
-                              >
-                                Shop now →
-                              </Link>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  {label === "Womens" && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-screen max-w-7xl bg-white shadow-2xl border border-[#cccc] p-8 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-999 mt-2">
-                      <div className="flex items-center justify-between gap-4 mb-8 max-w-7xl mx-auto">
-                        <h3 className="font-bold text-xl text-gray-900">
-                          Shop Women Collection
-                        </h3>
-                        <Link
-                          to="/productlist"
-                          className="text-sm text-[#d6b28a] hover:underline font-medium"
-                        >
-                          View all →
-                        </Link>
-                      </div>
-
-                      <div className="relative flex justify-between items-start max-w-7xl mx-auto">
-                        <div className="w-[60%]  border-t border-gray-200 py-10 h-[-webkit-fill-available]">
-                          <div className="grid grid-cols-5 divide-x divide-gray-300 h-[inherit]">
-                            <div className="space-y-4 px-6">
-                              {allCategory
-                                ?.filter((item) => item?.isActive)
-                                ?.sort(
-                                  (a, b) => a.displayOrder - b.displayOrder,
-                                ) // sort by displayOrder
-                                ?.map((data, index) => {
-                                  return (
-                                    <Link
-                                      key={data?._id}
-                                      to={{
-                                        pathname: "/productlist",
-                                        search: `?gender=Women&category=${data.slug}&ctd=${data._id}`,
-                                      }}
-                                      className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded"
-                                    >
-                                      <img
-                                        src={`${BASE_URL}${data?.smallimage}`}
-                                        alt={data?.name}
-                                        className="w-10 h-10 object-cover rounded"
-                                      />
-
-                                      <span className="font-medium">
-                                        {data?.name}
-                                      </span>
-                                    </Link>
-                                  );
-                                })}
-                              {/* <Link
-                                to="/blouses"
-                                className="block hover:underline font-medium"
-                              >
-                                Blouses
-                              </Link>
-                              <Link
-                                to="/tops"
-                                className="block hover:underline font-medium"
-                              >
-                                Tops
-                              </Link> */}
-                            </div>
-                            {/* <div className="space-y-4 px-6">
-                              <Link
-                                to="/jackets"
-                                className="block hover:underline font-medium"
-                              >
-                                Jackets
-                              </Link>
-                              <Link
-                                to="/sweaters"
-                                className="block hover:underline font-medium"
-                              >
-                                Sweaters
-                              </Link>
-                              <Link
-                                to="/cardigans"
-                                className="block hover:underline font-medium"
-                              >
-                                Cardigans
-                              </Link>
-                            </div>
-                            <div className="space-y-4 px-6">
-                              <Link
-                                to="/jeans"
-                                className="block hover:underline font-medium"
-                              >
-                                Jeans and trousers
-                              </Link>
-                              <Link
-                                to="/skirts"
-                                className="block hover:underline font-medium"
-                              >
-                                Skirts
-                              </Link>
-                              <Link
-                                to="/shorts"
-                                className="block hover:underline font-medium"
-                              >
-                                Shorts
-                              </Link>
-                            </div>
-                            <div className="space-y-4 px-6">
-                              <Link
-                                to="/lingerie"
-                                className="block hover:underline font-medium"
-                              >
-                                Lingerie
-                              </Link>
-                              <Link
-                                to="/bras"
-                                className="block hover:underline font-medium"
-                              >
-                                Bras
-                              </Link>
-                              <Link
-                                to="/bottoms"
-                                className="block hover:underline font-medium"
-                              >
-                                Bottoms
-                              </Link>
-                            </div>
-                            <div className="space-y-4 px-6">
-                              <Link
-                                to="/accessories"
-                                className="block hover:underline font-medium"
-                              >
-                                Accessories
-                              </Link>
-                              <Link
-                                to="/shop-all"
-                                className="block hover:underline font-medium"
-                              >
-                                Shop all
-                              </Link>
-                            </div> */}
-                          </div>
-                        </div>
-                        <div className="w-[40%] h-[420px] overflow-hidden shadow-2xl">
-                          <div className="relative h-full">
-                            <img
-                              src="/images/26.jpg"
-                              alt="Shop Now"
-                              className="absolute inset-0 w-full h-full object-cover"
-                            />
-                            <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
-                            <div className="absolute bottom-6 left-6 right-6 text-white">
-                              <h4 className="font-bold text-xl mb-4 leading-tight">
-                                A color of New structures
-                              </h4>
-                              <Link
-                                to="/mens/shop-all"
-                                className="bg-white text-[#d6b28a] px-8 py-3 rounded-lg font-bold text-sm hover:scale-105 transition-all inline-block shadow-lg"
-                              >
-                                Shop now →
-                              </Link>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {to === "/brands" && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-screen max-w-6xl bg-white shadow-2xl border border-gray-200 p-8 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-999 mt-2">
-                      <div className="flex items-start justify-between gap-8 mb-8">
-                        <div>
-                          <h3 className="font-bold text-2xl text-gray-900 mb-2">
-                            Top Brands
-                          </h3>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-8 max-w-6xl mx-auto">
-                        <div className="flex-1 max-w-4xl">
-                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                            {brands?.slice(0, 10)?.map((brand) => (
-                              <Link
-                                key={brand?._id}
-                                to={`/productlist?brand=${brand.slug}&brandId=${brand._id}`}
-                                className="group/item  bg-gray-100"
-                              >
-                                <div className="w-full p-6 gap-2">
-                                  <img
-                                    src={`${BASE_URL}${brand.logo}`}
-                                    alt={brand.name}
-                                    className="w-20 h-20 object-contain rounded-lg"
-                                  />
-                                </div>
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="w-80 shrink-0 hidden lg:block">
-                          <div className="bg-orange-50 border border-orange-200 rounded-2xl p-8 h-fit sticky top-8 text-sm space-y-4">
-                            <div className="flex items-center gap-3 p-4 bg-orange-100/50 rounded-xl">
-                              <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse" />
-                              <span className="font-medium text-gray-800">
-                                Free Delivery over ₹500
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-3 p-4 bg-orange-100/50 rounded-xl">
-                              <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse" />
-                              <span className="font-medium text-gray-800">
-                                Matched Guarantee
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-3 p-4 bg-orange-100/50 rounded-xl">
-                              <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse" />
-                              <span className="font-medium text-gray-800">
-                                Customer Support?
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-4 ml-auto w-[-webkit-fill-available]">
-              {/* ✅ DESKTOP SEARCH — replace the existing input div */}
-              <div
-                className="flex-1 w-100 hidden lg:block relative"
-                ref={searchRef}
+            {/* User Profile Icon */}
+            {user?.user ? (
+              <Link
+                to="/userprofile"
+                className="p-1.5 hover:text-[#08266B] transition-colors"
+                aria-label="User profile"
               >
+                <LuUser size={20} strokeWidth={1.5} />
+              </Link>
+            ) : (
+              <button
+                onClick={() => setLoginOpen(true)}
+                className="p-1.5 hover:text-[#08266B] transition-colors cursor-pointer"
+                aria-label="Sign In"
+              >
+                <LuUser size={20} strokeWidth={1.5} />
+              </button>
+            )}
+          </div>
+
+        </div>
+
+        {/* Desktop Search Bar Dropdown */}
+          {desktopSearchOpen && (
+            <div className="border-t border-neutral-100 py-3 bg-white" ref={searchRef}>
+              <div className="max-w-2xl mx-auto px-4 relative">
+                <div className="relative flex items-center">
+                  <FiSearch className="absolute left-3.5 text-neutral-400" size={16} />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSearchSubmit();
+                    }}
+                    placeholder="Search for Jeans, Shirts, Blazers, Trousers..."
+                    className="w-full pl-10 pr-9 py-2 bg-neutral-50 text-xs sm:text-sm border border-neutral-200 outline-none focus:border-black font-normal transition-all"
+                    autoFocus
+                  />
+                  <button
+                    onClick={() => setDesktopSearchOpen(false)}
+                    className="absolute right-3 text-neutral-400 hover:text-black"
+                  >
+                    <FiX size={16} />
+                  </button>
+                </div>
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="absolute top-full left-4 right-4 mt-1 bg-white border border-neutral-200 shadow-lg z-50 max-h-60 overflow-y-auto">
+                    {suggestions.map((item, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          setSearchQuery(item);
+                          handleSearchSubmit(item);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-neutral-50 text-xs text-neutral-800 transition-colors"
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Mobile Search Bar Dropdown */}
+          {mobileSearchOpen && (
+            <div className="md:hidden py-2 border-t border-neutral-100">
+              <div className="relative flex items-center">
+                <FiSearch className="absolute left-3 text-neutral-400" size={16} />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={handleSearchChange}
-                  onFocus={() =>
-                    suggestions.length > 0 && setShowSuggestions(true)
-                  }
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && searchQuery.trim()) {
-                      navigate(
-                        `/productSearch?search=${encodeURIComponent(searchQuery)}`,
-                      );
-                      setShowSuggestions(false);
-                    }
+                    if (e.key === "Enter") handleSearchSubmit();
                   }}
-                  placeholder="What are you looking for?"
-                  className="w-full bg-gray-50/50 px-4 py-2.5 text-sm outline-none border border-gray-200 focus:border-[#d6b28a] focus:ring-2 focus:ring-[#d6b28a]/20 transition-all"
+                  placeholder="Search Jeans, Shirts, Blazers..."
+                  className="w-full pl-9 pr-9 py-2 bg-neutral-100 text-xs outline-none"
+                  autoFocus
                 />
-
-                {/* Suggestions Dropdown */}
-                {showSuggestions && (
-                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 shadow-xl z-[999] max-h-80 overflow-y-auto mt-1 rounded-b-lg">
-                    {searchLoading ? (
-                      <div className="px-4 py-3 text-sm text-gray-400 flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-[#d6b28a] border-t-transparent rounded-full animate-spin" />
-                        Searching...
-                      </div>
-                    ) : suggestions.length > 0 ? (
-                      suggestions.map((item, index) => (
-                        <Link
-                          key={item._id || index}
-                          to={`/productlist?search=${encodeURIComponent(item)}`}
-                          onClick={() => {
-                            setSearchQuery(item); // fill input with selected suggestion
-                            setShowSuggestions(false);
-                          }}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-all border-b border-gray-100 last:border-0"
-                        >
-                          {/* Search icon prefix */}
-                          <svg
-                            className="w-4 h-4 text-gray-400 shrink-0"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
-                            />
-                          </svg>
-                          {/* Highlight matched query inside suggestion */}
-                          <span
-                            dangerouslySetInnerHTML={{
-                              __html: item.replace(
-                                new RegExp(`(${searchQuery})`, "gi"),
-                                '<strong class="text-[#d6b28a]">$1</strong>',
-                              ),
-                            }}
-                          />
-                        </Link>
-                      ))
-                    ) : (
-                      <div className="px-4 py-3 text-sm text-gray-400">
-                        No results found for "{searchQuery}"
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="items-center gap-3 hidden lg:flex">
-                <Link
-                  to="/wishlist"
-                  className="flex flex-col items-center p-2 rounded-lg transition-all group relative"
+                <button
+                  onClick={() => setMobileSearchOpen(false)}
+                  className="absolute right-3 text-neutral-500"
                 >
-                  <div className="relative">
-                    <FiHeart
-                      size={18}
-                      className="group-hover:scale-110 transition-transform"
-                    />
-                    {wishlistItems?.length > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center animate-pulse">
-                        {wishlistItems.length > 99
-                          ? "99+"
-                          : wishlistItems.length}
-                      </span>
-                    )}
-                  </div>
-                  <span className="hidden sm:block mt-1 text-xs font-medium">
-                    Wishlist
-                  </span>
-                </Link>
-
-                <CartTrigger onOpen={() => setCartOpen(true)} />
-
-                {user?.user ? (
-                  <Link
-                    to="userprofile"
-                    className="flex flex-col items-center p-2 hover:bg-gray-100 rounded-lg transition-all group"
-                  >
-                    <LuUser
-                      size={18}
-                      className="group-hover:scale-110 transition-transform"
-                    />
-                    <span className="hidden sm:block mt-1 text-xs font-medium">
-                      Profile
-                    </span>
-                  </Link>
-                ) : (
-                  <button
-                    onClick={() => setLoginOpen(true)}
-                    className="flex flex-col items-center p-2 hover:bg-gray-100 rounded-lg transition-all group"
-                  >
-                    <LuLogIn
-                      size={18}
-                      className="group-hover:scale-110 transition-transform"
-                    />
-                    <span className="hidden sm:block mt-1 text-xs font-medium">
-                      Login
-                    </span>
-                  </button>
-                )}
+                  <FiX size={16} />
+                </button>
               </div>
             </div>
-          </div>
-        </div>
-        <hr className="border-[#fef1f1] h-1" />
-        <div
-          className={`bg-white/80 backdrop-blur-sm  transition-all duration-300 relative z-[-1] ${isSticky ? "-mt-1" : ""}`}
-        >
-          <div className="relative overflow-y-hidden Xsidebar">
-            <div
-              className="absolute right-0 hidden lg:block"
-              style={{
-                width: " 1px",
-                boxShadow: "-14px 16px 40px 30px #fffcfc",
-                height: "-webkit-fill-available",
-              }}
-            />
-            <div className="flex items-center justify-start gap-6 px-4 sm:px-6">
-              <button
-                onClick={() => {
-                  setShowAllMenu(true);
-                }}
-                className="flex flex-col items-center gap-2 p-4 hover:scale-105 z-20 pointer-events-auto cursor-pointer transition-all group relative shrink-0"
-                style={{ zIndex: 20 }}
-              >
-                <div className="w-16 h-16 lg:w-[100px] lg:h-[100px] bg-linear-to-br from-gray-100 to-gray-200  rounded-full overflow-hidden group-hover:scale-110 transition-all shadow-lg hover:shadow-xl hover:border-yellow-300">
-                  <img
-                    src="../images/9.webp"
-                    alt="ALL"
-                    className="w-full h-full object-cover"
-                    onError={handleImageError}
-                  />
-                </div>
-                <span className="text-xs font-semibold text-gray-800 px-1 whitespace-nowrap">
-                  ALL
-                </span>
-              </button>
-              {subcategories
-                ?.filter((item) => item?.isActive)
-                ?.sort((a, b) => a.displayOrder - b.displayOrder)
-                .slice(0, 10)
-                ?.map((category) => (
-                  <Link
-                    key={category.name}
-                    to={`/productlist?subCategory=${category.slug}&subCategoryId=${category._id}`}
-                    className="flex flex-col items-center gap-2 p-4 hover:scale-105 z-20 pointer-events-auto cursor-pointer transition-all group relative shrink-0"
-                    style={{ zIndex: 20 }}
-                  >
-                    <div className="w-16 h-16 lg:w-[100px] lg:h-[100px] bg-linear-to-br from-gray-100 to-gray-200 rounded-full overflow-hidden group-hover:scale-110 transition-all shadow-lg hover:shadow-xl hover:border-2 hover:border-yellow-300">
-                      <img
-                        src={`${BASE_URL}${category.smallimage}`}
-                        alt={category.name}
-                        className="w-full h-full object-cover"
-                        onError={handleImageError}
-                      />
-                    </div>
-                    <span className="text-xs font-semibold text-gray-800 px-1 whitespace-nowrap">
-                      {category.name}
-                    </span>
-                  </Link>
-                ))}
+          )}
 
-              {/* {pareantcategory?.length > 0
-                ? pareantcategory.map((item) => (
-                  <Link
-                    key={item._id}
-                    to={`/${item.name.replace(/\s+/g, "-").toLowerCase()}`}
-                    className="flex flex-col items-center gap-2 p-2 hover:scale-105 transition-all group shrink-0 min-w-[72px]"
-                  >
-                    <div className="w-16 h-16 lg:w-[100px] lg:h-[100px] bg-linear-to-br from-gray-100 to-gray-200  rounded-full overflow-hidden group-hover:scale-110 transition-all shadow-lg hover:shadow-xl hover:border-yellow-300">
-                      <img
-                        src={
-                          item?.smallimage
-                            ? `http://localhost:5000${item.smallimage}`
-                            : "../images/23.jpg"
-                        }
-                        alt={item?.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <span className="text-[12px] capitalize font-semibold text-gray-800 text-center max-w-[80px]">
-                      {item?.name}
-                    </span>
-                  </Link>
-                ))
-                : Array(6)
-                  .fill(0)
-                  .map((_, i) => (
-                    <div
-                      key={i}
-                      className="flex flex-col items-center gap-2 p-4 animate-pulse shrink-0"
-                    >
-                      <div className="w-16 h-16 lg:w-20 lg:h-20 bg-gray-200 rounded-full" />
-                      <div className="w-16 h-4 bg-gray-200 rounded" />
-                    </div>
-                  ))
-              } */}
-            </div>
-          </div>
-        </div>
       </header>
 
-      {mobileMenuOpen && (
-        <>
+      {/* ─── 3. MOBILE SLIDE-OVER NAVIGATION DRAWER ─── */}
+      {mobileDrawerOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="fixed inset-0 z-9999 bg-black/50"
-            onClick={closeMobileMenus}
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+            onClick={() => setMobileDrawerOpen(false)}
           />
-          <div className="fixed right-4 top-24 sm:top-28 z-10000 w-[-webkit-fill-available] max-w-[94vw] bg-white shadow-2xl rounded-2xl p-6 border max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-bold text-lg">Quick Actions</h3>
-              <button onClick={closeMobileMenus}>
-                <X size={24} className="text-gray-500 hover:text-gray-700" />
+          <div className="fixed inset-y-0 left-0 max-w-xs w-full bg-white shadow-2xl z-50 flex flex-col">
+            
+            <div className="p-4 border-b border-neutral-100 flex items-center justify-between">
+              <Link to="/" onClick={() => setMobileDrawerOpen(false)} className="flex items-center">
+                <img
+                  src="/logo/WEARAAH_Logo_4K_Transparent.png"
+                  alt="Wearaah"
+                  className="h-8 w-auto object-contain"
+                  onError={(e) => {
+                    e.currentTarget.src = "/logo/wearaah-transparent.png";
+                  }}
+                />
+              </Link>
+              <button
+                onClick={() => setMobileDrawerOpen(false)}
+                className="p-1.5 text-neutral-500 hover:text-black rounded-full hover:bg-neutral-100"
+                aria-label="Close menu"
+              >
+                <X size={20} />
               </button>
             </div>
 
-            <div className="space-y-4 mb-8">
-              <Link
-                to="/wishlist"
-                className="flex items-center gap-4 p-4 hover:bg-gray-50 rounded-xl transition-all"
-                onClick={closeMobileMenus}
-              >
-                <FiHeart size={20} className="text-gray-700" />
-                <div>
-                  <div className="font-medium text-gray-900">Wishlist</div>
-                  <div className="text-xs text-gray-500">Your saved items</div>
-                </div>
-              </Link>
-
-              <div
-                className="flex items-center gap-4 p-4 hover:bg-gray-50 rounded-xl transition-all cursor-pointer"
-                onClick={() => {
-                  setCartOpen(true);
-                  closeMobileMenus();
-                }}
-              >
-                <svg
-                  className="w-6 h-6 text-gray-700"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6.5A2 2 0 007.4 21h9.2a2 2 0 001.9-2.5L17 13m0 0h2M3 3h2m0 0h2m0 0h2"
-                  />
-                </svg>
-                <div>
-                  <div className="font-medium text-gray-900">Cart</div>
-                  <div className="text-xs text-gray-500">
-                    View shopping cart
-                  </div>
-                </div>
-              </div>
-
+            <div className="p-4 bg-neutral-50 border-b border-neutral-100 flex items-center justify-between">
               {user?.user ? (
                 <Link
-                  to="userprofile"
-                  className="flex items-center gap-4 p-4 hover:bg-gray-50 rounded-xl transition-all"
-                  onClick={closeMobileMenus}
+                  to="/userprofile"
+                  onClick={() => setMobileDrawerOpen(false)}
+                  className="flex items-center gap-2.5 text-xs font-semibold text-neutral-800"
                 >
-                  <LuUser size={20} className="text-gray-700" />
-                  <div>
-                    <div className="font-medium text-gray-900">Profile</div>
-                    <div className="text-xs text-gray-500">
-                      Account settings
-                    </div>
+                  <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold">
+                    {user?.user?.name?.[0]?.toUpperCase() || "U"}
+                  </div>
+                  <div className="truncate">
+                    <p className="truncate font-semibold">{user?.user?.name || "My Account"}</p>
+                    <span className="text-[10px] text-neutral-400 font-normal">View Profile</span>
                   </div>
                 </Link>
               ) : (
                 <button
                   onClick={() => {
+                    setMobileDrawerOpen(false);
                     setLoginOpen(true);
-                    closeMobileMenus();
                   }}
-                  className="flex items-center gap-4 p-4 hover:bg-gray-50 rounded-xl transition-all w-full text-left"
+                  className="w-full py-2.5 px-4 bg-[#08266B] hover:bg-black text-white text-xs font-black uppercase tracking-wider text-center transition-colors font-display"
                 >
-                  <LuLogIn size={20} className="text-gray-700" />
-                  <div>
-                    <div className="font-medium text-gray-900">Login</div>
-                    <div className="text-xs text-gray-500">
-                      Sign in to your account
-                    </div>
-                  </div>
+                  Sign In / Register
                 </button>
               )}
             </div>
 
-            <div>
-              <button
-                onClick={() => setMobileNavOpen(!mobileNavOpen)}
-                className="w-full flex items-center justify-between p-4 border-y border-gray-200 mb-4"
-              >
-                <span className="font-semibold text-gray-900">Navigation</span>
-                <MdKeyboardArrowDown
-                  className={`transition-transform ${mobileNavOpen ? "rotate-180" : ""}`}
-                  size={20}
-                />
-              </button>
-
-              {mobileNavOpen && (
-                <div className="space-y-2 ml-4">
-                  <Link
-                    to="/"
-                    className="block p-3 hover:bg-gray-50 rounded-lg transition-all"
-                    onClick={() => {
-                      closeMobileMenus();
-                    }}
-                  >
-                    Home
-                  </Link>
-
-                  <div>
-                    <button
-                      onClick={() =>
-                        setOpenAccordion(
-                          openAccordion === "mens" ? null : "mens",
-                        )
-                      }
-                      className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-all text-left font-medium"
+            <div className="flex-1 overflow-y-auto p-4 space-y-1">
+              <div>
+                <button
+                  onClick={() =>
+                    setMobileExpandedSection(mobileExpandedSection === "mens" ? null : "mens")
+                  }
+                  className="w-full flex items-center justify-between p-3 text-sm font-bold text-neutral-900 hover:bg-neutral-50 rounded-lg uppercase tracking-wider text-left font-display"
+                >
+                  <span>MENS</span>
+                  <MdKeyboardArrowDown
+                    className={`transition-transform duration-200 ${
+                      mobileExpandedSection === "mens" ? "rotate-180 text-[#08266B]" : "text-neutral-400"
+                    }`}
+                    size={20}
+                  />
+                </button>
+                {mobileExpandedSection === "mens" && (
+                  <div className="ml-3 pl-3 border-l-2 border-[#08266B] space-y-1 py-1">
+                    <Link
+                      to="/mens"
+                      onClick={() => setMobileDrawerOpen(false)}
+                      className="block p-2 text-xs font-bold text-[#08266B] uppercase tracking-wider"
                     >
-                      Mens
-                      <MdKeyboardArrowDown
-                        className={`transition-transform ${openAccordion === "mens" ? "rotate-180" : ""}`}
-                        size={20}
-                      />
-                    </button>
-                    {openAccordion === "mens" && (
-                      <div className="ml-4 mt-2 space-y-2 bg-gray-50 p-3 rounded-lg">
-                        {allCategory?.slice(0, 5)?.map((item) => (
-                          <Link
-                            key={item?._id}
-                            to={`/productlist?category=${item.slug}&ctd=${item._id}`}
-                            className="block p-2 hover:bg-white rounded transition-all text-sm"
-                            onClick={closeMobileMenus}
-                          >
-                            {item?.name}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* <div>
-                    <button
-                      onClick={() =>
-                        setOpenAccordion(
-                          openAccordion === "new-arrivals"
-                            ? null
-                            : "new-arrivals",
-                        )
-                      }
-                      className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-all text-left font-medium"
+                      View All Men's →
+                    </Link>
+                    <Link
+                      to="/productlist?isNewArrival=true"
+                      onClick={() => setMobileDrawerOpen(false)}
+                      className="block p-2 text-xs text-neutral-600 hover:text-black"
                     >
                       New Arrivals
-                      <MdKeyboardArrowDown
-                        className={`transition-transform ${openAccordion === "new-arrivals" ? "rotate-180" : ""}`}
-                        size={20}
-                      />
-                    </button>
-                    {openAccordion === "new-arrivals" && (
-                      <div className="ml-4 mt-2 space-y-2 bg-gray-50 p-3 rounded-lg">
-                        <Link
-                          to="/new-arrivals/blouses"
-                          className="block p-2 hover:bg-white rounded transition-all text-sm"
-                          onClick={closeMobileMenus}
-                        >
-                          Blouses
-                        </Link>
-                        <Link
-                          to="/new-arrivals/cardigans"
-                          className="block p-2 hover:bg-white rounded transition-all text-sm"
-                          onClick={closeMobileMenus}
-                        >
-                          Cardigans
-                        </Link>
-                        <Link
-                          to="/new-arrivals/jackets"
-                          className="block p-2 hover:bg-white rounded transition-all text-sm"
-                          onClick={closeMobileMenus}
-                        >
-                          Jackets
-                        </Link>
-                        <Link
-                          to="/new-arrivals/trousers"
-                          className="block p-2 hover:bg-white rounded transition-all text-sm"
-                          onClick={closeMobileMenus}
-                        >
-                          Trousers
-                        </Link>
-                        <Link
-                          to="/new-arrivals/lingerie"
-                          className="block p-2 hover:bg-white rounded transition-all text-sm"
-                          onClick={closeMobileMenus}
-                        >
-                          Lingerie
-                        </Link>
-                      </div>
-                    )}
-                  </div> */}
-
-                  <div>
-                    <button
-                      onClick={() =>
-                        setOpenAccordion(
-                          openAccordion === "brands" ? null : "brands",
-                        )
-                      }
-                      className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-all text-left font-medium"
+                    </Link>
+                    <Link
+                      to="/productlist?subCategoryId=69c23c0df1295fef10514873&subCategory=jeans"
+                      onClick={() => setMobileDrawerOpen(false)}
+                      className="block p-2 text-xs text-neutral-600 hover:text-black"
                     >
-                      Brands
-                      <MdKeyboardArrowDown
-                        className={`transition-transform ${openAccordion === "brands" ? "rotate-180" : ""}`}
-                        size={20}
-                      />
-                    </button>
-                    {openAccordion === "brands" && (
-                      <div className="ml-4 mt-2 space-y-2 bg-gray-50 p-3 rounded-lg max-h-48 overflow-y-auto">
-                        {brands?.slice(0, 10)?.map((item) => (
-                          <Link
-                            key={item?._id}
-                            to={`/brands/${item.slug}`}
-                            className="block p-2 hover:bg-white rounded transition-all text-sm lg:flex items-center gap-2"
-                            onClick={closeMobileMenus}
-                          >
-                            <span className="w-5 h-5 bg-gray-300 rounded-sm shrink-0"></span>
-                            {item?.name}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
+                      Jeans
+                    </Link>
+                    <Link
+                      to="/productlist?category=shirts"
+                      onClick={() => setMobileDrawerOpen(false)}
+                      className="block p-2 text-xs text-neutral-600 hover:text-black"
+                    >
+                      Shirts
+                    </Link>
+                    <Link
+                      to="/productlist?category=formal-wear&ctd=69c50b8293df3e7bd375833a"
+                      onClick={() => setMobileDrawerOpen(false)}
+                      className="block p-2 text-xs text-neutral-600 hover:text-black"
+                    >
+                      Formal Wear
+                    </Link>
+                    <Link
+                      to="/productlist?category=blazers"
+                      onClick={() => setMobileDrawerOpen(false)}
+                      className="block p-2 text-xs text-neutral-600 hover:text-black"
+                    >
+                      Blazer and Coat
+                    </Link>
                   </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </>
-      )}
+                )}
+              </div>
 
-      <div
-        className={`fixed inset-0 z-60 ${showAllMenu ? "visible" : "invisible"}`}
-      >
-        <div
-          className={`absolute inset-0 bg-black/50 transition-opacity ${
-            showAllMenu ? "opacity-100" : "opacity-0"
-          }`}
-          onClick={() => setShowAllMenu(false)}
-        />
-        <div
-          className={`absolute left-0 top-0 h-full w-full sm:w-[420px] bg-white
-              transform transition-transform duration-300 overflow-y-auto
-              ${showAllMenu ? "translate-x-0" : "-translate-x-full"}`}
-        >
-          <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-white z-10">
-            <Link
-              to="/"
-              className="bg-[#d6b28a] text-white font-black text-2xl px-4 py-2 lowercase"
-            >
-              LIONIES
-            </Link>
-            <X
-              size={22}
-              className="cursor-pointer"
-              onClick={() => setShowAllMenu(false)}
-            />
-          </div>
-
-          <div className="px-4 py-4 border-b bg-gray-50 sticky top-[72px] z-10">
-            <h2 className="text-xl font-bold text-gray-900">ALL</h2>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 px-4 py-6">
-            {subcategories?.map((item) => (
               <Link
-                key={item._id}
-                to={`/productlist?subCategoryId=${item._id}&subCategory=${item.slug}`}
-                onClick={() => setShowAllMenu(false)}
-                className="text-center text-xs font-medium hover:bg-gray-50 p-3 transition-all hover:scale-105 rounded-md"
+                to="/kids"
+                onClick={() => setMobileDrawerOpen(false)}
+                className="flex items-center justify-between p-3 text-sm font-bold text-neutral-900 hover:bg-neutral-50 rounded-lg uppercase tracking-wider font-display"
               >
-                <img
-                  src={`${BASE_URL}${item.smallimage}`}
-                  alt={item.name}
-                  className="h-14 w-14 mx-auto rounded-lg object-cover mb-2"
-                />
-                <span className="block font-semibold">{item.name}</span>
+                <span>KIDS</span>
+                <FiChevronRight className="text-neutral-400" />
               </Link>
-            ))}
+
+              <Link
+                to="/productlist?category=accessories"
+                onClick={() => setMobileDrawerOpen(false)}
+                className="flex items-center justify-between p-3 text-sm font-bold text-neutral-900 hover:bg-neutral-50 rounded-lg uppercase tracking-wider font-display"
+              >
+                <span>ACCESSORIES</span>
+                <FiChevronRight className="text-neutral-400" />
+              </Link>
+
+              <Link
+                to="/productlist?isNewArrival=true"
+                onClick={() => setMobileDrawerOpen(false)}
+                className="flex items-center justify-between p-3 text-sm font-bold text-neutral-900 hover:bg-neutral-50 rounded-lg uppercase tracking-wider font-display"
+              >
+                <span>NEW ARRIVALS</span>
+                <FiChevronRight className="text-neutral-400" />
+              </Link>
+
+              <Link
+                to="/productlist?category=linen"
+                onClick={() => setMobileDrawerOpen(false)}
+                className="flex items-center justify-between p-3 text-sm font-bold text-neutral-900 hover:bg-neutral-50 rounded-lg uppercase tracking-wider font-display"
+              >
+                <span>LINEN</span>
+                <FiChevronRight className="text-neutral-400" />
+              </Link>
+
+              <div className="pt-4 border-t border-neutral-100 mt-4 space-y-1">
+                <Link
+                  to="/wishlist"
+                  onClick={() => setMobileDrawerOpen(false)}
+                  className="flex items-center gap-3 p-3 text-xs font-medium text-neutral-700 hover:bg-neutral-50 rounded-lg"
+                >
+                  <FiHeart size={16} />
+                  <span>My Wishlist ({wishlistItems?.length || 0})</span>
+                </Link>
+                <Link
+                  to="/faq"
+                  onClick={() => setMobileDrawerOpen(false)}
+                  className="flex items-center gap-3 p-3 text-xs font-medium text-neutral-700 hover:bg-neutral-50 rounded-lg"
+                >
+                  <FiGift size={16} />
+                  <span>Help & Customer Care</span>
+                </Link>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-neutral-100 text-center text-[10px] text-neutral-400 uppercase tracking-widest font-bold">
+              Wearaah Men's Denim & Contemporary Fashion
+            </div>
+
           </div>
         </div>
-      </div>
+      )}
 
+      {/* ─── 5. "ALL CATEGORIES" SLIDE-OVER MODAL ─── */}
+      {showAllMenu && (
+        <div className="fixed inset-0 z-50">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+            onClick={() => setShowAllMenu(false)}
+          />
+          <div className="fixed inset-y-0 left-0 w-full sm:w-[480px] bg-white shadow-2xl z-50 flex flex-col">
+            
+            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100">
+              <div className="flex items-center gap-3">
+                <img
+                  src="/logo/WEARAAH_Logo_4K_Transparent.png"
+                  alt="Wearaah"
+                  className="h-8 w-auto object-contain"
+                  onError={(e) => {
+                    e.currentTarget.src = "/logo/wearaah-transparent.png";
+                  }}
+                />
+                <span className="text-neutral-300">|</span>
+                <h3 className="font-display text-base text-neutral-900 font-black uppercase">All Categories</h3>
+              </div>
+              <button
+                onClick={() => setShowAllMenu(false)}
+                className="p-1.5 text-neutral-500 hover:text-black rounded-full hover:bg-neutral-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {subcategories?.map((item) => (
+                  <Link
+                    key={item._id}
+                    to={`/productlist?subCategoryId=${item._id}&subCategory=${item.slug}`}
+                    onClick={() => setShowAllMenu(false)}
+                    className="flex flex-col items-center text-center p-3.5 rounded-xl border border-neutral-200 hover:border-[#08266B] hover:shadow-md transition-all group bg-neutral-50/50 hover:bg-white"
+                  >
+                    <div className="w-16 h-16 rounded-full overflow-hidden bg-neutral-100 mb-2.5 shadow-xs">
+                      <img
+                        src={item?.smallimage ? `${BASE_URL}${item.smallimage}` : "/images/placeholder.png"}
+                        alt={item.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        onError={handleImageError}
+                      />
+                    </div>
+                    <span className="text-xs font-black uppercase tracking-wider text-neutral-900 group-hover:text-[#08266B] truncate w-full font-display">
+                      {item.name}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Global Cart Off-Canvas & Login Modal */}
       <CartOffCanvas isOpen={cartOpen} onClose={() => setCartOpen(false)} />
       <LoginModal isOpen={loginOpen} onClose={() => setLoginOpen(false)} />
     </>

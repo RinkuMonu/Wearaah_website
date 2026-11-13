@@ -1,47 +1,142 @@
-@import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap');
 @import "tailwindcss";
-*{
-  font-family: "Figtree", sans-serif !important;
-  /* overflow-x: hidden; */
+
+@layer base {
+  :root {
+    --font-sans: 'Jost', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-display: 'Jost', 'Montserrat', -apple-system, sans-serif;
+
+    --color-primary: #000000;
+    --color-secondary: #171717;
+    --color-killer-red: #ED1C24;
+    --color-killer-red-dark: #C4122F;
+    --color-gray-bg: #F8F8F8;
+    --color-border: #E8E8E8;
+  }
+
+  html {
+    font-family: var(--font-sans);
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #FFFFFF;
+    color: #111111;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  /* Consistent focus ring */
+  *:focus-visible {
+    outline: 2px solid #ED1C24;
+    outline-offset: 2px;
+  }
 }
 
-button{
-  cursor: pointer !important;
+/* Killer Jeans Clean & Simple Premium Typography */
+.font-display {
+  font-family: 'Jost', 'Montserrat', -apple-system, sans-serif;
+  letter-spacing: 0.04em;
 }
+
+.font-sans {
+  font-family: 'Jost', 'Inter', -apple-system, sans-serif;
+}
+
+/* Killer Red & Contrast Accents */
+.text-killer-red {
+  color: #ED1C24;
+}
+
+.bg-killer-red {
+  background-color: #ED1C24;
+}
+
+.border-killer-red {
+  border-color: #ED1C24;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F4F4F5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #111111;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ED1C24;
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Ticker Animation */
 @keyframes ticker {
-  from {
+  0% {
     transform: translateX(0);
   }
-  to {
+  100% {
     transform: translateX(-50%);
   }
 }
 
 .animate-ticker {
+  display: flex;
+  width: max-content;
   animation: ticker 25s linear infinite;
 }
-.sidebar::-webkit-scrollbar {
-  width: 3px;
+
+.animate-ticker:hover {
+  animation-play-state: paused;
 }
- 
-.sidebar::-webkit-scrollbar-track {
-  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+
+/* Shimmer skeleton states */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
- 
-.sidebar::-webkit-scrollbar-thumb {
-  background-color: #9d5d15;
-  outline: 1px solid #9d5d15;
+
+.animate-shimmer {
+  background: linear-gradient(90deg, #F4F4F5 25%, #E4E4E7 50%, #F4F4F5 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }
-.Xsidebar::-webkit-scrollbar {
-  width: 1px;
-  height: 1px;
+
+/* Smooth Image Zoom Hover */
+.image-zoom-container {
+  overflow: hidden;
 }
- 
-.Xsidebar::-webkit-scrollbar-track {
-  box-shadow: none;
+
+.image-zoom-container img {
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease;
 }
- 
-.Xsidebar::-webkit-scrollbar-thumb {
-  background-color: #d2ae87;
-  outline: 1px solid #ffffff;
+
+.image-zoom-container:hover img {
+  transform: scale(1.06);
 }

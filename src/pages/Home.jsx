@@ -1,4 +1,5 @@
 import HeroBanner from "../components/Home/HeroBanner";
+import CategoryStories from "../components/Home/CategoryStories";
 import TopProducts from "../components/Home/TopProducts";
 import PopularProducts from "../components/Home/PopularProducts";
 import JoggersSection from "../components/Home/JoggersSection";
@@ -16,6 +17,7 @@ export default function Home() {
   return (
     <>
       <HeroBanner />
+      <CategoryStories />
       <TopProducts />
       <BrandsSection />
       <CategoriesSection />

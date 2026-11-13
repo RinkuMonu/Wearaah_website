@@ -110,13 +110,16 @@ const Wishlist = () => {
 
   if (!user) {
     return (
-      <section className="w-full bg-white py-10">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <Heart size={48} className="mx-auto text-gray-300 mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Login to view your wishlist</h2>
-          <p className="text-gray-500 mb-4">Save your favorite items and never lose them</p>
-          <button className="bg-[#e4a156] text-white px-6 py-2 rounded-full hover:bg-[#d4854a] transition-colors">
-            Login / Sign Up
+      <section className="w-full bg-white py-16">
+        <div className="max-w-md mx-auto px-6 text-center">
+          <Heart size={44} strokeWidth={1.5} className="mx-auto text-neutral-300 mb-4" />
+          <h2 className="text-xl font-normal uppercase tracking-wider mb-2">Login to view your wishlist</h2>
+          <p className="text-neutral-500 text-xs mb-6">Save your favorite menswear pieces and access them across all your devices.</p>
+          <button 
+            onClick={() => window.location.href = '/'}
+            className="bg-black hover:bg-[#ED1C24] text-white px-8 py-3 text-xs font-medium uppercase tracking-[0.16em] transition-colors"
+          >
+            Sign In / Register
           </button>
         </div>
       </section>
@@ -125,10 +128,10 @@ const Wishlist = () => {
 
   if (isLoading && wishlistItems.length === 0) {
     return (
-      <section className="w-full bg-white py-10">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e4a156] mx-auto" />
-          <p className="text-gray-500 mt-4">Loading your wishlist...</p>
+      <section className="w-full bg-white py-16">
+        <div className="max-w-md mx-auto px-6 text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#ED1C24] mx-auto" />
+          <p className="text-neutral-500 text-xs tracking-wider uppercase mt-4">Loading your wishlist...</p>
         </div>
       </section>
     );
@@ -141,44 +144,37 @@ const Wishlist = () => {
   };
 
   return (
-    <section className="w-full bg-white py-10">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-lg font-semibold">
-            My Wishlist{" "}
-            <span className="text-gray-500">
-              ({wishlistItems.length} items)
-            </span>
-          </h1>
-          
-          {/* Optional: Clear all button */}
-          {/* {wishlistItems.length > 0 && (
-            <button
-              onClick={() => {
-                if (window.confirm('Remove all items from wishlist?')) {
-                  wishlistItems.forEach(item => {
-                    handleRemoveFromWishlist(item._id, item.variant?._id);
-                  });
-                }
-              }}
-              className="text-sm text-red-500 hover:text-red-600 transition-colors flex items-center gap-1"
-            >
-              <Trash2 size={14} />
-              Clear All
-            </button>
-          )} */}
+    <section className="w-full bg-white py-10 sm:py-14">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Header */}
+        <div className="flex items-baseline justify-between mb-8 pb-3 border-b border-neutral-200">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-normal uppercase tracking-[0.14em] text-neutral-900">
+              My Wishlist
+            </h1>
+            <p className="text-xs text-neutral-400 tracking-wider uppercase mt-1">
+              {wishlistItems.length} {wishlistItems.length === 1 ? 'ITEM' : 'ITEMS'} SAVED
+            </p>
+          </div>
         </div>
 
         {wishlistItems.length === 0 ? (
-          <div className="text-center py-12">
-            <Heart size={64} className="mx-auto text-gray-300 mb-4" />
-            <p className="text-gray-500 text-lg">Your wishlist is empty.</p>
-            <p className="text-gray-400 text-sm mt-2">
-              Start adding items you love to your wishlist!
+          <div className="text-center py-20 border border-neutral-200 bg-neutral-50/50">
+            <Heart size={48} strokeWidth={1.2} className="mx-auto text-neutral-300 mb-4" />
+            <h3 className="text-base font-normal uppercase tracking-wider text-neutral-800">Your wishlist is empty</h3>
+            <p className="text-neutral-500 text-xs mt-2 max-w-sm mx-auto">
+              Explore our denim, shirts, and tailored collections to save your favorite styles.
             </p>
+            <a
+              href="/productlist"
+              className="inline-block mt-6 px-8 py-3 bg-black hover:bg-[#ED1C24] text-white text-xs font-medium uppercase tracking-[0.16em] transition-colors"
+            >
+              Start Exploring
+            </a>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             {wishlistItems.map((item) => {
               const wishlistId = item._id;
               const variantId = item.variant?._id;
@@ -187,10 +183,9 @@ const Wishlist = () => {
               const isOutOfStock = item.isOutOfStock;
               const discount = calculateDiscount(variantData?.mrp, variantData?.price);
               
-              // Get image URL (handle both absolute and relative paths)
               const getImageUrl = (imagePath) => {
-                if (!imagePath) return '/api/placeholder/400/400';
-                if (imagePath.startsWith('http')) return imagePath;
+                if (!imagePath) return '/images/placeholder.png';
+                if (imagePath.startsWith('http') || imagePath.startsWith('/images/')) return imagePath;
                 if (imagePath.startsWith('/uploads')) {
                   const BASE_URL = import.meta.env.VITE_BASE_URL || '';
                   return `${BASE_URL}${imagePath}`;
@@ -198,124 +193,91 @@ const Wishlist = () => {
                 return imagePath;
               };
 
-              const productImage = getImageUrl(variantData?.image || productData?.image);
-              const productName = variantData?.title || productData?.name || 'Product';
-              const productPrice = variantData?.price || 0;
-              const productMrp = variantData?.mrp || productPrice;
+              const productImage = getImageUrl(variantData?.image || productData?.image || productData?.productImage?.[0]);
+              const productName = variantData?.title || productData?.name || 'Wearaah Product';
+              const productPrice = variantData?.price || productData?.price || 0;
+              const productMrp = variantData?.mrp || productData?.mrp || productPrice;
               
               return (
                 <div
                   key={wishlistId}
-                  className="border border-gray-200 rounded-lg overflow-hidden relative shadow-sm hover:shadow-md transition-all duration-300 bg-white group"
+                  className="group relative flex flex-col bg-white border border-neutral-200 transition-all duration-300 hover:shadow-md"
                 >
-                  {/* Toggle Remove Button with confirmation */}
-                  <ToggleRemoveButton 
-                    wishlistId={wishlistId}
-                    variantId={variantId}
-                    isRemoving={removingItems[wishlistId]} 
-                  />
+                  {/* Remove Button */}
+                  <button
+                    onClick={() => handleRemoveFromWishlist(wishlistId, variantId)}
+                    disabled={removingItems[wishlistId]}
+                    className="absolute top-2.5 right-2.5 w-7 h-7 bg-white/95 rounded-full flex items-center justify-center text-neutral-500 hover:text-black shadow-xs z-20 hover:scale-105 transition-all"
+                    aria-label="Remove from wishlist"
+                  >
+                    {removingItems[wishlistId] ? (
+                      <Loader size={12} className="animate-spin text-[#ED1C24]" />
+                    ) : (
+                      <X size={14} />
+                    )}
+                  </button>
 
-                  <div className="relative overflow-hidden bg-gray-100 cursor-pointer" style={{ aspectRatio: '1/1' }}>
+                  {/* 3:4 Aspect Ratio Image */}
+                  <div className="relative block w-full aspect-[3/4] overflow-hidden bg-neutral-100">
                     <img
                       src={productImage}
                       alt={productName}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                       loading="lazy"
-                      
+                      onError={(e) => {
+                        e.currentTarget.src = "/images/placeholder.png";
+                      }}
                     />
                     
-                    {discount && (
-                      <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                        {discount}% OFF
-                      </div>
-                    )}
-                    
-                    {isOutOfStock && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <div className="bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-1.5">
-                          <AlertCircle size={14} className="text-red-500" />
-                          <span className="text-xs font-bold text-red-600">OUT OF STOCK</span>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Hover overlay with quick actions */}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
-                      <button
-                        onClick={() => handleMoveToCart(variantId, 1, wishlistId)}
-                        disabled={movingItems[wishlistId] || isOutOfStock}
-                        className="bg-white text-gray-800 p-2 rounded-full hover:bg-[#e4a156] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        aria-label="Move to cart"
-                      >
-                        {movingItems[wishlistId] ? (
-                          <Loader size={16} className="animate-spin" />
-                        ) : (
-                          <ShoppingBag size={16} />
-                        )}
-                      </button>
-                      <button
-                        onClick={() => handleRemoveFromWishlist(wishlistId, variantId)}
-                        disabled={removingItems[wishlistId]}
-                        className="bg-white text-gray-800 p-2 rounded-full hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50"
-                        aria-label="Remove"
-                      >
-                        {removingItems[wishlistId] ? (
-                          <Loader size={16} className="animate-spin" />
-                        ) : (
-                          <Trash2 size={16} />
-                        )}
-                      </button>
+                    {/* Badge */}
+                    <div className="absolute bottom-2.5 left-2.5 z-10 pointer-events-none">
+                      {isOutOfStock ? (
+                        <span className="px-2 py-0.5 bg-black text-white text-[10px] font-normal tracking-widest uppercase">
+                          OUT OF STOCK
+                        </span>
+                      ) : discount ? (
+                        <span className="px-2 py-0.5 bg-black text-white text-[10px] font-normal tracking-widest uppercase">
+                          {discount}% OFF
+                        </span>
+                      ) : null}
                     </div>
                   </div>
 
-                  <div className="p-4">
-                    <h2 className="text-sm font-semibold leading-snug line-clamp-2 mb-1">
+                  {/* Details */}
+                  <div className="p-3.5 flex flex-col flex-1">
+                    <h3 className="text-[12px] sm:text-[13px] uppercase tracking-wide font-normal text-neutral-800 line-clamp-1 mb-1">
                       {productName}
-                    </h2>
+                    </h3>
 
-                    <div className="mb-4">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[#e4a156] text-sm font-bold">
-                          ₹{productPrice.toLocaleString('en-IN')}
+                    <div className="flex items-baseline gap-2 mb-3">
+                      <span className="text-[13px] sm:text-[14px] font-medium text-[#ED1C24]">
+                        ₹{productPrice.toLocaleString('en-IN')}
+                      </span>
+                      {productMrp > productPrice && (
+                        <span className="text-[11px] sm:text-xs text-neutral-400 line-through font-normal">
+                          ₹{productMrp.toLocaleString('en-IN')}
                         </span>
-                        {productMrp > productPrice && (
-                          <span className="text-gray-400 line-through text-xs">
-                            ₹{productMrp.toLocaleString('en-IN')}
-                          </span>
-                        )}
-                        {discount && (
-                          <span className="bg-green-100 text-green-700 text-xs px-1.5 py-0.5 rounded">
-                            {discount}% off
-                          </span>
-                        )}
-                      </div>
-                      
-                      {isOutOfStock && (
-                        <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
-                          <AlertCircle size={12} />
-                          Out of stock
-                        </p>
                       )}
                     </div>
 
                     <button
                       onClick={() => handleMoveToCart(variantId, 1, wishlistId)}
                       disabled={movingItems[wishlistId] || isOutOfStock}
-                      className={`w-full py-2.5 text-sm font-semibold border-t border-gray-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      className={`w-full py-2.5 text-xs font-medium uppercase tracking-[0.14em] flex items-center justify-center gap-2 transition-colors cursor-pointer ${
                         isOutOfStock 
-                          ? 'text-gray-400 cursor-not-allowed' 
-                          : 'text-[#633426] hover:text-[#e4a156]'
+                          ? 'bg-neutral-100 text-neutral-400 cursor-not-allowed' 
+                          : 'bg-black hover:bg-[#ED1C24] text-white'
                       }`}
                     >
                       {movingItems[wishlistId] ? (
                         <>
-                          <Loader size={16} className="animate-spin" />
-                          MOVING...
+                          <Loader size={13} className="animate-spin" />
+                          <span>MOVING...</span>
                         </>
                       ) : (
                         <>
-                          <ShoppingBag size={16} />
-                          {isOutOfStock ? 'OUT OF STOCK' : 'MOVE TO CART'}
+                          <ShoppingBag size={13} />
+                          <span>{isOutOfStock ? 'OUT OF STOCK' : 'MOVE TO BAG'}</span>
                         </>
                       )}
                     </button>

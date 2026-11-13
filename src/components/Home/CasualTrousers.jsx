@@ -1,129 +1,127 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { BsCart } from "react-icons/bs";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts } from "../../features/Productlist/ProductSlice";
+import ProductCard from "../common/ProductCard";
+import { FiArrowRight } from "react-icons/fi";
+import { resolveImageUrl, DEFAULT_PRODUCT_IMAGES } from "../../utils/resolveImage";
+
+const FALLBACK_TROUSERS = [
+  {
+    _id: "tr-1",
+    id: "tr-1",
+    name: "Pleated Double-Facing Wool Trouser",
+    brand: "Wearaah Studio",
+    price: 3899,
+    originalPrice: 5999,
+    front: "/images/3.jpg",
+    back: "/images/4.jpg",
+    sizes: ["30", "32", "34", "36"],
+    colors: ["Charcoal", "Mocha"],
+  },
+  {
+    _id: "tr-2",
+    id: "tr-2",
+    name: "Relaxed Drawstring Silk-Blend Pant",
+    brand: "Wearaah Essentials",
+    price: 3299,
+    originalPrice: 4799,
+    front: "/images/10.webp",
+    back: "/images/11.webp",
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Sand", "Black"],
+  },
+  {
+    _id: "tr-3",
+    id: "tr-3",
+    name: "Tailored Cropped Wool Trousers",
+    brand: "Wearaah Atelier",
+    price: 4199,
+    originalPrice: 6299,
+    front: "/images/12.webp",
+    back: "/images/13.webp",
+    sizes: ["30", "32", "34"],
+    colors: ["Navy", "Grey"],
+  },
+  {
+    _id: "tr-4",
+    id: "tr-4",
+    name: "Structured Belgian Linen Trousers",
+    brand: "Wearaah Signature",
+    price: 3599,
+    originalPrice: 5199,
+    front: "/images/21.webp",
+    back: "/images/22.webp",
+    sizes: ["30", "32", "34", "36"],
+    colors: ["Natural Ecru"],
+  },
+];
 
 export default function CasualTrousers() {
   const categoryId = "69c50b8293df3e7bd375833a";
-  const BASE_URL = import.meta.env.VITE_BASE_URL;
+  const BASE_URL = import.meta.env.VITE_BASE_URL || "";
   const dispatch = useDispatch();
-const key = JSON.stringify({ category: categoryId });
+  const key = JSON.stringify({ category: categoryId });
 
-const products = useSelector(
-  (state) => state.products.products[key]
-);
+  const rawProducts = useSelector((state) => state.products?.products?.[key]);
 
   useEffect(() => {
     dispatch(
       fetchProducts({
         category: categoryId,
-      }),
+      })
     );
-  }, [dispatch]);
+  }, [dispatch, categoryId]);
 
-  if (products?.length === 0) {
-    return;
-  }
+  const displayProducts = React.useMemo(() => {
+    if (Array.isArray(rawProducts) && rawProducts.length > 0) {
+      return rawProducts.slice(0, 4).map((p, idx) => {
+        const fallbackFront = FALLBACK_TROUSERS[idx % FALLBACK_TROUSERS.length].front;
+        const rawFront = Array.isArray(p.productImage) ? p.productImage[0] : p.productImage;
+        const rawBack = Array.isArray(p.productImage) ? p.productImage[1] : null;
+        const front = resolveImageUrl(rawFront, fallbackFront);
+        const back = rawBack ? resolveImageUrl(rawBack, front) : front;
+        return {
+          id: p._id,
+          _id: p._id,
+          name: p.name || "Tailored Trouser",
+          brand: p.brand?.name || p.brand || "Wearaah Studio",
+          price: p.startingPrice || p.price || 0,
+          originalPrice: p.mrp || p.originalPrice || 0,
+          front,
+          back,
+          sizes: p.sizes?.length ? p.sizes : ["30", "32", "34", "36"],
+          colors: p.colors?.length ? p.colors : ["Standard"],
+        };
+      });
+    }
+    return FALLBACK_TROUSERS;
+  }, [rawProducts]);
+
   return (
-    <section className="py-12 bg-white">
-      <div className="mx-auto px-8">
-        <div className="flex items-center justify-between mb-8">
+    <section className="py-12 sm:py-16 bg-white border-b border-neutral-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-baseline justify-between mb-8 pb-3 border-b border-neutral-200">
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
+            <h2 className="text-xl sm:text-2xl font-normal text-neutral-900 uppercase tracking-[0.14em]">
               Formal Wear
             </h2>
-            <span className="text-sm text-gray-500">
+            <p className="text-xs text-neutral-400 tracking-wider mt-1 uppercase">
               Shop now for ultimate comfort
-            </span>
+            </p>
           </div>
           <Link
-            to={
-              "/productlist?category=formal-wear&ctd=69c50b8293df3e7bd375833a"
-            }
-            className="text-[#633426] font-semibold text-sm hover:text-orange-600 transition"
+            to={`/productlist?category=formal-wear&ctd=${categoryId}`}
+            className="text-xs font-normal uppercase tracking-[0.15em] text-neutral-900 hover:text-[#ED1C24] pb-0.5 border-b border-neutral-900 hover:border-[#ED1C24] transition-all inline-flex items-center gap-1.5"
           >
-            View All →
+            <span>View All</span>
+            <FiArrowRight size={13} />
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-          {products?.slice(0, 9)?.map((product) => (
-            <div key={product._id} className="group cursor-pointer">
-              <Link
-                to={`/product/${product._id}`}
-                className="block bg-gray-50  overflow-hidden  transition-all duration-300"
-              >
-                <div className="relative h-full md:h-full">
-                  <div className="absolute top-0 left-0 z-20">
-                    <span
-                      className="text-white text-xs px-2 py-1 font-bold"
-                      style={{ backgroundColor: "rgba(0, 184, 82, 0.9)" }}
-                    >
-                      {product.name}
-                    </span>
-                  </div>
-
-                  <img
-                    src={`${BASE_URL}${product.productImage[0]}`}
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-
-                  <div className="absolute top-3 -right-20 group-hover:right-3 transition-all duration-500 flex flex-col gap-1 z-30">
-                    {/* <div className="relative group/cart">
-                      <div className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50 transition-colors duration-200">
-                        <BsCart size={16} className="text-gray-800" />
-                      </div>
-                      <span className="absolute right-12 top-1/2 -translate-y-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover/cart:opacity-100 transition-all whitespace-nowrap shadow-lg z-10">
-                        Add to cart
-                      </span>
-                    </div> */}
-
-                    <div className="relative group/qv">
-                      <div className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-50 transition-colors duration-200">
-                        <svg
-                          className="w-4 h-4 text-gray-800"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                          />
-                        </svg>
-                      </div>
-                      <span className="absolute right-12 top-1/2 -translate-y-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover/qv:opacity-100 transition-all whitespace-nowrap shadow-lg z-10">
-                        Quick View
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 pt-2">
-                  <h3 className="font-semibold text-sm text-gray-900 mb-1 truncate">
-                    {product.name}
-                  </h3>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-lg font-bold text-[#633426]">
-                      Rs. {product?.startingPrice}
-                    </span>
-                    <span className="text-xs text-gray-400 line-through">
-                      Rs. {product?.mrp}
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+          {displayProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       </div>

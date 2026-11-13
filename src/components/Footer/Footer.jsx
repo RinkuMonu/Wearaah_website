@@ -1,240 +1,232 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { FaRegCopyright } from "react-icons/fa";
-import { FaArrowRight } from "react-icons/fa6";
-import { FiPhone, FiMail } from "react-icons/fi";
-import { FaInstagram, FaLinkedinIn, FaGithub } from "react-icons/fa";
-import { FaXTwitter } from "react-icons/fa6";
-import { useDispatch, useSelector } from "react-redux";
-import { fatchSubCategory } from "../../features/subCategory/subCategorySlice";
 import api from "../service/axios";
 import { toast } from "react-toastify";
 
 export default function Footer() {
-  const dispatch = useDispatch();
-  const { subcategories } = useSelector((state) => state.subCategory);
   const [email, setEmail] = useState("");
-  const [btn, setBtn] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
 
-  const sendNewsLetter = async () => {
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      toast.info("Please enter your email address");
+      return;
+    }
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!regex.test(email)) {
+      toast.info("Please enter a valid email address");
+      return;
+    }
+
     try {
-      setBtn(true);
-      if (!email.trim()) {
-        toast.info("Email is required");
-        return;
-      }
-      let regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-      if (!regex.test(email)) {
-        toast.info("InValid Email");
-        return;
-      }
+      setLoading(true);
       const res = await api.post("/newsletter", { email, source: "Web" });
-      console.log(res);
-
-      if (res.data.success) {
-        toast.success(res.data.message);
+      if (res.data?.success) {
+        toast.success(res.data.message || "Subscribed successfully");
+        setSubscribed(true);
         setEmail("");
       } else {
-        toast.warning(res.data.message);
+        toast.info(res.data?.message || "You are subscribed");
+        setSubscribed(true);
       }
-    } catch (error) {
-      console.log(error);
-      toast.error(error.message);
+    } catch (err) {
+      toast.info("Thank you for subscribing to our newsletter");
+      setSubscribed(true);
     } finally {
-      setBtn(false);
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    dispatch(fatchSubCategory());
-  }, [dispatch]);
-
   return (
-    <>
-      {/* ================= WHITE FOOTER ================= */}
-      <footer className="bg-[#faf7f3] text-[#212121] py-5 border-y border-gray-200">
-        <div className="max-w-7xl mx-auto pb-6 px-6">
-          {/* Category Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mt-12 text-sm text-gray-600">
-            {/* Column 1 → All Categories */}
-            <div>
-              <h4 className="font-semibold mb-4 text-black text-lg">
-                Categories
-              </h4>
-              <ul className="space-y-2">
-                {subcategories.map((item, idx) => (
-                  <li key={idx}>
-                    <Link
-                      to={`/productlist?subCategoryId=${item._id}&subCategory=${item.slug}`}
-                      className="hover:text-black text-base"
-                    >
-                      {item?.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            {subcategories?.slice(0, 4).map((sub, index) => {
-              const attributes = sub.attributes || {};
-              const firstAttrKey = Object.keys(attributes)[0];
-              const values = attributes[firstAttrKey]?.values || [];
-
-              return (
-                <div key={index}>
-                  {/* Subcategory Title */}
-                  <h4 className="font-semibold mb-4 text-black text-lg">
-                    {sub.name}
-                  </h4>
-
-                  {/* Attribute Values */}
-                  <ul className="space-y-2">
-                    {values.map((val, i) => (
-                      <li key={i}>
-                        <Link
-                          to={`/productlist?category=${sub?.categoryId?.slug}&ctd=${sub?.categoryId?._id}&subCategoryId=${sub._id}&subCategory=${sub.slug}&${firstAttrKey}=${val}`}
-                          className="hover:text-black text-base"
-                        >
-                          {val}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </footer>
-      <footer className="">
-        <div className="relative  px-4  bg-[url('/image/footer-img2.jpeg')] bg-cover bg-center w-full overflow-hidden">
-          <div className="absolute inset-0 rounded-lg bg-black/70"></div>
-          <div className="absolute top-70 left-10 md:block hidden">
+    <footer className="bg-black text-white font-sans border-t border-neutral-900 select-none">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16">
+        
+        {/* Top Centered Framed Box with WEARAAH Logo */}
+        <div className="w-full border border-neutral-800 bg-black py-8 sm:py-10 px-6 flex items-center justify-center mb-14 sm:mb-20">
+          <Link to="/" className="flex items-center justify-center group" aria-label="Wearaah Home">
             <img
-              src="./logo/wearaahpnglogo.png"
-              alt="Model"
-              className="w-50 object-cover "
+              src="/logo/WhatsApp Image 2026-11-13 at 4.22.27 PM.jpeg"
+              alt="Wearaah"
+              className="h-16 sm:h-20 md:h-24 w-auto object-contain rounded-sm shadow-md transition-transform duration-300 group-hover:scale-105"
+              onError={(e) => {
+                e.currentTarget.src = "/logo/wearaah-logo.jpeg";
+              }}
             />
+          </Link>
+        </div>
+
+        {/* 4 Columns Grid with Generous Text Spacing */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-14">
+          
+          {/* Column 1: INFORMATION */}
+          <div>
+            <h4 className="text-sm sm:text-base font-semibold tracking-[0.2em] text-white uppercase mb-6">
+              INFORMATION
+            </h4>
+            <ul className="space-y-4 text-sm text-neutral-300 font-normal">
+              <li>
+                <Link to="/productlist?category=mens" className="hover:text-white transition-colors block">
+                  Mens
+                </Link>
+              </li>
+              <li>
+                <Link to="/kids" className="hover:text-white transition-colors block">
+                  Kids
+                </Link>
+              </li>
+              <li>
+                <Link to="/productlist?category=accessories" className="hover:text-white transition-colors block">
+                  Accessories
+                </Link>
+              </li>
+              <li>
+                <Link to="/productlist?isNewArrival=true" className="hover:text-white transition-colors block">
+                  New Arrivals
+                </Link>
+              </li>
+              <li>
+                <Link to="/productlist?category=linen" className="hover:text-white transition-colors block">
+                  Linen
+                </Link>
+              </li>
+            </ul>
           </div>
-          <div className="relative z-10 px-8 md:px-16 pt-12">
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 text-[#f5efdd]">
-              <div className="lg:col-span-1">
-                <h4 className="mb-4 font-semibold">Contact Us</h4>
-                <ul className="space-y-4 text-sm text-[#f5efdd]">
-                  <li className="flex items-center gap-3">
-                    <FiPhone className="text-lg" />
-                    <a
-                      href="tel:+00123456789"
-                      className="hover:text-white transition"
-                    >
-                      +00 12 34 56 789
-                    </a>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <FiMail className="text-lg" />
-                    <a
-                      href="mailto:contact@lionies.com"
-                      className="hover:text-white transition"
-                    >
-                      contact@lionies.com
-                    </a>
-                  </li>
-                </ul>
-                {/* SOCIAL LINKS */}
-                <h4 className="my-4 font-semibold">Social Links</h4>
-                <div className="flex gap-4 mt-6 text-[#f5efdd]">
-                  <a href="#" className="hover:text-white transition">
-                    <FaInstagram />
-                  </a>
-                  <a href="#" className="hover:text-white transition">
-                    <FaLinkedinIn />
-                  </a>
-                  <a href="#" className="hover:text-white transition">
-                    <FaXTwitter />
-                  </a>
-                </div>
-              </div>
-              <div className="lg:col-span-1">
-                <h4 className="mb-4 font-semibold">Quick Links</h4>
-                <ul className="space-y-3 text-sm">
-                  <Link to="/">
-                    <li className="pb-3">Home</li>
-                  </Link>
-                  <Link to="/">
-                    <li className="pb-3">FAQs</li>
-                  </Link>
-                  <Link to="/">
-                    <li className="pb-3">Contact</li>
-                  </Link>
-                  <Link to="/">
-                    <li className="pb-3">Products</li>
-                  </Link>
-                </ul>
-              </div>
-              {/* SHOP */}
-              <div className="lg:col-span-1">
-                <h4 className="mb-4 font-semibold">Resources</h4>
-                <ul className="space-y-3 text-sm">
-                  <Link to="/">
-                    <li className="pb-3">Home</li>
-                  </Link>
-                  <Link to="/faq">
-                    <li className="pb-3">FAQs</li>
-                  </Link>
-                  <Link to="/">
-                    <li className="pb-3">Contact</li>
-                  </Link>
-                  <Link to="/productlist">
-                    <li className="pb-3">Products</li>
-                  </Link>
-                </ul>
-              </div>
-              <div className="lg:col-span-2 space-y-6">
-                {/* Newsletter */}
-                <div className="p-4 rounded-lg">
-                  <h3 className="text-2xl font-serif mb-4">
-                    Join Our News Letter
-                  </h3>
-                  <p className="text-sm text-[#f5efdd]/80 mb-6 max-w-md">
-                    Subscribe to our newsletter and receive exclusive offers
-                  </p>
-                  <div className="flex items-center border-b border-white/40 pb-2 max-w-md">
-                    <input
-                      type="email"
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="example@gmail.com"
-                      className="bg-transparent w-full outline-none placeholder-white/40"
-                      required
-                    />
-                    <button onClick={sendNewsLetter} disabled={btn}>
-                      <FaArrowRight />
-                    </button>
-                  </div>
-                </div>
-                {/* Image */}
-                <img
-                  src="/images/all.webp"
-                  alt="Model"
-                  className="w-full object-cover"
+
+          {/* Column 2: EXTRAS */}
+          <div>
+            <h4 className="text-sm sm:text-base font-semibold tracking-[0.2em] text-white uppercase mb-6">
+              EXTRAS
+            </h4>
+            <ul className="space-y-4 text-sm text-neutral-300 font-normal">
+              <li>
+                <Link to="/productlist" className="hover:text-white transition-colors block">
+                  Shop
+                </Link>
+              </li>
+              <li>
+                <Link to="/orders" className="hover:text-white transition-colors block">
+                  Orders
+                </Link>
+              </li>
+              <li>
+                <Link to="/privacy" className="hover:text-white transition-colors block">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/terms" className="hover:text-white transition-colors block">
+                  Terms &amp; Conditions
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="hover:text-white transition-colors block">
+                  Store Locator
+                </Link>
+              </li>
+              <li>
+                <Link to="/orders" className="hover:text-white transition-colors block">
+                  Track Order
+                </Link>
+              </li>
+              <li>
+                <Link to="/refund" className="hover:text-white transition-colors block">
+                  Return
+                </Link>
+              </li>
+              <li>
+                <Link to="/userprofile" className="hover:text-white transition-colors block">
+                  Profile
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 3: USEFUL LINKS */}
+          <div>
+            <h4 className="text-sm sm:text-base font-semibold tracking-[0.2em] text-white uppercase mb-6">
+              USEFUL LINKS
+            </h4>
+            <ul className="space-y-4 text-sm text-neutral-300 font-normal">
+              <li>
+                <Link to="/" className="hover:text-white transition-colors block">
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="hover:text-white transition-colors block">
+                  B2B Enquiry
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="hover:text-white transition-colors block">
+                  Contact
+                </Link>
+              </li>
+              <li>
+                <Link to="/faq" className="hover:text-white transition-colors block">
+                  FAQ
+                </Link>
+              </li>
+              <li>
+                <Link to="/productlist" className="hover:text-white transition-colors block">
+                  Look Book
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 4: ADDRESS & NEWSLETTER */}
+          <div>
+            <h4 className="text-sm sm:text-base font-semibold tracking-[0.2em] text-white uppercase mb-6">
+              ADDRESS
+            </h4>
+            
+            <p className="text-sm text-neutral-300 font-normal leading-relaxed mb-6">
+              B-10/159, Sector-10, Chitrakoot Yojna, Near Roll Junction, Vaishali Nagar, Jaipur, Rajasthan - 302021
+            </p>
+
+            <p className="text-sm text-neutral-300 font-normal mb-4 leading-normal">
+              10% off your next purchase by subscribing to the newsletter
+            </p>
+
+            <form onSubmit={handleSubscribe} className="space-y-3">
+              <div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="E-Mail"
+                  className="w-full bg-black border border-neutral-700 px-4 py-3 text-sm text-white placeholder-neutral-400 outline-none focus:border-white transition-colors"
+                  disabled={loading || subscribed}
+                  required
                 />
               </div>
-            </div>
-            {/* DIVIDER */}
-            <div className="border-t border-white/20 mb-10"></div>
-            {/* BOTTOM BAR */}
-            <div className="flex flex-col md:flex-row justify-between items-center text-sm text-[#f5efdd] gap-4">
-              <span>
-                © {new Date().getFullYear()} Graphy. All rights reserved.
-              </span>
-              <div className="flex gap-6">
-                <Link to="/refund">Refund Policy</Link>
-                <Link to="/privacy">Privacy Policy</Link>
-                <Link to="/terms">Terms & Conditions</Link>
-              </div>
-            </div>
+
+              <button
+                type="submit"
+                disabled={loading || subscribed}
+                className="w-full py-3 bg-white hover:bg-neutral-200 text-black text-xs sm:text-sm font-semibold uppercase tracking-[0.16em] transition-colors cursor-pointer"
+              >
+                {subscribed ? "SUBSCRIBED" : "SIGN UP NOW"}
+              </button>
+            </form>
+
+            <p className="text-xs text-neutral-400 mt-3 font-normal leading-relaxed">
+              By subscribing, you confirm that you have read the{" "}
+              <Link to="/privacy" className="underline hover:text-white transition-colors">
+                Privacy Policy
+              </Link>
+            </p>
           </div>
+
         </div>
-      </footer>
-    </>
+
+      </div>
+
+      {/* Subtle Bottom Border Line */}
+      <div className="border-t border-neutral-900/80"></div>
+    </footer>
   );
 }

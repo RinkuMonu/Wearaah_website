@@ -6,6 +6,15 @@ import "swiper/css";
 import "swiper/css/effect-fade";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchBanner } from "../../features/Banner/bannerSlice";
+import { resolveImageUrl } from "../../utils/resolveImage";
+
+const FALLBACK_KIDS_BANNERS = [
+  {
+    _id: "kb-default-1",
+    bannerName: "Junior Season Styles",
+    images: "/images/centerbanner.webp",
+  },
+];
 
 
 export default function KidsBanner() {
@@ -28,9 +37,10 @@ export default function KidsBanner() {
     );
   }, [dispatch]);
 
-  if (!banners.length) return null;
+  const activeBanners = banners && banners.length > 0 ? banners : FALLBACK_KIDS_BANNERS;
+
   return (
-    <section className="relative w-full h-[80vh]">
+    <section className="relative w-full h-[60vh] sm:h-[80vh]">
       <Swiper
         modules={[Autoplay, EffectFade]}
         slidesPerView={1}
@@ -39,16 +49,19 @@ export default function KidsBanner() {
         autoplay={{ delay: 4000, disableOnInteraction: false }}
         className="w-full h-full"
       >
-        {banners?.map((slide) => (
+        {activeBanners.map((slide) => (
           <SwiperSlide key={slide._id}>
-            <div className="relative w-full h-screen">
+            <div className="relative w-full h-full">
               {/* Background image */}
               <img
-                src={`${BASE_URL}${slide?.images}`}
-                alt={slide.bannerName}
+                src={resolveImageUrl(slide?.images, "/images/centerbanner.webp")}
+                alt={slide.bannerName || "Kids Banner"}
                 className="w-full h-full object-cover"
                 loading="lazy"
                 decoding="async"
+                onError={(e) => {
+                  e.currentTarget.src = "/images/centerbanner.webp";
+                }}
               />
 
               {/* Dark overlay */}
